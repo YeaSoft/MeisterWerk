@@ -25,7 +25,13 @@ void setup() {
 
     mwMQ.begin(tep.mqttserver);
 }
-
+extern "C" {
+#include "user_interface.h"
+}
+unsigned int observeHeap() {
+    uint32_t free = system_get_free_heap_size();
+    return (unsigned int)free;
+}
 unsigned int ctr = 0;
 unsigned int blfreq=10000; // faster blinky during connection & configuration phase.
 bool isConnected=false;
@@ -42,8 +48,10 @@ void loop() { // non-blocking event loop
         mwMQ.handleMQTT();
     }
 
-    if (ctr % blfreq == 0)
+    if (ctr % blfreq == 0) {
         digitalWrite(LED_BUILTIN, LOW); // Turn the LED on
+        Serial.println(observeHeap());
+    }
     if (ctr % (blfreq*2) == 0)
         digitalWrite(LED_BUILTIN, HIGH); // Turn the LED off
     if (ctr > (blfreq*3))
