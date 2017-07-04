@@ -97,6 +97,7 @@ String stylesheet = R"MWx(<style>
             border: 1px solid #ccc;
             border-radius: 4px;
             box-sizing: border-box;
+            font-size: 18px;
         }
 
         input[type=password], select {
@@ -107,6 +108,7 @@ String stylesheet = R"MWx(<style>
             border: 1px solid #ccc;
             border-radius: 4px;
             box-sizing: border-box;
+            font-size: 18px;
         }
 
         input[type=submit] {
@@ -118,6 +120,7 @@ String stylesheet = R"MWx(<style>
             border: none;
             border-radius: 4px;
             cursor: pointer;
+            font-size: 18px;
         }
 
         input[type=submit]:hover {
@@ -125,6 +128,7 @@ String stylesheet = R"MWx(<style>
         }
 
         div {
+            width: 640px;
             border-radius: 5px;
             background-color: #f2f2f2;
             padding: 20px;
