@@ -173,6 +173,7 @@ class MW_BasicNet
         tmwbn.ipStr = String(ip[0]) + '.' + String(ip[1]) + '.' +
                 String(ip[2]) + '.' + String(ip[3]);
         tmwbn.header = "Client mode";
+        Serial.println(tmwbn.ipStr);
         runWebServer();
     }
 

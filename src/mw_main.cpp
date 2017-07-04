@@ -50,7 +50,7 @@ void loop() { // non-blocking event loop
 
     if (ctr % blfreq == 0) {
         digitalWrite(LED_BUILTIN, LOW); // Turn the LED on
-        Serial.println(observeHeap());
+        //Serial.println(observeHeap());
     }
     if (ctr % (blfreq*2) == 0)
         digitalWrite(LED_BUILTIN, HIGH); // Turn the LED off
