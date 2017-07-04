@@ -27,19 +27,19 @@ void setup() {
 
 unsigned int ctr = 0;
 unsigned int blfreq=10000;
+bool isConnected=false;
 void loop() { // non-blocking event loop
     ++ctr;
 
     // Handle AP connection/creation and Web config interface.
-    if (mwBN.handleCom()) {
+    isConnected=mwBN.handleCom()) 
+    
+    if (isConnected)
+    {
         // connected to local network
         blfreq=20000; // slow blinky on normal operation
-    } else {
-        // configuration ongoing, waiting at http://10.1.1.1
-        blfreq=10000; // faster blinky during local AP config
+        mwMQ.handleMQTT();
     }
-
-    mwMQ.handleMQTT();
 
     if (ctr % blfreq == 0)
         digitalWrite(LED_BUILTIN, LOW); // Turn the LED on
