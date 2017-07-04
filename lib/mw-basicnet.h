@@ -216,12 +216,13 @@ class MW_BasicNet
     }
 
 public:
-    MW_BasicNet(String applicationName, bool bDebug = false)
+    MW_BasicNet(String applicationName, unsigned int connectionTimeout=20, bool bDebug = false)
     {
         tmwbn.appName = applicationName;
         tmwbn.uuid=0;
         tmwbn.uuidstr="";
         debugMsg = bDebug;
+        connectTimeout=connectionTimeout;
         tmwbn.state = ST_UNDEFINED;
     }
 
