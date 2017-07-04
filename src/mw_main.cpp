@@ -2,6 +2,7 @@
 #include <ESP8266WebServer.h>
 #include <EEPROM.h>
 
+// Install PubSubClient with:
 // pio lib search PubSubClient  # -> library ID
 // pio lib install <ID>
 #include <PubSubClient.h>
@@ -12,12 +13,16 @@
 String application="MeisterWerk";
 
 MW_BasicNet mwBN(application, 20, true); // application-name, timeout-for-connecting-to-AP, serial-debug-active
+MW_MQTT mwMQ;
 
 void setup() {
     Serial.begin(9600);
     pinMode(LED_BUILTIN, OUTPUT);
 
     mwBN.begin(); // Start MW Basic Networking: try to connect to AP, or on failure: create config AP (http://10.1.1.1).
+
+    String mqttServer=""; // disable
+    mwMQ.begin(mqttServer);
 }
 
 unsigned int ctr = 0;
@@ -33,6 +38,9 @@ void loop() { // non-blocking event loop
         // configuration ongoing, waiting at http://10.1.1.1
         blfreq=10000; // faster blinky during local AP config
     }
+
+    mwMQ.handleMQTT();
+
     if (ctr % blfreq == 0)
         digitalWrite(LED_BUILTIN, LOW); // Turn the LED on
     if (ctr % (blfreq*2) == 0)

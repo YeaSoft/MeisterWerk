@@ -20,9 +20,11 @@ class MW_MQTT
   private:
     String mq_server;
     bool mqState;
+    bool mqActive;
 
-    void reconnect() // XXX this hammers on failure -- needs timed block
+    bool reconnect() // XXX this hammers on failure -- needs timed block
     {
+        bool ret=true;
         // Loop until we're reconnected
         if (!mw_mq_client.connected())
         {
@@ -43,38 +45,52 @@ class MW_MQTT
             {
                 Serial.print("failed, rc=");
                 Serial.print(mw_mq_client.state());
+                ret=false;
             }
         }
+        return ret;
     }
 
   public:
-    MW_MQTT(String mqtt_server)
+    MW_MQTT()
     {
-        mq_server = mqtt_server;
         mqState = false;
+        mqActive = false;
     }
-    bool mqStarted()
+    bool mqIsStarted()
     {
         return mqState;
     }
-    void begin()
+    bool mqIsActive() {
+        return mqActive;
+    }
+    void begin(String mqtt_server)
     {
-        char mqS[128];
-        strncpy(mqS, mq_server.c_str(), 127);
-        mw_mq_client.setServer(mq_server.c_str(), 1883);
-        mw_mq_client.setCallback(callback);
+        mq_server = mqtt_server;
+        if (mq_server != "") {
+            mw_mq_client.setServer(mq_server.c_str(), 1883);
+            mw_mq_client.setCallback(callback);
+        }
         mqState = true;
     }
     void publish(String topic, String msg)
     {
         mw_mq_client.publish(topic.c_str(), msg.c_str());
     }
-    void handleMQTT()
+    bool handleMQTT()
     {
-        if (!mw_mq_client.connected())
+        bool ret=false;
+        if (mq_server != "")
         {
-            reconnect();
+            if (!mw_mq_client.connected())
+            {
+                ret=reconnect();
+            } else {
+                ret=true;
+            }
+            if (ret) mw_mq_client.loop();
         }
-        mw_mq_client.loop();
+        mqActive=ret;
+        return ret;
     }
 };
