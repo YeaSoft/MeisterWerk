@@ -6,12 +6,13 @@
 
 String application="MeisterWerk";
 
-MW_BasicNet mwBN(application, true);
+MW_BasicNet mwBN(application, 20, true); // application-name, timeout-for-connecting-to-AP, serial-debug-active
 
 void setup() {
     Serial.begin(9600);
     pinMode(LED_BUILTIN, OUTPUT);
-    mwBN.begin();
+
+    mwBN.begin(); // Start MW Basic Networking: try to connect to AP, or on failure: create config AP (http://10.1.1.1).
 }
 
 unsigned int ctr = 0;
@@ -19,12 +20,13 @@ unsigned int blfreq=10000;
 void loop() { // non-blocking event loop
     ++ctr;
 
+    // Handle AP connection/creation and Web config interface.
     if (mwBN.handleCom()) {
         // connected to local network
-        blfreq=20000;
+        blfreq=20000; // slow blinky on normal operation
     } else {
-        blfreq=10000;
-        // configuration ongoing, waiting.
+        // configuration ongoing, waiting at http://10.1.1.1
+        blfreq=10000; // faster blinky during local AP config
     }
     if (ctr % blfreq == 0)
         digitalWrite(LED_BUILTIN, LOW); // Turn the LED on
