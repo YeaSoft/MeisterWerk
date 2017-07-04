@@ -122,7 +122,6 @@ void runWebServer() {
         memset((unsigned char *)&eepr,0,sizeof(T_EEPROM));
         writeEEPROM(&eepr);
         body = "{\"Success\":\"erased eeprom.\"}";
-        localhostname=defaultHostname();
         statusCode = 200;
         webserver.send(statusCode, "application/json", body);
         state = ST_NOTCONFIGURED;
@@ -227,6 +226,7 @@ void loop() { // non-blocking event loop
     case ST_NOTCONFIGURED:
         Serial.println("Unconfigured server, creating AP");
         blfreq=10000; // fast blink: initial config
+        localhostname=defaultHostname();
         createAP(localhostname); // use localhostname as network-name on initial setup.
         break;
     case ST_WAITFORCONFIG:
