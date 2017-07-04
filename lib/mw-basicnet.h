@@ -2,7 +2,6 @@
 ESP Wlan & web configurator
 */
 
-#include "styles.cssh"
 
 #define EE_SIZE 512     // Size of eeprom
 #define EE_SSID_SIZE 32 // Max SSID size
@@ -30,38 +29,39 @@ typedef struct t_eeprom
     char _fill[EE_SIZE - EE_SSID_SIZE - EE_HOST_SIZE - EE_PWD_SIZE - 2 * sizeof(short int)];
 } T_EEPROM;
 
-ESP8266WebServer webserver(80);
+ESP8266WebServer mw_webserver(80);
 
-String body;
-String header;
-String ipStr;
-int statusCode;
-String appName = "";
+typedef struct t_mwbn {
+    String body;
+    #include "styles.cssh"  // defines var 'stylesheet' that contains styles
 
-T_EEPROM eepr;
-unsigned int uuid = 0; // Micro UUID
-String uuidstr="";
-String localhostname;
-// WLAN configuration states ST_*
-unsigned int state = ST_UNDEFINED;
+    String header;
+    String ipStr;
+    int statusCode;
+    String appName;
+
+    T_EEPROM eepr;
+    unsigned int uuid; // Micro UUID
+    String uuidstr;
+    String localhostname;
+    // WLAN configuration states ST_*
+    unsigned int state;
+} T_MBWN;
+
+T_MBWN tmwbn;
+
 
 
 class MW_BasicNet
 {
-  public:
+  private:
     bool debugMsg = false;
-
-    MW_BasicNet(String applicationName, bool bDebug = false)
-    {
-        appName = applicationName;
-        debugMsg = bDebug;
-    }
 
     static void initEEPROM(T_EEPROM *pep)
     {
         memset((void *)pep, 0, EE_SIZE);
         pep->sig = EE_SIG;
-        pep->uuid = uuid;
+        pep->uuid = tmwbn.uuid;
     }
 
     void readEEPROM(T_EEPROM *pep)
@@ -83,43 +83,6 @@ class MW_BasicNet
         EEPROM.commit();
     }
 
-    void begin()
-    {
-        EEPROM.begin(512);
-        state = ST_CONFIGURED;
-        readEEPROM(&eepr);
-        if (eepr.sig != EE_SIG)
-        {
-            uuid = genUUID();
-            if (debugMsg)
-                Serial.println("New UUID generated.");
-            initEEPROM(&eepr);
-            localhostname = defaultHostname();
-            strncpy(eepr.localhostname, localhostname.c_str(), EE_HOST_SIZE - 1);
-            writeEEPROM(&eepr);
-        }
-        else
-        {
-            uuid = eepr.uuid;
-            localhostname = String(eepr.localhostname);
-        }
-        uuidstr=UUIDtoString(uuid);
-        if (debugMsg)
-            Serial.println("Unique name: " + localhostname);
-        if (eepr.SSID[0] == 0)
-        {
-            if (debugMsg)
-                Serial.println("State: ST_NOTCONFIGURED");
-            state = ST_NOTCONFIGURED;
-        }
-        else
-        {
-            if (debugMsg)
-                Serial.println("State: ST_CONFIGURED");
-            state = ST_CONFIGURED;
-        }
-    }
-
     unsigned int genUUID()
     {
         unsigned int uuid = random(65536);
@@ -135,63 +98,63 @@ class MW_BasicNet
 
     String defaultHostname()
     {
-        return appName + "x" + UUIDtoString(uuid);
+        return tmwbn.appName + "x" + UUIDtoString(tmwbn.uuid);
     }
 
     void runWebServer()
     {
-        webserver.on("/", []() {
-            body = "<!DOCTYPE HTML>\r\n<html>";
-            body += stylesheet;
-            body += "<div style=\"background-color: #e2e2f8\"><h3>" + header + "</h3>";
-            body += appName + "-node at " + ipStr + ", " + localhostname + ", UUID=" + uuidstr + "</div><p></p>";
-            body += "<div><form method='get' action='save'>"
+        mw_webserver.on("/", []() {
+            tmwbn.body = "<!DOCTYPE HTML>\r\n<html>";
+            tmwbn.body += tmwbn.stylesheet;
+            tmwbn.body += "<div style=\"background-color: #e2e2f8\"><h3>" + tmwbn.header + "</h3>";
+            tmwbn.body += tmwbn.appName + "-node at " + tmwbn.ipStr + ", " + tmwbn.localhostname + ", UUID=" + tmwbn.uuidstr + "</div><p></p>";
+            tmwbn.body += "<div><form method='get' action='save'>"
                     "<label>SSID:     </label><input name='ssid' type='text' value='" +
-                    String(eepr.SSID) + "' length=31><br>"
+                    String(tmwbn.eepr.SSID) + "' length=31><br>"
                                         "<label>Password: </label><input name='pass' type='password' value='" +
-                    String(eepr.password) + "' length=31><br>"
+                    String(tmwbn.eepr.password) + "' length=31><br>"
                                             "<label>Hostname: </label><input name='host' type='text' value='" +
-                    String(eepr.localhostname) + "' length=31><br>"
+                    String(tmwbn.eepr.localhostname) + "' length=31><br>"
                                                  "<input type='submit' value='Save'></form></div><p></p>";
-            body += "<div><form method='get' action='factory'>"
+            tmwbn.body += "<div><form method='get' action='factory'>"
                     "<label>Factory reset:</label><br><input type='submit' value='Reset'></form></div>";
-            body += "</html>";
-            webserver.send(200, "text/html", body);
+            tmwbn.body += "</html>";
+            mw_webserver.send(200, "text/html", tmwbn.body);
         });
-        webserver.on("/save", []() {
-            initEEPROM(&eepr);
-            String ssid = webserver.arg("ssid");
-            String pwd = webserver.arg("pass");
-            String host = webserver.arg("host");
-            strncpy(eepr.SSID, ssid.c_str(), EE_SSID_SIZE - 1);
-            strncpy(eepr.password, pwd.c_str(), EE_PWD_SIZE - 1);
-            strncpy(eepr.localhostname, host.c_str(), EE_HOST_SIZE - 1);
-            localhostname = String(eepr.localhostname);
-            writeEEPROM(&eepr);
-            body = "{\"Success\":\"saved " + ssid + " to eeprom.\"}";
-            statusCode = 200;
-            webserver.send(statusCode, "application/json", body);
-            state = ST_INITCONFIGURED;
+        mw_webserver.on("/save", []() {
+            initEEPROM(&tmwbn.eepr);
+            String ssid = mw_webserver.arg("ssid");
+            String pwd = mw_webserver.arg("pass");
+            String host = mw_webserver.arg("host");
+            strncpy(tmwbn.eepr.SSID, ssid.c_str(), EE_SSID_SIZE - 1);
+            strncpy(tmwbn.eepr.password, pwd.c_str(), EE_PWD_SIZE - 1);
+            strncpy(tmwbn.eepr.localhostname, host.c_str(), EE_HOST_SIZE - 1);
+            tmwbn.localhostname = String(tmwbn.eepr.localhostname);
+            writeEEPROM(&tmwbn.eepr);
+            tmwbn.body = "{\"Success\":\"saved " + ssid + " to eeprom.\"}";
+            tmwbn.statusCode = 200;
+            mw_webserver.send(tmwbn.statusCode, "application/json", tmwbn.body);
+            tmwbn.state = ST_INITCONFIGURED;
         });
-        webserver.on("/factory", []() {
-            memset((unsigned char *)&eepr, 0, sizeof(T_EEPROM));
-            writeEEPROM(&eepr);
-            body = "{\"Success\":\"erased eeprom.\"}";
-            statusCode = 200;
-            webserver.send(statusCode, "application/json", body);
-            state = ST_NOTCONFIGURED;
+        mw_webserver.on("/factory", []() {
+            memset((unsigned char *)&tmwbn.eepr, 0, sizeof(T_EEPROM));
+            writeEEPROM(&tmwbn.eepr);
+            tmwbn.body = "{\"Success\":\"erased eeprom.\"}";
+            tmwbn.statusCode = 200;
+            mw_webserver.send(tmwbn.statusCode, "application/json", tmwbn.body);
+            tmwbn.state = ST_NOTCONFIGURED;
         });
 
-        webserver.begin();
+        mw_webserver.begin();
     }
 
     // Web server that runs during initial configuration, AP is ESP-module.
     void initialConfigServer()
     {
         IPAddress ip = WiFi.softAPIP();
-        ipStr = String(ip[0]) + '.' + String(ip[1]) + '.' +
+        tmwbn.ipStr = String(ip[0]) + '.' + String(ip[1]) + '.' +
                 String(ip[2]) + '.' + String(ip[3]);
-        header = "Access point mode";
+        tmwbn.header = "Access point mode";
         runWebServer();
     }
 
@@ -199,9 +162,9 @@ class MW_BasicNet
     void startConfigServer()
     {
         IPAddress ip = WiFi.localIP();
-        ipStr = String(ip[0]) + '.' + String(ip[1]) + '.' +
+        tmwbn.ipStr = String(ip[0]) + '.' + String(ip[1]) + '.' +
                 String(ip[2]) + '.' + String(ip[3]);
-        header = "Client mode";
+        tmwbn.header = "Client mode";
         runWebServer();
     }
 
@@ -216,8 +179,8 @@ class MW_BasicNet
             WiFi.softAP(name.c_str());
         else
             WiFi.softAP(name.c_str(), password.c_str());
-        WiFi.hostname(localhostname.c_str());
-        state = ST_WAITFORCONFIG;
+        WiFi.hostname(tmwbn.localhostname.c_str());
+        tmwbn.state = ST_WAITFORCONFIG;
         initialConfigServer();
     }
 
@@ -228,15 +191,15 @@ class MW_BasicNet
     {
         WiFi.mode(WIFI_STA);
         if (debugMsg)
-            Serial.println("Connecting to " + String(eepr.SSID) + ", " + String(eepr.password));
-        WiFi.begin(eepr.SSID, eepr.password);
-        WiFi.hostname(localhostname.c_str());
+            Serial.println("Connecting to " + String(tmwbn.eepr.SSID) + ", " + String(tmwbn.eepr.password));
+        WiFi.begin(tmwbn.eepr.SSID, tmwbn.eepr.password);
+        WiFi.hostname(tmwbn.localhostname.c_str());
         digitalWrite(LED_BUILTIN, LOW); // LED on during connect-attempt
         for (int t = 0; t < connectTimeout * 10; t++)
         { // connectTimeout sec. timeout.
             if (WiFi.status() == WL_CONNECTED)
             {
-                state = ST_CONNECTED;
+                tmwbn.state = ST_CONNECTED;
                 if (debugMsg)
                     Serial.println("Connection successful!");
                 return true;
@@ -246,29 +209,76 @@ class MW_BasicNet
         WiFi.disconnect();
         if (debugMsg)
             Serial.println("Connection failed!");
-        state = ST_NOTCONFIGURED; // This needs to be removed (or adapted) for Leo-Use-Case   XXX-LEO
+        tmwbn.state = ST_NOTCONFIGURED; // This needs to be removed (or adapted) for Leo-Use-Case   XXX-LEO
                                   // Setting state to NOTCONFIGURED causes spawning of local access point.
                                   // In order to retry connection with existing configuration, simply set to ST_CONFIGURED.
         return false;
     }
 
+public:
+    MW_BasicNet(String applicationName, bool bDebug = false)
+    {
+        tmwbn.appName = applicationName;
+        tmwbn.uuid=0;
+        tmwbn.uuidstr="";
+        debugMsg = bDebug;
+        tmwbn.state = ST_UNDEFINED;
+    }
+
+    void begin()
+    {
+        EEPROM.begin(512);
+        tmwbn.state = ST_CONFIGURED;
+        readEEPROM(&tmwbn.eepr);
+        if (tmwbn.eepr.sig != EE_SIG)
+        {
+            tmwbn.uuid = genUUID();
+            if (debugMsg)
+                Serial.println("New UUID generated.");
+            initEEPROM(&tmwbn.eepr);
+            tmwbn.localhostname = defaultHostname();
+            strncpy(tmwbn.eepr.localhostname, tmwbn.localhostname.c_str(), EE_HOST_SIZE - 1);
+            writeEEPROM(&tmwbn.eepr);
+        }
+        else
+        {
+            tmwbn.uuid = tmwbn.eepr.uuid;
+            tmwbn.localhostname = String(tmwbn.eepr.localhostname);
+        }
+        tmwbn.uuidstr=UUIDtoString(tmwbn.uuid);
+        if (debugMsg)
+            Serial.println("Unique name: " + tmwbn.localhostname);
+        if (tmwbn.eepr.SSID[0] == 0)
+        {
+            if (debugMsg)
+                Serial.println("State: ST_NOTCONFIGURED");
+            tmwbn.state = ST_NOTCONFIGURED;
+        }
+        else
+        {
+            if (debugMsg)
+                Serial.println("State: ST_CONFIGURED");
+            tmwbn.state = ST_CONFIGURED;
+        }
+    }
+
     bool handleCom()
     {
         bool ret=false;
-        switch (state)
+        switch (tmwbn.state)
         {
         case ST_NOTCONFIGURED:
             Serial.println("Unconfigured server, creating AP");
-            localhostname = defaultHostname();
-            createAP(localhostname); // use localhostname as network-name on initial setup.
+            tmwbn.localhostname = defaultHostname();
+            createAP(tmwbn.localhostname); // use localhostname as network-name on initial setup.
             break;
         case ST_WAITFORCONFIG:
             break;
         case ST_INITCONFIGURED:
             Serial.println("Received connection information");
-            webserver.stop();
+            mw_webserver.stop();
             WiFi.disconnect();
-            state = ST_CONFIGURED;
+            tmwbn.state = ST_CONFIGURED;
             break;
         case ST_CONFIGURED:
             Serial.println("Configured, trying connect to AP");
@@ -277,18 +287,18 @@ class MW_BasicNet
         case ST_CONNECTED:
             Serial.println("Connected to AP");
             startConfigServer();
-            state = ST_STARTUPOK;
+            tmwbn.state = ST_STARTUPOK;
             break;
         case ST_STARTUPOK:
             Serial.println("Ready for things to be done.");
-            state = ST_NORMALOPERATION;
+            tmwbn.state = ST_NORMALOPERATION;
             break;
         case ST_NORMALOPERATION:
             ret=true;
             break;
         }
 
-        webserver.handleClient(); // handle web requests
+        mw_webserver.handleClient(); // handle web requests
         return ret;
     }
 };
