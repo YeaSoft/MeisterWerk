@@ -39,7 +39,8 @@ String stylesheet = R"MWx(<style>
     }
 
     div {
-        width: 640px;
+        width: auto;
+        max-width: 100%;
         border-radius: 5px;
         background-color: #f2f2f2;
         padding: 20px;
