@@ -2,7 +2,12 @@
 #include <ESP8266WebServer.h>
 #include <EEPROM.h>
 
+// pio lib search PubSubClient  # -> library ID
+// pio lib install <ID>
+#include <PubSubClient.h>
+
 #include "../lib/mw-basicnet.h"
+#include "../lib/mw-mqtt.h"
 
 String application="MeisterWerk";
 
