@@ -139,7 +139,7 @@ void runWebServer() {
     webserver.on("/", []() {
         body = "<!DOCTYPE HTML>\r\n<html>";
         body += stylesheet;
-        body += "<div><h3>"+header+"</h3>";
+        body += "<div style=\"background-color: #e2e2f8\"><h3>"+header+"</h3>";
         body += appName+"-node at "+ipStr + ", "+localhostname+", UUID="+UUIDtoString(uuid)+"</div><p></p>";
         body += "<div><form method='get' action='save'>"
                 "<label>SSID:     </label><input name='ssid' type='text' value='"+String(eepr.SSID)+"' length=31><br>"
