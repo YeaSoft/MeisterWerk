@@ -4,7 +4,6 @@
 
 #include "../lib/mw-basicnet.h"
 
-int gargabe;
 String application="MeisterWerk";
 
 MW_BasicNet mwBN(application, true);

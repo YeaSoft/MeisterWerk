@@ -326,9 +326,9 @@ class MW_BasicNet
         case ST_STARTUPOK:
             Serial.println("Ready for things to be done.");
             state = ST_NORMALOPERATION;
-            ret=true;
             break;
         case ST_NORMALOPERATION:
+            ret=true;
             break;
         }
 
