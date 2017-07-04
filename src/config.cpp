@@ -88,18 +88,62 @@ String defaultHostname() {
     return appName+"x"+UUIDtoString(uuid);
 }
 
+String stylesheet = R"MWx(<style>
+        input[type=text], select {
+            width: 100%;
+            padding: 12px 20px;
+            margin: 8px 0;
+            display: inline-block;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+
+        input[type=password], select {
+            width: 100%;
+            padding: 12px 20px;
+            margin: 8px 0;
+            display: inline-block;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+
+        input[type=submit] {
+            width: 100%;
+            background-color: #7C7CE0;
+            color: white;
+            padding: 14px 20px;
+            margin: 8px 0;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        input[type=submit]:hover {
+            background-color: #4549a0;
+        }
+
+        div {
+            border-radius: 5px;
+            background-color: #f2f2f2;
+            padding: 20px;
+            font-family: Verdana, Arial, Sans-serif;
+        }</style>)MWx";
+
 void runWebServer() {
     webserver.on("/", []() {
         body = "<!DOCTYPE HTML>\r\n<html>";
-        body += "<h3>"+header+"</h3>";
-        body += "<p>Esp Sensor at " + ipStr + ", " + localhostname + ", UUID="+UUIDtoString(uuid)+"</p>";
-        body += "<p><form method='get' action='save'>"
-                "<label>SSID:     </label><input name='ssid' value='"+String(eepr.SSID)+"' length=31><br>"
+        body += stylesheet;
+        body += "<div><h3>"+header+"</h3>";
+        body += appName+"-node at "+ipStr + ", "+localhostname+", UUID="+UUIDtoString(uuid)+"</div><p></p>";
+        body += "<div><form method='get' action='save'>"
+                "<label>SSID:     </label><input name='ssid' type='text' value='"+String(eepr.SSID)+"' length=31><br>"
                 "<label>Password: </label><input name='pass' type='password' value='"+String(eepr.password)+"' length=31><br>"
-                "<label>Hostname: </label><input name='host' value='"+String(eepr.localhostname)+"' length=31><br>"
-                "<input type='submit' value='Save'></form></p>";
-        body += "<p><form method='get' action='factory'>"
-                "<label>Factory reset:</label><br><input type='submit' value='Reset'></form></p>";
+                "<label>Hostname: </label><input name='host' type='text' value='"+String(eepr.localhostname)+"' length=31><br>"
+                "<input type='submit' value='Save'></form></div><p></p>";
+        body += "<div><form method='get' action='factory'>"
+                "<label>Factory reset:</label><br><input type='submit' value='Reset'></form></div>";
         body += "</html>";
         webserver.send(200, "text/html", body);
     });
