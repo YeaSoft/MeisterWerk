@@ -26,6 +26,8 @@ ESP Wlan configurator
 #define ST_STARTUPOK 6        // Cleanup
 #define ST_NORMALOPERATION 7  // Normal operation, connected to external AP
 
+String appName="MeisterWerk";
+
 unsigned int uuid = 0;        // Micro UUID
 
 typedef struct t_eeprom {
@@ -67,6 +69,8 @@ void writeEEPROM(T_EEPROM *pep) {
 }
 
 String body;
+String header;
+String ipStr;
 int statusCode;
 
 unsigned int genUUID() {
@@ -80,21 +84,22 @@ String UUIDtoString(unsigned int uuid) {
     return String(uuidstr);
 }
 
-// Web server that runs during initial configuration, AP is ESP-module.
-void initialConfigServer() {
+String defaultHostname() {
+    return appName+"x"+UUIDtoString(uuid);
+}
+
+void runWebServer() {
     webserver.on("/", []() {
-        IPAddress ip = WiFi.softAPIP();
-        String ipStr = String(ip[0]) + '.' + String(ip[1]) + '.' +
-                       String(ip[2]) + '.' + String(ip[3]);
         body = "<!DOCTYPE HTML>\r\n<html>";
+        body += "<h3>"+header+"</h3>";
         body += "<p>Esp Sensor at " + ipStr + ", " + localhostname + ", UUID="+UUIDtoString(uuid)+"</p>";
         body += "<p><form method='get' action='save'>"
-                   "<label>SSID:     </label><input name='ssid' value='"+String(eepr.SSID)+"' length=31><br>"   // XXX hardcoded 31
-                   "<label>Password: </label><input type='password' value='"+String(eepr.password)+"' name='pass' length=31><br>"
-                   "<label>Hostname: </label><input name='host' value='"+String(eepr.localhostname)+"' length=31><br>"
-                   "<input type='submit' value='Save'></form></p>";
+                "<label>SSID:     </label><input name='ssid' value='"+String(eepr.SSID)+"' length=31><br>"
+                "<label>Password: </label><input name='pass' type='password' value='"+String(eepr.password)+"' length=31><br>"
+                "<label>Hostname: </label><input name='host' value='"+String(eepr.localhostname)+"' length=31><br>"
+                "<input type='submit' value='Save'></form></p>";
         body += "<p><form method='get' action='factory'>"
-                   "<label>Factory reset:</label><br><input type='submit' value='Reset'></form></p>";
+                "<label>Factory reset:</label><br><input type='submit' value='Reset'></form></p>";
         body += "</html>";
         webserver.send(200, "text/html", body);
     });
@@ -117,56 +122,31 @@ void initialConfigServer() {
         memset((unsigned char *)&eepr,0,sizeof(T_EEPROM));
         writeEEPROM(&eepr);
         body = "{\"Success\":\"erased eeprom.\"}";
+        localhostname=defaultHostname();
         statusCode = 200;
         webserver.send(statusCode, "application/json", body);
+        state = ST_NOTCONFIGURED;
     });
 
     webserver.begin();
 }
 
-// Web server that runs if connected to external access point (normal operation)
-// XXX currently (almost) identical to initial config (exception: IP address)
-void startConfigServer() {
-    webserver.on("/", []() {
-        IPAddress ip = WiFi.localIP();
-        String ipStr = String(ip[0]) + '.' + String(ip[1]) + '.' +
-                       String(ip[2]) + '.' + String(ip[3]);
-        body = "<!DOCTYPE HTML>\r\n<html>";
-        body += "<p>Esp Sensor at " + ipStr + ", " + localhostname + ", UUID="+UUIDtoString(uuid)+"</p>";
-        body += "<p><form method='get' action='save'>"
-                   "<label>SSID:     </label><input name='ssid' value='"+String(eepr.SSID)+"' length=31><br>"
-                   "<label>Password: </label><input type='password' value='"+String(eepr.password)+"' name='pass' length=31><br>"
-                   "<label>Hostname: </label><input name='host' value='"+String(eepr.localhostname)+"' length=31><br>"
-                   "<input type='submit' value='Save'></form></p>";
-        body += "<p><form method='get' action='factory'>"
-                   "<label>Factory reset:</label><br><input type='submit' value='Reset'></form></p>";
-        body += "</html>";
-        webserver.send(200, "text/html", body);
-    });
-    webserver.on("/save", []() {
-        initEEPROM(&eepr);
-        String ssid = webserver.arg("ssid");
-        String pwd = webserver.arg("pass");
-        String host = webserver.arg("host");
-        strncpy(eepr.SSID, ssid.c_str(), EE_SSID_SIZE - 1);
-        strncpy(eepr.password, pwd.c_str(), EE_PWD_SIZE - 1);
-        strncpy(eepr.localhostname, host.c_str(), EE_HOST_SIZE - 1);
-        localhostname=String(eepr.localhostname);
-        writeEEPROM(&eepr);
-        body = "{\"Success\":\"saved " + ssid + " to eeprom.\"}";
-        statusCode = 200;
-        webserver.send(statusCode, "application/json", body);
-        state = ST_INITCONFIGURED;
-    });
-    webserver.on("/factory", []() {
-        memset((unsigned char *)&eepr,0,sizeof(T_EEPROM));
-        writeEEPROM(&eepr);
-        body = "{\"Success\":\"erased eeprom.\"}";
-        statusCode = 200;
-        webserver.send(statusCode, "application/json", body);
-    });
+// Web server that runs during initial configuration, AP is ESP-module.
+void initialConfigServer() {
+    IPAddress ip = WiFi.softAPIP();
+    ipStr = String(ip[0]) + '.' + String(ip[1]) + '.' +
+            String(ip[2]) + '.' + String(ip[3]);
+    header="Access point mode";
+    runWebServer();
+}
 
-    webserver.begin();
+// Web server that runs if connected to external access point (normal operation)
+void startConfigServer() {
+    IPAddress ip = WiFi.localIP();
+    ipStr = String(ip[0]) + '.' + String(ip[1]) + '.' +
+            String(ip[2]) + '.' + String(ip[3]);
+    header="Client mode";
+    runWebServer();
 }
 
 // create local AP for initial config
@@ -184,13 +164,16 @@ bool createAP(String name, String password="") {
     initialConfigServer();
 }
 
-// connect to external AP
+unsigned int connectTimeout=30; // Number seconds, a connect to configured access point is tried,
+                                // before a local access point is spawned.
+// connect to external AP, create a local AP if cnnection fails for connectTimeout secs.
 bool connectToAp() {
     WiFi.mode(WIFI_STA);
     Serial.println("Connecting to "+String(eepr.SSID)+", "+String(eepr.password));
     WiFi.begin(eepr.SSID, eepr.password);
     WiFi.hostname(localhostname.c_str());
-    for (int t=0; t<150; t++) { // 15sec timeout.
+    digitalWrite(LED_BUILTIN, LOW); // LED on during connect-attempt
+    for (int t=0; t<connectTimeout*10; t++) { // connectTimeout sec. timeout.
         if (WiFi.status() == WL_CONNECTED) {
             state=ST_CONNECTED;
             Serial.println("Connection successful!");
@@ -218,7 +201,7 @@ void setup() {
         uuid = genUUID();
         Serial.println("New UUID generated.");
         initEEPROM(&eepr);
-        localhostname="ESP-Sensor-"+UUIDtoString(uuid);
+        localhostname=defaultHostname();
         strncpy(eepr.localhostname,localhostname.c_str(),EE_HOST_SIZE-1);        
         writeEEPROM(&eepr);
     } else {
