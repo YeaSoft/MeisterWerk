@@ -239,6 +239,11 @@ public:
         return tmwbn.eepr;
     }
 
+    void clearEEPROM() {
+        memset(&tmwbn.eepr,0,EE_SIZE); 
+        writeEEPROM(&tmwbn.eepr);
+    }
+    
     void begin()
     {
         EEPROM.begin(512);
