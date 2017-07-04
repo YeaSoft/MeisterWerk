@@ -2,6 +2,8 @@
 ESP Wlan & web configurator
 */
 
+#include "styles.cssh"
+
 #define EE_SIZE 512     // Size of eeprom
 #define EE_SSID_SIZE 32 // Max SSID size
 #define EE_PWD_SIZE 32  // Max password size
@@ -30,52 +32,6 @@ typedef struct t_eeprom
 
 ESP8266WebServer webserver(80);
 
-    String stylesheet = R"MWx(<style>
-        input[type=text], select {
-            width: 100%;
-            padding: 12px 20px;
-            margin: 8px 0;
-            display: inline-block;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-            box-sizing: border-box;
-            font-size: 18px;
-        }
-
-        input[type=password], select {
-            width: 100%;
-            padding: 12px 20px;
-            margin: 8px 0;
-            display: inline-block;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-            box-sizing: border-box;
-            font-size: 18px;
-        }
-
-        input[type=submit] {
-            width: 100%;
-            background-color: #7C7CE0;
-            color: white;
-            padding: 14px 20px;
-            margin: 8px 0;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 18px;
-        }
-
-        input[type=submit]:hover {
-            background-color: #4549a0;
-        }
-
-        div {
-            width: 640px;
-            border-radius: 5px;
-            background-color: #f2f2f2;
-            padding: 20px;
-            font-family: Verdana, Arial, Sans-serif;
-        }</style>)MWx";
 String body;
 String header;
 String ipStr;
