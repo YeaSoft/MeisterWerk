@@ -7,6 +7,7 @@ ESP Wlan & web configurator
 #define EE_SSID_SIZE 32 // Max SSID size
 #define EE_PWD_SIZE 32  // Max password size
 #define EE_HOST_SIZE 32 // Max hostname size
+#define EE_MQSERVER_SIZE 32 // Max server name of MQTT server
 #define EE_SIG 0x7812   // Signature of a valid EEPROM content
 
 // WLAN configuration states
@@ -26,7 +27,8 @@ typedef struct t_eeprom
     char SSID[EE_SSID_SIZE]; // Network SSID
     char password[EE_PWD_SIZE];
     char localhostname[EE_HOST_SIZE];
-    char _fill[EE_SIZE - EE_SSID_SIZE - EE_HOST_SIZE - EE_PWD_SIZE - 2 * sizeof(short int)];
+    char mqttserver[EE_MQSERVER_SIZE];
+    char _fill[EE_SIZE - EE_SSID_SIZE - EE_HOST_SIZE - EE_PWD_SIZE - EE_MQSERVER_SIZE - 2 * sizeof(short int)];
 } T_EEPROM;
 
 ESP8266WebServer mw_webserver(80);
@@ -115,7 +117,11 @@ class MW_BasicNet
                     String(tmwbn.eepr.password) + "' length=31><br>"
                                             "<label>Hostname: </label><input name='host' type='text' value='" +
                     String(tmwbn.eepr.localhostname) + "' length=31><br>"
+                                            "<label>MQTT Server: </label><input name='mqserver' type='text' value='" +
+                    String(tmwbn.eepr.mqttserver) + "' length=31><br>"
                                                  "<input type='submit' value='Save'></form></div><p></p>";
+
+                                                 
             tmwbn.body += "<div><form method='get' action='factory'>"
                     "<label>Factory reset:</label><br><input type='submit' value='Reset'></form></div>";
             tmwbn.body += "</html>";
@@ -126,9 +132,11 @@ class MW_BasicNet
             String ssid = mw_webserver.arg("ssid");
             String pwd = mw_webserver.arg("pass");
             String host = mw_webserver.arg("host");
+            String mqsrv = mw_webserver.arg("mqserver");
             strncpy(tmwbn.eepr.SSID, ssid.c_str(), EE_SSID_SIZE - 1);
             strncpy(tmwbn.eepr.password, pwd.c_str(), EE_PWD_SIZE - 1);
             strncpy(tmwbn.eepr.localhostname, host.c_str(), EE_HOST_SIZE - 1);
+            strncpy(tmwbn.eepr.mqttserver, mqsrv.c_str(), EE_MQSERVER_SIZE - 1);
             tmwbn.localhostname = String(tmwbn.eepr.localhostname);
             writeEEPROM(&tmwbn.eepr);
             tmwbn.body = "{\"Success\":\"saved " + ssid + " to eeprom.\"}";
@@ -224,6 +232,10 @@ public:
         debugMsg = bDebug;
         connectTimeout=connectionTimeout;
         tmwbn.state = ST_UNDEFINED;
+    }
+
+    T_EEPROM getEEPROM() {
+        return tmwbn.eepr;
     }
 
     void begin()

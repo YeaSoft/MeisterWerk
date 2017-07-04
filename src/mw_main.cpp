@@ -14,30 +14,31 @@ String application="MeisterWerk";
 
 MW_BasicNet mwBN(application, 20, true); // application-name, timeout-for-connecting-to-AP, serial-debug-active
 MW_MQTT mwMQ;
+T_EEPROM tep;
 
 void setup() {
     Serial.begin(9600);
     pinMode(LED_BUILTIN, OUTPUT);
 
     mwBN.begin(); // Start MW Basic Networking: try to connect to AP, or on failure: create config AP (http://10.1.1.1).
+    tep=mwBN.getEEPROM();
 
-    String mqttServer=""; // disable
-    mwMQ.begin(mqttServer);
+    mwMQ.begin(tep.mqttserver);
 }
 
 unsigned int ctr = 0;
-unsigned int blfreq=10000;
+unsigned int blfreq=10000; // faster blinky during connection & configuration phase.
 bool isConnected=false;
 void loop() { // non-blocking event loop
     ++ctr;
 
     // Handle AP connection/creation and Web config interface.
-    isConnected=mwBN.handleCom()) 
+    isConnected=mwBN.handleCom();
     
     if (isConnected)
     {
         // connected to local network
-        blfreq=20000; // slow blinky on normal operation
+        blfreq=20000; // slower blinky on normal operation
         mwMQ.handleMQTT();
     }
 
