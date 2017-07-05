@@ -42,7 +42,7 @@ class MW_Scheduler {
             ticker=micros();
             T_TASK* ptask=t.second;
             unsigned long tdelta=ticker-ptask->lastcall;
-            if (tdelta>ptask->minmicros) {
+            if (tdelta>=ptask->minmicros) {
                 // Serial.println("Scheduling: "+t.first+" ticker: "+String(ticker)+" tdelta: "+String(tdelta));
                 ptask->loopcallback(ticker);
                 ptask->lastcall=ticker;

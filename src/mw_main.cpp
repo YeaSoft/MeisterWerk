@@ -47,7 +47,7 @@ void ledLoop(unsigned long ticker) {
     // Serial.println("ledLoop: "+String(ticker));
     if (ledMode==LED_MODE_BLINK) {
         unsigned long millis=(ticker-ledLastChange)/1000L; 
-        if (millis > ledBlinkIntervallMs) {
+        if (millis >= ledBlinkIntervallMs) {
             ledLastChange=ticker;
             if (ledState==0) {
                 ledSetState(1);
