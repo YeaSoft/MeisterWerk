@@ -32,7 +32,7 @@ void ledInit(unsigned int port) {
     ledPort=port;
     pinMode(ledPort, OUTPUT);
 }
-void ledSetMode(unsigned int mode) {
+void ledSetMode(unsigned int mode) { // LED_MODE_{STATIC|BLINK}
     ledMode=mode;
 }
 void ledSetState(unsigned int state) {
@@ -84,8 +84,6 @@ unsigned int observeHeap()
     uint32_t free = system_get_free_heap_size();
     return (unsigned int)free;
 }
-unsigned int ctr = 0;
-// unsigned int blfreq = 10000; // faster blinky during connection & configuration phase.
 
 unsigned int tickfreq = 10000;
 unsigned int tickctr = 0;
@@ -98,7 +96,6 @@ void loop()
 { // non-blocking event loop
     mwScheduler.loop();
 
-    //++ctr;
     ++tickctr;
 
     // Handle AP connection/creation and Web config interface.
@@ -108,7 +105,6 @@ void loop()
     {
         // connected to local network
         ledSetBlinkIntervallMs(1500);
-        // blfreq = 20000; // slower blinky on normal operation
         mwMQ.handleMQTT();
     }
 
@@ -152,15 +148,4 @@ void loop()
         }
     }
 
-    /*
-    if (ctr % blfreq == 0)
-    {
-        digitalWrite(LED_BUILTIN, LOW); // Turn the LED on
-        //Serial.println(observeHeap());
-    }
-    if (ctr % (blfreq * 2) == 0)
-        digitalWrite(LED_BUILTIN, HIGH); // Turn the LED off
-    if (ctr > (blfreq * 3))
-        ctr = 0;
-        */
 }
