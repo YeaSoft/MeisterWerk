@@ -22,11 +22,12 @@ typedef struct t_task {
     unsigned int priority;        // MW_PRIORITY_*
 } T_TASK;
 
-// The task list;
-std::map<String, T_TASK *> mw_tasklist;
 
 class MW_Scheduler {
     private:
+    // The task list;
+    std::map<String, T_TASK *> mw_tasklist;
+
     bool bDebug;
     unsigned long lasttick;
     public:
@@ -61,7 +62,7 @@ class MW_Scheduler {
         }
     }
     void addTask(String name, T_LOOPCALLBACK loopcallback, unsigned long minmicrosecs=0, unsigned int priority=1) {
-        T_TASK* ptask=new T_TASK;
+        T_TASK* ptask=new T_TASK; // XXX: check
         ptask->loopcallback=loopcallback;
         ptask->minmicros=minmicrosecs;
         ptask->lastcall=0;
