@@ -22,6 +22,19 @@ typedef struct t_task {
     unsigned int priority;        // MW_PRIORITY_*
 } T_TASK;
 
+class MW_Entity {
+    virtual ~MW_Entity() {}; // Otherwise destructor of derived classes is never called!
+
+    bool sendToQueue() {
+        // ... sends to scheduler-queue
+    }
+    bool registerEntity() {
+
+    }
+    virtual void setup()  { return; }
+    virtual void loop(unsigned long ticker)  { return; }
+    virtual void receiveCmds()  { return; }
+};
 
 class MW_Scheduler {
     private:
