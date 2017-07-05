@@ -26,7 +26,7 @@ T_EEPROM tep;
 unsigned int ledMode=LED_MODE_STATIC;
 unsigned int ledState=0;      // 0: off, 1: on;
 unsigned int ledBlinkIntervallMs=0;
-unsigned long lastChange;
+unsigned long ledLastChange=0;
 unsigned int ledPort;
 void ledInit(unsigned int port) {
     ledPort=port;
@@ -46,8 +46,9 @@ void ledSetBlinkIntervallMs(unsigned int intervall) {
 void ledLoop(unsigned long ticker) {
     // Serial.println("ledLoop: "+String(ticker));
     if (ledMode==LED_MODE_BLINK) {
-        if ((lastChange-ticker)/1000L > ledBlinkIntervallMs) {
-            lastChange=ticker;
+        unsigned long millis=(ticker-ledLastChange)/1000L; 
+        if (millis > ledBlinkIntervallMs) {
+            ledLastChange=ticker;
             if (ledState==0) {
                 ledSetState(1);
             } else {
