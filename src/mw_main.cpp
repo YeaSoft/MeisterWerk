@@ -210,7 +210,7 @@ void mqttClientLoop(unsigned long ticker) {
 void setup()
 {
     // Debug console
-    Serial.begin(9600);
+    Serial.begin(115200);
 
     // Internal LED
     ledInit(BUILTIN_LED);
