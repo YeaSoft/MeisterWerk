@@ -5,6 +5,13 @@ using std::function;
 
 typedef function<void(unsigned long)> T_LOOPCALLBACK;
 
+#define MW_PRIORITY_SYSTEMCRITICAL 0
+#define MW_PRIORITY_TIMECRITICAL   1
+#define MW_PRIORITY_HIGH           2
+#define MW_PRIORITY_NORMAL         3
+#define MW_PRIORITY_LOW            4
+#define MW_PRIORITY_LOWEST         5
+
 typedef struct t_task {
     T_LOOPCALLBACK loopcallback; // = function <void(unsigned long)> loopcallback; // = void (* loopcallback)(unsigned long);
     unsigned long minmicros;      // Intervall task should be called in microsecs.
@@ -12,7 +19,7 @@ typedef struct t_task {
     unsigned long numberOfCalls;  // number of times, task has been executed
     unsigned long budget;         // Sum of microsecs used by this task during all calls
     unsigned long latetime;       // Sum of microsecs the task was scheduled later than requested by minmicros
-    unsigned int priority;        // 0: critical, 1: important, 2: kind of important, 3: sloppy, 4: now and then, ...
+    unsigned int priority;        // MW_PRIORITY_*
 } T_TASK;
 
 // The task list;

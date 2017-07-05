@@ -182,6 +182,7 @@ class MW_BasicNet
     {
         IPAddress apIP(10, 1, 1, 1); // Private network address: local & gateway
         IPAddress apNet(255, 255, 255, 0);
+        WiFi.disconnect();
         WiFi.mode(WIFI_AP_STA);
         WiFi.softAPConfig(apIP, apIP, apNet);
         if (password == "")
@@ -239,11 +240,15 @@ public:
         return tmwbn.eepr;
     }
 
+    void enterAccessPointMode() {
+        tmwbn.state = ST_NOTCONFIGURED;
+    }
+
     void clearEEPROM() {
         memset(&tmwbn.eepr,0,EE_SIZE); 
         writeEEPROM(&tmwbn.eepr);
     }
-    
+
     void begin()
     {
         EEPROM.begin(512);
