@@ -35,14 +35,15 @@ class MW_Scheduler {
         mw_tasklist.clear();
     }
     void loop() { 
-        unsigned long ticker=micros();
+        unsigned long ticker=micros(); // XXX: handle ticker overflow!
         unsigned long schedulerdelta=ticker-lasttick;
+        // XXX: sort tasks according to urgency
         for (auto t : mw_tasklist) {
             ticker=micros();
             T_TASK* ptask=t.second;
             unsigned long tdelta=ticker-ptask->lastcall;
             if (tdelta>ptask->minmicros) {
-                // Serial.println("Scheduling: "+t.first);
+                // Serial.println("Scheduling: "+t.first+" ticker: "+String(ticker)+" tdelta: "+String(tdelta));
                 ptask->loopcallback(ticker);
                 ptask->lastcall=ticker;
                 ptask->budget+=micros()-ticker;
