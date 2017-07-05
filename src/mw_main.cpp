@@ -7,25 +7,74 @@
 // pio lib install <ID>
 #include <PubSubClient.h>
 
+#include "../lib/mw-scheduler.h"
+
 #include "../lib/mw-basicnet.h"
 #include "../lib/mw-mqtt.h"
 
 String application = "MeisterWerk";
 
+MW_Scheduler mwScheduler;
+
 MW_BasicNet mwBN(application, 20, true); // application-name, timeout-for-connecting-to-AP, serial-debug-active
 MW_MQTT mwMQ;
 T_EEPROM tep;
 
+//--- LED task --------------
+#define LED_MODE_STATIC 0
+#define LED_MODE_BLINK 1
+unsigned int ledMode=LED_MODE_STATIC;
+unsigned int ledState=0;      // 0: off, 1: on;
+unsigned int ledBlinkIntervallMs=0;
+unsigned long lastChange;
+unsigned int ledPort;
+void ledInit(unsigned int port) {
+    ledPort=port;
+    pinMode(ledPort, OUTPUT);
+}
+void ledSetMode(unsigned int mode) {
+    ledMode=mode;
+}
+void ledSetState(unsigned int state) {
+    ledState=state;
+    if (ledState==0) digitalWrite(ledPort, HIGH); // Turn the LED off
+    else digitalWrite(ledPort, LOW); // Turn the LED on
+}
+void ledSetBlinkIntervallMs(unsigned int intervall) {
+    ledBlinkIntervallMs=intervall;
+}
+void ledLoop(unsigned long ticker) {
+    // Serial.println("ledLoop: "+String(ticker));
+    if (ledMode==LED_MODE_BLINK) {
+        if ((lastChange-ticker)/1000L > ledBlinkIntervallMs) {
+            lastChange=ticker;
+            if (ledState==0) {
+                ledSetState(1);
+            } else {
+                ledSetState(0);
+            }
+        }
+    }
+}
+//--- Reset task ------------
+//---------------------------
+
 void setup()
 {
     Serial.begin(9600);
-    pinMode(LED_BUILTIN, OUTPUT);
+
+    ledInit(BUILTIN_LED);
+    
     pinMode(GPIO_ID_PIN0, INPUT); // ID_PIN0 == D3 is the Flash button and will be observed for soft/hard reset.
 
     mwBN.begin(); // Start MW Basic Networking: try to connect to AP, or on failure: create config AP (http://10.1.1.1).
     tep = mwBN.getEEPROM();
 
     mwMQ.begin(tep.mqttserver);
+
+    mwScheduler.addTask("InternalLed",ledLoop,100000L,1);
+    ledSetMode(LED_MODE_BLINK);
+    ledSetBlinkIntervallMs(500);
 }
 extern "C" {
 #include "user_interface.h"
@@ -36,7 +85,7 @@ unsigned int observeHeap()
     return (unsigned int)free;
 }
 unsigned int ctr = 0;
-unsigned int blfreq = 10000; // faster blinky during connection & configuration phase.
+// unsigned int blfreq = 10000; // faster blinky during connection & configuration phase.
 
 unsigned int tickfreq = 10000;
 unsigned int tickctr = 0;
@@ -47,7 +96,9 @@ int rstButton;
 
 void loop()
 { // non-blocking event loop
-    ++ctr;
+    mwScheduler.loop();
+
+    //++ctr;
     ++tickctr;
 
     // Handle AP connection/creation and Web config interface.
@@ -56,7 +107,8 @@ void loop()
     if (isConnected)
     {
         // connected to local network
-        blfreq = 20000; // slower blinky on normal operation
+        ledSetBlinkIntervallMs(1500);
+        // blfreq = 20000; // slower blinky on normal operation
         mwMQ.handleMQTT();
     }
 
@@ -94,11 +146,13 @@ void loop()
             {
                 if (softrstctr == 31)
                     Serial.println("HARD-RESET duration reached...");
-                blfreq = 6000; // very fast blinking on iminent hard reset.
+                ledSetBlinkIntervallMs(200);
+                // blfreq = 6000; // very fast blinking on iminent hard reset.
             }
         }
     }
 
+    /*
     if (ctr % blfreq == 0)
     {
         digitalWrite(LED_BUILTIN, LOW); // Turn the LED on
@@ -108,4 +162,5 @@ void loop()
         digitalWrite(LED_BUILTIN, HIGH); // Turn the LED off
     if (ctr > (blfreq * 3))
         ctr = 0;
+        */
 }
