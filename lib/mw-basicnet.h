@@ -2,13 +2,12 @@
 ESP Wlan & web configurator
 */
 
-
-#define EE_SIZE 512     // Size of eeprom
-#define EE_SSID_SIZE 32 // Max SSID size
-#define EE_PWD_SIZE 32  // Max password size
-#define EE_HOST_SIZE 32 // Max hostname size
+#define EE_SIZE 512         // Size of eeprom
+#define EE_SSID_SIZE 32     // Max SSID size
+#define EE_PWD_SIZE 32      // Max password size
+#define EE_HOST_SIZE 32     // Max hostname size
 #define EE_MQSERVER_SIZE 32 // Max server name of MQTT server
-#define EE_SIG 0x7812   // Signature of a valid EEPROM content
+#define EE_SIG 0x7812       // Signature of a valid EEPROM content
 
 // WLAN configuration states
 #define ST_UNDEFINED 0       // Nothing
@@ -32,10 +31,13 @@ typedef struct t_eeprom
 } T_EEPROM;
 
 ESP8266WebServer mw_webserver(80);
+const byte DNS_PORT = 53;
+DNSServer mw_CaptiveDnsServer;
 
-typedef struct t_mwbn {
+typedef struct t_mwbn
+{
     String body;
-    #include "styles.cssh"  // defines var 'stylesheet' that contains styles
+#include "styles.cssh" // defines var 'stylesheet' that contains styles
 
     String header;
     String ipStr;
@@ -51,8 +53,6 @@ typedef struct t_mwbn {
 } T_MBWN;
 
 T_MBWN tmwbn;
-
-
 
 class MW_BasicNet
 {
@@ -103,28 +103,32 @@ class MW_BasicNet
         return tmwbn.appName + "x" + UUIDtoString(tmwbn.uuid);
     }
 
+    static void createBody()
+    {
+        tmwbn.body = "<!DOCTYPE HTML>\r\n<html>";
+        tmwbn.body += tmwbn.stylesheet;
+        tmwbn.body += "<div style=\"background-color: #e2e2f8\"><h3>" + tmwbn.header + "</h3>";
+        tmwbn.body += tmwbn.appName + "-node at " + tmwbn.ipStr + ", " + tmwbn.localhostname + ", UUID=" + tmwbn.uuidstr + "</div><p></p>";
+        tmwbn.body += "<div><form method='get' action='save'>"
+                      "<label>SSID:     </label><input name='ssid' type='text' value='" +
+                      String(tmwbn.eepr.SSID) + "' length=31><br>"
+                                                "<label>Password: </label><input name='pass' type='password' value='" +
+                      String(tmwbn.eepr.password) + "' length=31><br>"
+                                                    "<label>Hostname: </label><input name='host' type='text' value='" +
+                      String(tmwbn.eepr.localhostname) + "' length=31><br>"
+                                                         "<label>MQTT Server: </label><input name='mqserver' type='text' value='" +
+                      String(tmwbn.eepr.mqttserver) + "' length=31><br>"
+                                                      "<input type='submit' value='Save'></form></div><p></p>";
+
+        tmwbn.body += "<div><form method='get' action='factory'>"
+                      "<label>Factory reset:</label><br><input type='submit' value='Reset'></form></div>";
+        tmwbn.body += "</html>";
+    }
+
     void runWebServer()
     {
         mw_webserver.on("/", []() {
-            tmwbn.body = "<!DOCTYPE HTML>\r\n<html>";
-            tmwbn.body += tmwbn.stylesheet;
-            tmwbn.body += "<div style=\"background-color: #e2e2f8\"><h3>" + tmwbn.header + "</h3>";
-            tmwbn.body += tmwbn.appName + "-node at " + tmwbn.ipStr + ", " + tmwbn.localhostname + ", UUID=" + tmwbn.uuidstr + "</div><p></p>";
-            tmwbn.body += "<div><form method='get' action='save'>"
-                    "<label>SSID:     </label><input name='ssid' type='text' value='" +
-                    String(tmwbn.eepr.SSID) + "' length=31><br>"
-                                        "<label>Password: </label><input name='pass' type='password' value='" +
-                    String(tmwbn.eepr.password) + "' length=31><br>"
-                                            "<label>Hostname: </label><input name='host' type='text' value='" +
-                    String(tmwbn.eepr.localhostname) + "' length=31><br>"
-                                            "<label>MQTT Server: </label><input name='mqserver' type='text' value='" +
-                    String(tmwbn.eepr.mqttserver) + "' length=31><br>"
-                                                 "<input type='submit' value='Save'></form></div><p></p>";
-
-                                                 
-            tmwbn.body += "<div><form method='get' action='factory'>"
-                    "<label>Factory reset:</label><br><input type='submit' value='Reset'></form></div>";
-            tmwbn.body += "</html>";
+            createBody();
             mw_webserver.send(200, "text/html", tmwbn.body);
         });
         mw_webserver.on("/save", []() {
@@ -152,6 +156,10 @@ class MW_BasicNet
             mw_webserver.send(tmwbn.statusCode, "application/json", tmwbn.body);
             tmwbn.state = ST_NOTCONFIGURED;
         });
+        mw_webserver.onNotFound([]() {
+            createBody();
+            mw_webserver.send(200, "text/html", tmwbn.body);
+        });
 
         mw_webserver.begin();
     }
@@ -161,7 +169,7 @@ class MW_BasicNet
     {
         IPAddress ip = WiFi.softAPIP();
         tmwbn.ipStr = String(ip[0]) + '.' + String(ip[1]) + '.' +
-                String(ip[2]) + '.' + String(ip[3]);
+                      String(ip[2]) + '.' + String(ip[3]);
         tmwbn.header = "Access point mode";
         runWebServer();
     }
@@ -171,7 +179,7 @@ class MW_BasicNet
     {
         IPAddress ip = WiFi.localIP();
         tmwbn.ipStr = String(ip[0]) + '.' + String(ip[1]) + '.' +
-                String(ip[2]) + '.' + String(ip[3]);
+                      String(ip[2]) + '.' + String(ip[3]);
         tmwbn.header = "Client mode";
         Serial.println(tmwbn.ipStr);
         runWebServer();
@@ -191,6 +199,12 @@ class MW_BasicNet
         else
             WiFi.softAP(name.c_str(), password.c_str());
         WiFi.hostname(tmwbn.localhostname.c_str());
+
+        /* Setup Captive DNS server redirecting all the domains to the apIP */
+        delay(500);
+        mw_CaptiveDnsServer.setErrorReplyCode(DNSReplyCode::NoError);
+        mw_CaptiveDnsServer.start(DNS_PORT, "*", apIP);
+
         tmwbn.state = ST_WAITFORCONFIG;
         initialConfigServer();
     }
@@ -221,34 +235,37 @@ class MW_BasicNet
         if (debugMsg)
             Serial.println("Connection failed!");
         tmwbn.state = ST_NOTCONFIGURED; // This needs to be removed (or adapted) for Leo-Use-Case   XXX-LEO
-                                  // Setting state to NOTCONFIGURED causes spawning of local access point.
-                                  // In order to retry connection with existing configuration, simply set to ST_CONFIGURED.
+                                        // Setting state to NOTCONFIGURED causes spawning of local access point.
+                                        // In order to retry connection with existing configuration, simply set to ST_CONFIGURED.
         return false;
     }
 
-public:
-    MW_BasicNet(String applicationName, unsigned int connectionTimeout=20, bool bDebug = false)
+  public:
+    MW_BasicNet(String applicationName, unsigned int connectionTimeout = 20, bool bDebug = false)
     {
         tmwbn.appName = applicationName;
-        tmwbn.uuid=0;
-        tmwbn.uuidstr="";
+        tmwbn.uuid = 0;
+        tmwbn.uuidstr = "";
         debugMsg = bDebug;
-        connectTimeout=connectionTimeout;
+        connectTimeout = connectionTimeout;
         tmwbn.state = ST_UNDEFINED;
     }
 
-    T_EEPROM getEEPROM() {
+    T_EEPROM getEEPROM()
+    {
         return tmwbn.eepr;
     }
 
-    void enterAccessPointMode() {
+    void enterAccessPointMode()
+    {
         WiFi.mode(WIFI_OFF);
         delay(1000);
         tmwbn.state = ST_NOTCONFIGURED;
     }
 
-    void clearEEPROM() {
-        memset(&tmwbn.eepr,0,EE_SIZE); 
+    void clearEEPROM()
+    {
+        memset(&tmwbn.eepr, 0, EE_SIZE);
         writeEEPROM(&tmwbn.eepr);
     }
 
@@ -272,7 +289,7 @@ public:
             tmwbn.uuid = tmwbn.eepr.uuid;
             tmwbn.localhostname = String(tmwbn.eepr.localhostname);
         }
-        tmwbn.uuidstr=UUIDtoString(tmwbn.uuid);
+        tmwbn.uuidstr = UUIDtoString(tmwbn.uuid);
         if (debugMsg)
             Serial.println("Unique name: " + tmwbn.localhostname);
         if (tmwbn.eepr.SSID[0] == 0)
@@ -291,7 +308,7 @@ public:
 
     bool handleCom()
     {
-        bool ret=false;
+        bool ret = false;
         switch (tmwbn.state)
         {
         case ST_NOTCONFIGURED:
@@ -300,10 +317,13 @@ public:
             createAP(tmwbn.localhostname); // use localhostname as network-name on initial setup.
             break;
         case ST_WAITFORCONFIG:
+            //Captive DNS
+            mw_CaptiveDnsServer.processNextRequest();
             break;
         case ST_INITCONFIGURED:
             Serial.println("Received connection information");
             mw_webserver.stop();
+            mw_CaptiveDnsServer.stop();
             WiFi.disconnect();
             tmwbn.state = ST_CONFIGURED;
             break;
@@ -321,12 +341,12 @@ public:
             tmwbn.state = ST_NORMALOPERATION;
             break;
         case ST_NORMALOPERATION:
-            ret=true;
+            ret = true;
             break;
         }
 
         mw_webserver.handleClient(); // handle web requests
+
         return ret;
     }
 };
-
