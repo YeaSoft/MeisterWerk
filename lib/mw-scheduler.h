@@ -4,9 +4,9 @@
 #include <functional>
 #include <map>
 
-using std::function;
+using std::function; // [OBSOLETE]
 
-typedef function<void(unsigned long)> T_LOOPCALLBACK;
+typedef function<void(unsigned long)> T_LOOPCALLBACK; // [OBSOLETE]
 
 #define MW_PRIORITY_SYSTEMCRITICAL 0
 #define MW_PRIORITY_TIMECRITICAL   1
@@ -17,7 +17,7 @@ typedef function<void(unsigned long)> T_LOOPCALLBACK;
 
 typedef struct t_task {
     MW_Entity* pEnt;               // Entity object
-    T_LOOPCALLBACK loopCallback;  // = function <void(unsigned long)> loopcallback; // = void (* loopcallback)(unsigned long);
+    T_LOOPCALLBACK loopCallback;  // [OBSOLETE] = function <void(unsigned long)> loopcallback; // = void (* loopcallback)(unsigned long);
     unsigned long minMicros;      // Intervall task should be called in microsecs.
     unsigned long lastCall;       // last microsec timestamp task was called
     unsigned long numberOfCalls;  // number of times, task has been executed
@@ -55,7 +55,7 @@ class MW_Scheduler {
             unsigned long tDelta=ticker-pTask->lastCall;
             if (tDelta>=pTask->minMicros) {
                 // Serial.println("Scheduling: "+t.first+" ticker: "+String(ticker)+" tdelta: "+String(tdelta));
-                if (pTask->loopCallback != nullptr)
+                if (pTask->loopCallback != nullptr) // [OBSOLETE]
                     pTask->loopCallback(ticker); // Old callback style
                 else {
                     if (pTask->pEnt != nullptr) { 
@@ -70,8 +70,11 @@ class MW_Scheduler {
 
         }
     }
-    void addTask(String name, T_LOOPCALLBACK loopCallback, unsigned long minMicroSecs=0, unsigned int priority=1) {
-        T_TASK* pTask=new T_TASK; // XXX: check
+
+    // [OBSOLETE]?
+    bool addTask(String name, T_LOOPCALLBACK loopCallback, unsigned long minMicroSecs=0, unsigned int priority=1) {
+        T_TASK* pTask=new T_TASK;
+        if (pTask==nullptr) return false;
         memset(pTask, 0, sizeof(T_TASK));
         pTask->pEnt=nullptr;
         pTask->loopCallback=loopCallback;
@@ -81,10 +84,12 @@ class MW_Scheduler {
         pTask->budget=0;
         pTask->priority=priority;
         mw_taskList[name]=pTask;
+        return true;
     }
 
-    void registerEntity(String name, MW_Entity* pEnt, unsigned long minMicroSecs=0, unsigned int priority=1) {
-        T_TASK* pTask=new T_TASK; // XXX: check
+    bool registerEntity(String name, MW_Entity* pEnt, unsigned long minMicroSecs=0, unsigned int priority=1) {
+        T_TASK* pTask=new T_TASK;
+        if (pTask==nullptr) return false;
         memset(pTask, 0, sizeof(T_TASK));
         pTask->pEnt=pEnt;
         pTask->loopCallback=nullptr;
@@ -94,6 +99,7 @@ class MW_Scheduler {
         pTask->budget=0;
         pTask->priority=priority;
         mw_taskList[name]=pTask;
+        return true;
     }
 };
 

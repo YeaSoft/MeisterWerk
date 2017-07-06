@@ -1,19 +1,6 @@
 #ifndef _MW_QUEUE_H
 #define _MW_QUEUE_H
 
-#define MW_MAX_QUEUE 256
-
-#define MW_MSG_DIRECT       1
-#define MW_MSG_PUBLISH      2
-#define MW_MSG_SUBSCRIBE    3
-
-typedef struct t_mw_msg {
-    unsigned int type;      // MW_MSG_*
-    unsigned int pBufLen;   // Length of binary buffer pBuf
-    char *topic;            // zero terminated string
-    char *pBuf;             // bin buffer of size pBufLen
-} T_MW_MSG;
-
 template <class T>
 class MW_Queue {
     private:
@@ -52,7 +39,5 @@ class MW_Queue {
         return (size);
     }
 };
-
-MW_Queue<T_MW_MSG> mw_msgQueue(MW_MAX_QUEUE);
 
 #endif
