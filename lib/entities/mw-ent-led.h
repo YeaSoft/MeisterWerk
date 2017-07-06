@@ -24,9 +24,9 @@ class MW_Led : public MW_Entity {
 
         Serial.println("Registering LED "+entName);
         registerEntity(entName, this, &MW_Entity::loop, &MW_Entity::receiveMessage, minMicroSecs, priority);
-        subscribe(entName+"/state");
-        subscribe(entName+"/mode");
-        subscribe(entName+"/blinkMs");
+        subscribe(entName+"/setstate");
+        subscribe(entName+"/setmode");
+        subscribe(entName+"/setblinkMs");
     }
 
     virtual void loop(unsigned long ticker) override {
@@ -64,12 +64,12 @@ class MW_Led : public MW_Entity {
         if (ledState == MW_STATE_OFF) {
             digitalWrite(ledPort, HIGH); // Turn the LED off
             if (bVerbose) {
-                publish(entName+"/state",R"<>({"state":"off"})<>");
+                publish(entName+"/hasstate",R"<>({"state":"off"})<>");
             }
         } else {
             digitalWrite(ledPort, LOW); // Turn the LED on
             if (bVerbose) {
-                publish(entName+"/state",R"<>({"state":"on"})<>");
+                publish(entName+"/hasstate",R"<>({"state":"on"})<>");
             }
         }
     }

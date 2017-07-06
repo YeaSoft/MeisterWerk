@@ -35,7 +35,7 @@ MW_MQTT mwMQ;
 T_EEPROM tep;
 
 // New led 
-MW_Led onboardLed("OnboardLed", BUILTIN_LED, true);  // true: publish all led changes...
+MW_Led onboardLed("OnboardLed", BUILTIN_LED, false);  // true: publish all led changes...
 
 // START SCHROTTHAUFEN -> Entity-Object-Model needed.
 //--- Button task --------------------------------------------------------------
