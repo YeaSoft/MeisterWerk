@@ -30,7 +30,6 @@ typedef function<void(unsigned long)> T_LOOPCALLBACK;
 typedef struct t_mw_msg_register {
     MW_Entity* pEnt;
     T_OLOOPCALLBACK pLoop;
-    char kaka[50];
     T_ORECVCALLBACK pRecv;
     char name[MW_MSG_REG_MAXNAME];
     unsigned long minMicroSecs;
@@ -60,7 +59,6 @@ class MW_Entity {
             return false;
         }
         strcpy(pMsg->topic, topic.c_str());
-        Serial.println("Topic set.");
 
         if (len==0) {
             pMsg->pBuf=nullptr;
@@ -79,7 +77,7 @@ class MW_Entity {
             }
             pMsg->pBufLen=len;
         }
-        Serial.println("Enquing");
+
         mw_msgQueue.push(pMsg);
         return true;
     }

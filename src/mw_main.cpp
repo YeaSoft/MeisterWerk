@@ -43,14 +43,18 @@ class MW_Led : public MW_Entity {
     unsigned int ledPort;
     String ledName;
     public:
-    MW_Led(String name, unsigned int port) {
-        Serial.println("Registering LED");
+    MW_Led(String name, unsigned int port, unsigned long minMicroSecs=500000L, unsigned int priority=MW_PRIORITY_NORMAL) {
         ledName=name;
         ledPort=port;
+        Serial.println("Registering LED "+ledName);
+        registerEntity(ledName, this, &MW_Entity::loop, &MW_Entity::receiveMessage, minMicroSecs, priority);
+        subscribe(ledName+"/state");
+        subscribe(ledName+"/mode");
+        subscribe(ledName+"/blinkMs");
     }
 
     virtual void loop(unsigned long ticker) override {
-        // Serial.println("victory!");
+        Serial.println("victory!");
         return ;
     }
 
@@ -58,15 +62,6 @@ class MW_Led : public MW_Entity {
         // Serial.println("msg recv!");
         return;
     }
-
-    void setup(MW_Entity* pEnt, unsigned long minMicroSecs=500000L, unsigned int priority=MW_PRIORITY_NORMAL) {
-        registerEntity(ledName, pEnt, &MW_Entity::loop, &MW_Entity::receiveMessage, minMicroSecs, priority);
-        subscribe(ledName+"/state");
-        subscribe(ledName+"/mode");
-        subscribe(ledName+"/blinkMs");
-        return;
-    }
-
 
 };
 //--- LED task ----------------------------------------------------------------
@@ -242,17 +237,14 @@ void mqttClientLoop(unsigned long ticker) {
 //-----------------------------------------------------------------------------
 // END SCHROTTHAUFEN ----------------------------------------------------------
 
-MW_Led myLed("OnboardLed", GPIO_ID_PIN0);
+// New led 
+MW_Led onBoardLed("OnboardLed", GPIO_ID_PIN0);
 
 void setup()
 {
     // Debug console
     Serial.begin(115200);
 
-    // New led
-    Serial.println("Instantiating object MW_Led");
-    myLed.setup(&myLed);
- 
     // Internal LED
     ledInit(BUILTIN_LED);
     ledSetMode(LED_MODE_BLINK);
