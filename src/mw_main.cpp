@@ -39,23 +39,34 @@ T_EEPROM tep;
 // START SCHROTTHAUFEN -> Entity-Object-Model needed.
 //--- LED task new style ------------------------------------------------------
 class MW_Led : public MW_Entity {
+    private:
+    unsigned int ledPort;
+    String ledName;
     public:
-    MW_Led(String name, unsigned long minMicroSecs=50000L, unsigned int priority=MW_PRIORITY_NORMAL) {
+    MW_Led(String name, unsigned int port) {
         Serial.println("Registering LED");
-        registerEntity(name, loop, receiveMessage, minMicroSecs, priority);
-    } 
-
-    void setup() {
-        return;
+        ledName=name;
+        ledPort=port;
     }
 
-    static void loop(unsigned long ticker) {
+    virtual void loop(unsigned long ticker) override {
+        // Serial.println("victory!");
         return ;
     }
 
-    static void receiveMessage(unsigned long baddy)  {
+    virtual void receiveMessage(String topic, char *pBuf, unsigned int len) override {
+        // Serial.println("msg recv!");
         return;
     }
+
+    void setup(MW_Entity* pEnt, unsigned long minMicroSecs=500000L, unsigned int priority=MW_PRIORITY_NORMAL) {
+        registerEntity(ledName, pEnt, &MW_Entity::loop, &MW_Entity::receiveMessage, minMicroSecs, priority);
+        subscribe(ledName+"/state");
+        subscribe(ledName+"/mode");
+        subscribe(ledName+"/blinkMs");
+        return;
+    }
+
 
 };
 //--- LED task ----------------------------------------------------------------
@@ -231,21 +242,22 @@ void mqttClientLoop(unsigned long ticker) {
 //-----------------------------------------------------------------------------
 // END SCHROTTHAUFEN ----------------------------------------------------------
 
+MW_Led myLed("OnboardLed", GPIO_ID_PIN0);
+
 void setup()
 {
     // Debug console
     Serial.begin(115200);
 
+    // New led
+    Serial.println("Instantiating object MW_Led");
+    myLed.setup(&myLed);
+ 
     // Internal LED
     ledInit(BUILTIN_LED);
     ledSetMode(LED_MODE_BLINK);
     ledSetBlinkIntervallMs(500); // XXX: should be set by entering access point mode
     mwScheduler.addTask("InternalLed", ledLoop, 50000L, MW_PRIORITY_NORMAL);
-
-    // New led
-    Serial.println("Instantiating object MW_Led");
-    MW_Led myLed("ExtraLed");
-    //myLed.registerPointer("ExtraLed", &myLed);
 
     // Reset button
     resetButtonInit(GPIO_ID_PIN0); // ID_PIN0 == D3 is the Flash button and will be observed for soft/hard reset.

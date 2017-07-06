@@ -12,7 +12,9 @@
 
 typedef struct t_task {
     T_LOOPCALLBACK loopCallback;  // function <void(unsigned long)> loopcallback; // = void (* loopcallback)(unsigned long);
-    T_RECVCALLBACK recvCallback;  // receives incoming messages.
+    MW_Entity* pEnt;              // pointer to instance
+    T_OLOOPCALLBACK oloopCallback;  // = void (MW_Entity::* loopcallback)(unsigned long);
+    T_ORECVCALLBACK orecvCallback;  // receives incoming messages.
     unsigned long minMicros;      // Intervall task should be called in microsecs.
     unsigned long lastCall;       // last microsec timestamp task was called
     unsigned long numberOfCalls;  // number of times, task has been executed
@@ -57,7 +59,7 @@ class MW_Scheduler {
                 Serial.println("Direct message: invalid message buffer size!"+String(pMsg->topic));            
             } else {
                 T_MW_MSG_REGISTER *pReg=(T_MW_MSG_REGISTER *)pMsg->pBuf;
-                registerEntity(String(pReg->name), pReg->pLoop, pReg->pRecv, pReg->minMicroSecs, pReg->priority);
+                registerEntity(String(pReg->name), pReg->pEnt, pReg->pLoop, pReg->pRecv, pReg->minMicroSecs, pReg->priority);
                 Serial.println("Registered entity: "+String(pReg->name));
             }
         } else {
@@ -109,6 +111,20 @@ class MW_Scheduler {
                 // SLOW: Serial.println("Scheduling: "+t.first+" ticker: "+String(ticker)+" tdelta: "+String(tdelta));
                 if (pTask->loopCallback != nullptr) {
                     pTask->loopCallback(ticker);
+                } else {
+                    if (pTask->oloopCallback != nullptr) {
+                        // Serial.println(t.first+" going to be called! Nr: "+String(pTask->numberOfCalls));
+                        MW_Entity *pE;
+                        pE=pTask->pEnt;
+                        if (pE==nullptr) Serial.println("Bad pe=NULL");
+                        // Serial.println("Starting");
+                        T_OLOOPCALLBACK lc;
+                        lc=pTask->oloopCallback;
+                        if (lc==nullptr) Serial.println("Bad lc=NULL");
+                        // Serial.println("Calling:");
+                        (pE->*lc)(ticker);
+                        // Serial.println("DONE");
+                    }   
                 }
                 pTask->lastCall=ticker;
                 pTask->budget+=micros()-ticker;
@@ -124,7 +140,8 @@ class MW_Scheduler {
         if (pTask==nullptr) return false;
         memset(pTask, 0, sizeof(T_TASK));
         pTask->loopCallback=loopCallback;
-        pTask->recvCallback=nullptr;
+        pTask->oloopCallback=nullptr;
+        pTask->orecvCallback=nullptr;
         pTask->minMicros=minMicroSecs;
         pTask->lastCall=0;
         pTask->numberOfCalls=0;
@@ -134,12 +151,14 @@ class MW_Scheduler {
         return true;
     }
 
-    bool registerEntity(String name, T_LOOPCALLBACK loopCallback, T_RECVCALLBACK recvCallback, unsigned long minMicroSecs=100000L, unsigned int priority=1) {
+    bool registerEntity(String name, MW_Entity* pEnt, T_OLOOPCALLBACK loopCallback, T_ORECVCALLBACK recvCallback, unsigned long minMicroSecs=100000L, unsigned int priority=1) {
         T_TASK* pTask=new T_TASK;
         if (pTask==nullptr) return false;
         memset(pTask, 0, sizeof(T_TASK));
-        pTask->loopCallback=loopCallback;
-        pTask->recvCallback=recvCallback;
+        pTask->pEnt=pEnt;
+        pTask->loopCallback=nullptr;
+        pTask->oloopCallback=loopCallback;
+        pTask->orecvCallback=recvCallback;
         pTask->minMicros=minMicroSecs;
         pTask->lastCall=0;
         pTask->numberOfCalls=0;

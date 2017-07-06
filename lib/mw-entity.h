@@ -20,12 +20,18 @@ class MW_Entity;
 
 #define MW_MSG_REG_MAXNAME  32
 
+// = void (* loopcallback)(unsigned long);
+typedef void (MW_Entity::*T_OLOOPCALLBACK)(unsigned long);
+typedef void (MW_Entity::*T_ORECVCALLBACK)(String, char* pBuf, unsigned int len);
 typedef function<void(unsigned long)> T_LOOPCALLBACK;
-typedef function<void(unsigned long)> T_RECVCALLBACK;
+// typedef function<void(String, char* pBuf, int len)> T_RECVCALLBACK;
+
 
 typedef struct t_mw_msg_register {
-    T_LOOPCALLBACK pLoop;
-    T_RECVCALLBACK pRecv;
+    MW_Entity* pEnt;
+    T_OLOOPCALLBACK pLoop;
+    char kaka[50];
+    T_ORECVCALLBACK pRecv;
     char name[MW_MSG_REG_MAXNAME];
     unsigned long minMicroSecs;
     unsigned int priority;
@@ -94,13 +100,14 @@ class MW_Entity {
 
     virtual ~MW_Entity() {}; // Otherwise destructor of derived classes is never called!
 
-    bool registerEntity(String name, T_LOOPCALLBACK pLoop, T_RECVCALLBACK pRecv, unsigned long minMicroSecs=0, unsigned int priority=1) {
+    bool registerEntity(String name, MW_Entity* pen, T_OLOOPCALLBACK pLoop, T_ORECVCALLBACK pRecv, unsigned long minMicroSecs=0, unsigned int priority=1) {
         T_MW_MSG_REGISTER mr;
         if (name.length()>=MW_MSG_REG_MAXNAME-1) {
             Serial.println("Name to long for registration: "+name);
             return false;
         }
         memset(&mr,0,sizeof(mr));
+        mr.pEnt=pen;
         mr.pLoop=pLoop;
         mr.pRecv=pRecv;
         strcpy(mr.name,name.c_str());
@@ -113,10 +120,22 @@ class MW_Entity {
 
     bool publish(String topic, char *pbuf, unsigned int size) {
         // ... sends to scheduler-queue
+        return false;
     }
     bool subscribe(String topic) {
-
+        return false;
     }
+
+    virtual void loop(unsigned long ticker) {
+        Serial.println("Loop: class for "+name+" doesnt implement override! Wrong instance!");
+        return;
+    }
+
+    virtual void receiveMessage(String topic, char *pBuf, unsigned int len) {
+        Serial.println("receiveMessage: class for "+name+" doesnt implement override! Wrong instance!");
+        return;
+    }
+
 };
 
 #endif
