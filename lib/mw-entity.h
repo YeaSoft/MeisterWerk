@@ -3,6 +3,11 @@
 
 using std::function;
 
+// states for buttons and leds
+#define MW_STATE_OFF 0
+#define MW_STATE_ON 1
+#define MW_STATE_UNDEFINED 2
+
 #define MW_MAX_QUEUE 256
 
 #define MW_MSG_DIRECT       1

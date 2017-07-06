@@ -15,13 +15,10 @@
 #include "../lib/mw-basicnet.h"
 #include "../lib/mw-mqtt.h"
 
+#include "../lib/entities/mw-ent-led.h"
+
 // Application name, used for default hostnames and AP-names
 String application = "MeisterWerk";
-
-// states for buttons and leds
-#define MW_STATE_OFF 0
-#define MW_STATE_ON 1
-#define MW_STATE_UNDEFINED 2
 
 // Task Scheduler object
 MW_Scheduler mwScheduler;
@@ -36,83 +33,12 @@ MW_MQTT mwMQ;
 T_EEPROM tep;
 
 
+
+// New led 
+MW_Led onboardLed("OnboardLed", BUILTIN_LED);
+
+
 // START SCHROTTHAUFEN -> Entity-Object-Model needed.
-//--- LED task new style ------------------------------------------------------
-class MW_Led : public MW_Entity {
-    private:
-    unsigned int ledPort;
-    String ledName;
-    public:
-    MW_Led(String eName, unsigned int port, unsigned long minMicroSecs=500000L, unsigned int priority=MW_PRIORITY_NORMAL) {
-        ledName=eName;
-        ledPort=port;
-        Serial.println("Registering LED "+ledName);
-        registerEntity(ledName, this, &MW_Entity::loop, &MW_Entity::receiveMessage, minMicroSecs, priority);
-        subscribe(ledName+"/state");
-        subscribe(ledName+"/mode");
-        subscribe(ledName+"/blinkMs");
-    }
-
-    virtual void loop(unsigned long ticker) override {
-        Serial.println("victory!");
-        return ;
-    }
-
-    virtual void receiveMessage(String topic, char *pBuf, unsigned int len) override {
-        // Serial.println("msg recv!");
-        return;
-    }
-
-};
-//--- LED task ----------------------------------------------------------------
-#define LED_MODE_STATIC 0
-#define LED_MODE_BLINK 1
-unsigned int ledMode = LED_MODE_STATIC;
-unsigned int ledState = MW_STATE_OFF; // MW_STATE_*
-unsigned int ledBlinkIntervallMs = 0;
-unsigned long ledLastChange = 0;
-unsigned int ledPort;
-void ledInit(unsigned int port)
-{
-    ledPort = port;
-    pinMode(ledPort, OUTPUT);
-}
-void ledSetMode(unsigned int mode)
-{ // LED_MODE_{STATIC|BLINK}
-    ledMode = mode;
-}
-void ledSetState(unsigned int state)
-{
-    ledState = state;
-    if (ledState == MW_STATE_OFF)
-        digitalWrite(ledPort, HIGH); // Turn the LED off
-    else
-        digitalWrite(ledPort, LOW); // Turn the LED on
-}
-void ledSetBlinkIntervallMs(unsigned int intervall)
-{
-    ledBlinkIntervallMs = intervall;
-}
-void ledLoop(unsigned long ticker)
-{
-    // Serial.println("ledLoop: "+String(ticker));
-    if (ledMode == LED_MODE_BLINK)
-    {
-        unsigned long millis = (ticker - ledLastChange) / 1000L;
-        if (millis >= ledBlinkIntervallMs)
-        {
-            ledLastChange = ticker;
-            if (ledState == MW_STATE_OFF)
-            {
-                ledSetState(MW_STATE_ON);
-            }
-            else
-            {
-                ledSetState(MW_STATE_OFF);
-            }
-        }
-    }
-}
 //--- Button task --------------------------------------------------------------
 int resetButtonDurationPressedMs = 0;
 int resetButtonState = MW_STATE_UNDEFINED;
@@ -165,7 +91,7 @@ void resetButtonLoop(unsigned long ticker)
                         resetButtonDurationPressedMs = 0;
                         Serial.println("Entering accesspoint mode... (no restart)");
                         mwBN.enterAccessPointMode();
-                        ledSetBlinkIntervallMs(500); // XXX: should be set by entering access point mode
+                        onboardLed.setBlinkIntervallMs(500); // XXX: should be set by entering access point mode
                     }
                     else
                     {
@@ -184,7 +110,7 @@ void resetButtonLoop(unsigned long ticker)
         {                                // XXX: set only once
             if (buttonMode<2) {
                 Serial.println("EEPROM erasure mode entered.");
-                ledSetBlinkIntervallMs(100); // Furious blinking
+                onboardLed.setBlinkIntervallMs(100); // Furious blinking
                 buttonMode=2;
             }
         }
@@ -194,7 +120,7 @@ void resetButtonLoop(unsigned long ticker)
             {
                 if (buttonMode<1) {
                     Serial.println("Enter AP mode (no erase config)");
-                    ledSetBlinkIntervallMs(300); // Fast blinking
+                    onboardLed.setBlinkIntervallMs(300); // Fast blinking
                     buttonMode=1;
                 }
             }
@@ -230,15 +156,12 @@ void mqttClientLoop(unsigned long ticker) {
     if (isWifiConnected)
     {
         // connected to local network
-        ledSetBlinkIntervallMs(2000);
+        onboardLed.setBlinkIntervallMs(2000);
         mwMQ.handleMQTT();
     }
 }
 //-----------------------------------------------------------------------------
 // END SCHROTTHAUFEN ----------------------------------------------------------
-
-// New led 
-MW_Led onBoardLed("OnboardLed", GPIO_ID_PIN0);
 
 void setup()
 {
@@ -246,10 +169,11 @@ void setup()
     Serial.begin(115200);
 
     // Internal LED
-    ledInit(BUILTIN_LED);
-    ledSetMode(LED_MODE_BLINK);
-    ledSetBlinkIntervallMs(500); // XXX: should be set by entering access point mode
-    mwScheduler.addTask("InternalLed", ledLoop, 50000L, MW_PRIORITY_NORMAL);
+    //ledInit(BUILTIN_LED);
+    onboardLed.setState(MW_STATE_ON);
+    onboardLed.setMode(LED_MODE_BLINK);
+    onboardLed.setBlinkIntervallMs(500); // XXX: should be set by entering access point mode
+    //mwScheduler.addTask("InternalLed", ledLoop, 50000L, MW_PRIORITY_NORMAL);
 
     // Reset button
     resetButtonInit(GPIO_ID_PIN0); // ID_PIN0 == D3 is the Flash button and will be observed for soft/hard reset.
