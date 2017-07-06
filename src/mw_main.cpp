@@ -32,11 +32,8 @@ MW_MQTT mwMQ;
 // EEPROM user configuration content
 T_EEPROM tep;
 
-
-
 // New led 
 MW_Led onboardLed("OnboardLed", BUILTIN_LED);
-
 
 // START SCHROTTHAUFEN -> Entity-Object-Model needed.
 //--- Button task --------------------------------------------------------------
@@ -169,11 +166,9 @@ void setup()
     Serial.begin(115200);
 
     // Internal LED
-    //ledInit(BUILTIN_LED);
     onboardLed.setState(MW_STATE_ON);
     onboardLed.setMode(LED_MODE_BLINK);
     onboardLed.setBlinkIntervallMs(500); // XXX: should be set by entering access point mode
-    //mwScheduler.addTask("InternalLed", ledLoop, 50000L, MW_PRIORITY_NORMAL);
 
     // Reset button
     resetButtonInit(GPIO_ID_PIN0); // ID_PIN0 == D3 is the Flash button and will be observed for soft/hard reset.
