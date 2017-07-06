@@ -16,6 +16,14 @@ class MW_Queue {
         size=0;
         maxSize=maxQueueSize;
         que=(T**)malloc(sizeof(T*)*maxSize);
+        if (que==nullptr) maxSize=0;
+    }
+    ~MW_Queue() {
+        if (que!=nullptr) {
+            // If size > 0 then there's a potential memory leak.
+            // This must be taken care of by the queue owner.
+            free(que);
+        }
     }
     bool push(T* ent) {
         if (size>=maxSize) return false;

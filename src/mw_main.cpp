@@ -37,6 +37,27 @@ T_EEPROM tep;
 
 
 // START SCHROTTHAUFEN -> Entity-Object-Model needed.
+//--- LED task new style ------------------------------------------------------
+class MW_Led : public MW_Entity {
+    public:
+    MW_Led(String name, unsigned long minMicroSecs=50000L, unsigned int priority=MW_PRIORITY_NORMAL) {
+        Serial.println("Registering LED");
+        registerEntity(name, loop, receiveMessage, minMicroSecs, priority);
+    } 
+
+    void setup() {
+        return;
+    }
+
+    static void loop(unsigned long ticker) {
+        return ;
+    }
+
+    static void receiveMessage(unsigned long baddy)  {
+        return;
+    }
+
+};
 //--- LED task ----------------------------------------------------------------
 #define LED_MODE_STATIC 0
 #define LED_MODE_BLINK 1
@@ -220,6 +241,11 @@ void setup()
     ledSetMode(LED_MODE_BLINK);
     ledSetBlinkIntervallMs(500); // XXX: should be set by entering access point mode
     mwScheduler.addTask("InternalLed", ledLoop, 50000L, MW_PRIORITY_NORMAL);
+
+    // New led
+    Serial.println("Instantiating object MW_Led");
+    MW_Led myLed("ExtraLed");
+    //myLed.registerPointer("ExtraLed", &myLed);
 
     // Reset button
     resetButtonInit(GPIO_ID_PIN0); // ID_PIN0 == D3 is the Flash button and will be observed for soft/hard reset.
