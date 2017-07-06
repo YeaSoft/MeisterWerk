@@ -8,7 +8,6 @@
 class MW_Led : public MW_Entity {
     private:
     unsigned int ledPort;
-    String ledName;
     bool bVerbose=false;
 
     unsigned int ledMode = LED_MODE_STATIC;
@@ -18,16 +17,16 @@ class MW_Led : public MW_Entity {
 
     public:
     MW_Led(String eName, unsigned int port, bool verbose=false, unsigned long minMicroSecs=50000L, unsigned int priority=MW_PRIORITY_NORMAL) {
-        ledName=eName;
+        entName=eName;
         ledPort=port;
         bVerbose=verbose;
         pinMode(ledPort, OUTPUT);
 
-        Serial.println("Registering LED "+ledName);
-        registerEntity(ledName, this, &MW_Entity::loop, &MW_Entity::receiveMessage, minMicroSecs, priority);
-        subscribe(ledName+"/state");
-        subscribe(ledName+"/mode");
-        subscribe(ledName+"/blinkMs");
+        Serial.println("Registering LED "+entName);
+        registerEntity(entName, this, &MW_Entity::loop, &MW_Entity::receiveMessage, minMicroSecs, priority);
+        subscribe(entName+"/state");
+        subscribe(entName+"/mode");
+        subscribe(entName+"/blinkMs");
     }
 
     virtual void loop(unsigned long ticker) override {
@@ -50,7 +49,8 @@ class MW_Led : public MW_Entity {
     }
 
     virtual void receiveMessage(String topic, char *pBuf, unsigned int len) override {
-        // Serial.println("msg recv!");
+        Serial.println("msg recv! "+topic);
+        if (pBuf!=nullptr) free(pBuf);
         return;
     }
 
@@ -64,12 +64,12 @@ class MW_Led : public MW_Entity {
         if (ledState == MW_STATE_OFF) {
             digitalWrite(ledPort, HIGH); // Turn the LED off
             if (bVerbose) {
-                publish(ledName+"/state",R"<>({"state":"off"})<>");
+                publish(entName+"/state",R"<>({"state":"off"})<>");
             }
         } else {
             digitalWrite(ledPort, LOW); // Turn the LED on
             if (bVerbose) {
-                publish(ledName+"/state",R"<>({"state":"on"})<>");
+                publish(entName+"/state",R"<>({"state":"on"})<>");
             }
         }
     }

@@ -17,6 +17,7 @@ using std::function;
 typedef struct t_mw_msg {
     unsigned int type;      // MW_MSG_*
     unsigned int pBufLen;   // Length of binary buffer pBuf
+    char *originator;       // allocated instance name of originator
     char *topic;            // allocated zero terminated string
     char *pBuf;             // allocated bin buffer of size pBufLen
 } T_MW_MSG;
@@ -50,7 +51,7 @@ class MW_Entity {
     private:
     // This sends messages to scheduler via mw_msgQueue
     bool sendMessage(int type, String topic, char *pBuf, int len, bool isBufAllocated=false) {
-        Serial.println("begin sendMessage: "+topic);
+        Serial.println("begin sendMessage, from: "+entName+", topic: "+topic);
         int tLen=topic.length()+1;
         if (tLen>MW_MSG_MAX_TOPIC_LENGTH || len>MW_MSG_MAX_MSGBUFFER_LENGTH) {
             Serial.println("Msg discard, size too large. "+topic);
@@ -83,6 +84,10 @@ class MW_Entity {
             }
             pMsg->pBufLen=len;
         }
+
+        unsigned int olen=entName.length()+1;
+        pMsg->originator=(char *)malloc(olen);
+        strcpy(pMsg->originator,entName.c_str());
 
         mw_msgQueue.push(pMsg);
         return true;

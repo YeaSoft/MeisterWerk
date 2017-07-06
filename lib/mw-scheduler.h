@@ -26,6 +26,13 @@ typedef struct t_task {
     unsigned int priority;        // MW_PRIORITY_*
 } T_TASK;
 
+typedef struct subscription {
+    char *subscriber;
+    char *topic;
+} T_SUBSCRIPTION;
+
+std::vector<T_SUBSCRIPTION> subscriptions;
+
 class MW_Scheduler {
     private:
     // The task list;
@@ -53,6 +60,9 @@ class MW_Scheduler {
             if (pMsg->topic!=nullptr) {
                 free(pMsg->topic);
             }
+            if (pMsg->originator != nullptr) {
+                free(pMsg->originator);
+            }
             free(pMsg);
         }
     }
@@ -70,14 +80,43 @@ class MW_Scheduler {
         }
         discardMsg(pMsg);
     }
+
+    bool msgmatches(char *t1, char *t2) {
+        if (String(t1)=="*") return true;
+        if (String(t1)==String(t2)) return true;   // XXX: proper wildcard support
+        else return false;
+    }
+
     void publishMsg(T_MW_MSG *pMsg) {
-        Serial.println("Publish message: not implemented: "+String(pMsg->topic));
+        for (auto sub : subscriptions) {
+            if (msgmatches(sub.topic, pMsg->topic)) {
+                for (auto t : mw_taskList) {
+                    if (t.first == String(sub.subscriber)) {
+                        T_TASK* pTask=t.second;
+                        if (pTask->orecvCallback != nullptr && pTask->pEnt != nullptr) {
+                            // This nasty bugger calls the class-instances virtual override member recvMsg:
+                            String topic=String(pMsg->topic);
+                            char *pBufNew=(char *)malloc(pMsg->pBufLen);
+                            memcpy(pBufNew,pMsg->pBuf,pMsg->pBufLen);
+                            unsigned int len=pMsg->pBufLen;
+                            ((pTask->pEnt)->*(pTask->orecvCallback))(topic, pBufNew, len);
+                            // Serial.println("DONE");
+                        }
+                    }
+                }
+            }
+        }
         discardMsg(pMsg);
     }
+
     void subscribeMsg(T_MW_MSG *pMsg) {
-        Serial.println("Subscribe message: not implemented: "+String(pMsg->topic));
-        discardMsg(pMsg);
+        T_SUBSCRIPTION subs;
+        subs.subscriber=pMsg->originator;
+        subs.topic=pMsg->topic;
+        subscriptions.emplace_back(subs);
+        delete pMsg; // pointers of content are recycled in subs.
     }
+
     void checkMsgQueue() {
         T_MW_MSG *pMsg;
         while (!mw_msgQueue.isEmpty()) {
