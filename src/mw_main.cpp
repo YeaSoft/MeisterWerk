@@ -43,8 +43,8 @@ class MW_Led : public MW_Entity {
     unsigned int ledPort;
     String ledName;
     public:
-    MW_Led(String name, unsigned int port, unsigned long minMicroSecs=500000L, unsigned int priority=MW_PRIORITY_NORMAL) {
-        ledName=name;
+    MW_Led(String eName, unsigned int port, unsigned long minMicroSecs=500000L, unsigned int priority=MW_PRIORITY_NORMAL) {
+        ledName=eName;
         ledPort=port;
         Serial.println("Registering LED "+ledName);
         registerEntity(ledName, this, &MW_Entity::loop, &MW_Entity::receiveMessage, minMicroSecs, priority);

@@ -11,10 +11,13 @@
 #define MW_PRIORITY_LOWEST         5
 
 typedef struct t_task {
+    // For static tasks:
     T_LOOPCALLBACK loopCallback;  // Static task function, function <void(unsigned long)> loopcallback; // = void (* loopcallback)(unsigned long);
+    // For MW_Entity derived objects: (note: virtual methods have different pointer sizes than static function pointers!)
     MW_Entity* pEnt;              // pointer to derived instance of MW_Entity
     T_OLOOPCALLBACK oloopCallback;  // loop virtual override, = void (MW_Entity::* loopcallback)(unsigned long);
     T_ORECVCALLBACK orecvCallback;  // receiveMessage virtual override, receives incoming messages.
+    // Common:
     unsigned long minMicros;      // Intervall task should be called in microsecs.
     unsigned long lastCall;       // last microsec timestamp task was called
     unsigned long numberOfCalls;  // number of times, task has been executed
@@ -59,8 +62,8 @@ class MW_Scheduler {
                 Serial.println("Direct message: invalid message buffer size!"+String(pMsg->topic));            
             } else {
                 T_MW_MSG_REGISTER *pReg=(T_MW_MSG_REGISTER *)pMsg->pBuf;
-                registerEntity(String(pReg->name), pReg->pEnt, pReg->pLoop, pReg->pRecv, pReg->minMicroSecs, pReg->priority);
-                Serial.println("Registered entity: "+String(pReg->name));
+                registerEntity(String(pReg->entName), pReg->pEnt, pReg->pLoop, pReg->pRecv, pReg->minMicroSecs, pReg->priority);
+                Serial.println("Registered entity: "+String(pReg->entName));
             }
         } else {
             Serial.println("Direct message: not implemented"+String(pMsg->topic));
@@ -129,7 +132,7 @@ class MW_Scheduler {
     }
 
     // This adds tasks as static functions:
-    bool addTask(String name, T_LOOPCALLBACK loopCallback, unsigned long minMicroSecs=0, unsigned int priority=1) {
+    bool addTask(String eName, T_LOOPCALLBACK loopCallback, unsigned long minMicroSecs=0, unsigned int priority=1) {
         T_TASK* pTask=new T_TASK;
         if (pTask==nullptr) return false;
         memset(pTask, 0, sizeof(T_TASK));
@@ -141,12 +144,12 @@ class MW_Scheduler {
         pTask->numberOfCalls=0;
         pTask->budget=0;
         pTask->priority=priority;
-        mw_taskList[name]=pTask;
+        mw_taskList[eName]=pTask;
         return true;
     }
 
     // This supports derived objects from MW_Entity: the scheduler accesses the virtual overrides for loop and receiveMessage:
-    bool registerEntity(String name, MW_Entity* pEnt, T_OLOOPCALLBACK loopCallback, T_ORECVCALLBACK recvCallback, unsigned long minMicroSecs=100000L, unsigned int priority=1) {
+    bool registerEntity(String eName, MW_Entity* pEnt, T_OLOOPCALLBACK loopCallback, T_ORECVCALLBACK recvCallback, unsigned long minMicroSecs=100000L, unsigned int priority=1) {
         T_TASK* pTask=new T_TASK;
         if (pTask==nullptr) return false;
         memset(pTask, 0, sizeof(T_TASK));
@@ -159,7 +162,7 @@ class MW_Scheduler {
         pTask->numberOfCalls=0;
         pTask->budget=0;
         pTask->priority=priority;
-        mw_taskList[name]=pTask;
+        mw_taskList[eName]=pTask;
         return true;
     }
 };

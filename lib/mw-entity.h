@@ -20,20 +20,20 @@ class MW_Entity;
 
 #define MW_MSG_REG_MAXNAME  32
 
-// = void (* loopcallback)(unsigned long);
+// Type declaration for virtual override member functions loop and receiveMessage of MW_Entity:
 typedef void (MW_Entity::*T_OLOOPCALLBACK)(unsigned long);
 typedef void (MW_Entity::*T_ORECVCALLBACK)(String, char* pBuf, unsigned int len);
+// Type declaration for static tasks:
 typedef function<void(unsigned long)> T_LOOPCALLBACK;
-// typedef function<void(String, char* pBuf, int len)> T_RECVCALLBACK;
 
 
 typedef struct t_mw_msg_register {
-    MW_Entity* pEnt;
-    T_OLOOPCALLBACK pLoop;
-    T_ORECVCALLBACK pRecv;
-    char name[MW_MSG_REG_MAXNAME];
-    unsigned long minMicroSecs;
-    unsigned int priority;
+    MW_Entity* pEnt;                   // instance object pointer to derived object instance
+    T_OLOOPCALLBACK pLoop;             // pointer to virtual override loop
+    T_ORECVCALLBACK pRecv;             // pointer to virtual override recvMessage
+    char entName[MW_MSG_REG_MAXNAME];  // Entity instance name
+    unsigned long minMicroSecs;        // intervall in micro seconds the loop method should be called
+    unsigned int priority;             // Priority MW_PRIORITY_*
 } T_MW_MSG_REGISTER;
 
 MW_Queue<T_MW_MSG> mw_msgQueue(MW_MAX_QUEUE);
@@ -43,6 +43,7 @@ MW_Queue<T_MW_MSG> mw_msgQueue(MW_MAX_QUEUE);
 
 class MW_Entity {
     private:
+    // This sends messages to scheduler via mw_msgQueue
     bool sendMessage(int type, String topic, char *pBuf, int len, bool isBufAllocated=false) {
         Serial.println("begin sendMessage: "+topic);
         int tLen=topic.length()+1;
@@ -82,6 +83,7 @@ class MW_Entity {
         return true;
     }
 
+    // Send text message to Scheduler
     bool sendMessage(int type, String topic, String content) {
         if (content==nullptr || content.length()==0) {
             return sendMessage(type, topic, nullptr, 0);
@@ -94,25 +96,25 @@ class MW_Entity {
     }
 
     public:
-    String name;
+    String entName;   // Instance name
 
     virtual ~MW_Entity() {}; // Otherwise destructor of derived classes is never called!
 
-    bool registerEntity(String name, MW_Entity* pen, T_OLOOPCALLBACK pLoop, T_ORECVCALLBACK pRecv, unsigned long minMicroSecs=0, unsigned int priority=1) {
+    bool registerEntity(String eName, MW_Entity* pen, T_OLOOPCALLBACK pLoop, T_ORECVCALLBACK pRecv, unsigned long minMicroSecs=0, unsigned int priority=1) {
         T_MW_MSG_REGISTER mr;
-        if (name.length()>=MW_MSG_REG_MAXNAME-1) {
-            Serial.println("Name to long for registration: "+name);
+        if (eName.length()>=MW_MSG_REG_MAXNAME-1) {
+            Serial.println("Name to long for registration: "+eName);
             return false;
         }
         memset(&mr,0,sizeof(mr));
         mr.pEnt=pen;
         mr.pLoop=pLoop;
         mr.pRecv=pRecv;
-        strcpy(mr.name,name.c_str());
+        strcpy(mr.entName,eName.c_str());
         mr.minMicroSecs=minMicroSecs;
         mr.priority=priority;
         bool ret=sendMessage(MW_MSG_DIRECT, "register", (char *)&mr, sizeof(mr));
-        if (!ret) Serial.println("sendMessage failed for register "+name);
+        if (!ret) Serial.println("sendMessage failed for register "+eName);
         return ret;
     }
 
@@ -125,12 +127,12 @@ class MW_Entity {
     }
 
     virtual void loop(unsigned long ticker) {
-        Serial.println("Loop: class for "+name+" doesnt implement override! Wrong instance!");
+        Serial.println("Loop: class for "+entName+" doesnt implement override! Wrong instance!");
         return;
     }
 
     virtual void receiveMessage(String topic, char *pBuf, unsigned int len) {
-        Serial.println("receiveMessage: class for "+name+" doesnt implement override! Wrong instance!");
+        Serial.println("receiveMessage: class for "+entName+" doesnt implement override! Wrong instance!");
         return;
     }
 
