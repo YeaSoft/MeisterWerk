@@ -17,12 +17,12 @@ class MW_Led : public MW_Entity {
     unsigned long ledLastChange = 0;
 
     public:
-    MW_Led(String eName, unsigned int port, bool verbose=False, unsigned long minMicroSecs=50000L, unsigned int priority=MW_PRIORITY_NORMAL) {
+    MW_Led(String eName, unsigned int port, bool verbose=false, unsigned long minMicroSecs=50000L, unsigned int priority=MW_PRIORITY_NORMAL) {
         ledName=eName;
         ledPort=port;
         bVerbose=verbose;
         pinMode(ledPort, OUTPUT);
-        
+
         Serial.println("Registering LED "+ledName);
         registerEntity(ledName, this, &MW_Entity::loop, &MW_Entity::receiveMessage, minMicroSecs, priority);
         subscribe(ledName+"/state");
@@ -61,12 +61,17 @@ class MW_Led : public MW_Entity {
     void setState(unsigned int state)
     {
         ledState = state;
-        if (ledState == MW_STATE_OFF)
+        if (ledState == MW_STATE_OFF) {
             digitalWrite(ledPort, HIGH); // Turn the LED off
-            if (bVerbose) publish(ledName+"/state",R"<>({"state":"off"})<>";
-        else
+            if (bVerbose) {
+                publish(ledName+"/state",R"<>({"state":"off"})<>");
+            }
+        } else {
             digitalWrite(ledPort, LOW); // Turn the LED on
-            if (bVerbose) publish(ledName+"/state",R"<>({"state":"on"})<>";
+            if (bVerbose) {
+                publish(ledName+"/state",R"<>({"state":"on"})<>");
+            }
+        }
     }
     void setBlinkIntervallMs(unsigned int intervall)
     {

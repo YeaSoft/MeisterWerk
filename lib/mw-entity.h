@@ -17,8 +17,8 @@ using std::function;
 typedef struct t_mw_msg {
     unsigned int type;      // MW_MSG_*
     unsigned int pBufLen;   // Length of binary buffer pBuf
-    char *topic;            // zero terminated string
-    char *pBuf;             // bin buffer of size pBufLen
+    char *topic;            // allocated zero terminated string
+    char *pBuf;             // allocated bin buffer of size pBufLen
 } T_MW_MSG;
 
 class MW_Entity;
@@ -123,11 +123,12 @@ class MW_Entity {
         return ret;
     }
 
-    bool publish(String topic, char *pbuf, unsigned int size) {
-        // ... sends to scheduler-queue
+    bool publish(String topic, String msg) {
+        sendMessage(MW_MSG_PUBLISH, topic, msg);
         return false;
     }
     bool subscribe(String topic) {
+        sendMessage(MW_MSG_SUBSCRIBE, topic, nullptr, 0);
         return false;
     }
 

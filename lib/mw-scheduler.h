@@ -66,16 +66,16 @@ class MW_Scheduler {
                 Serial.println("Registered entity: "+String(pReg->entName));
             }
         } else {
-            Serial.println("Direct message: not implemented"+String(pMsg->topic));
+            Serial.println("Direct message: not implemented: "+String(pMsg->topic));
         }
         discardMsg(pMsg);
     }
     void publishMsg(T_MW_MSG *pMsg) {
-        Serial.println("Publish message: not implemented"+String(pMsg->topic));
+        Serial.println("Publish message: not implemented: "+String(pMsg->topic));
         discardMsg(pMsg);
     }
     void subscribeMsg(T_MW_MSG *pMsg) {
-        Serial.println("Subscribe message: not implemented"+String(pMsg->topic));
+        Serial.println("Subscribe message: not implemented: "+String(pMsg->topic));
         discardMsg(pMsg);
     }
     void checkMsgQueue() {
