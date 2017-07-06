@@ -11,10 +11,10 @@
 #define MW_PRIORITY_LOWEST         5
 
 typedef struct t_task {
-    T_LOOPCALLBACK loopCallback;  // function <void(unsigned long)> loopcallback; // = void (* loopcallback)(unsigned long);
-    MW_Entity* pEnt;              // pointer to instance
-    T_OLOOPCALLBACK oloopCallback;  // = void (MW_Entity::* loopcallback)(unsigned long);
-    T_ORECVCALLBACK orecvCallback;  // receives incoming messages.
+    T_LOOPCALLBACK loopCallback;  // Static task function, function <void(unsigned long)> loopcallback; // = void (* loopcallback)(unsigned long);
+    MW_Entity* pEnt;              // pointer to derived instance of MW_Entity
+    T_OLOOPCALLBACK oloopCallback;  // loop virtual override, = void (MW_Entity::* loopcallback)(unsigned long);
+    T_ORECVCALLBACK orecvCallback;  // receiveMessage virtual override, receives incoming messages.
     unsigned long minMicros;      // Intervall task should be called in microsecs.
     unsigned long lastCall;       // last microsec timestamp task was called
     unsigned long numberOfCalls;  // number of times, task has been executed
@@ -112,17 +112,10 @@ class MW_Scheduler {
                 if (pTask->loopCallback != nullptr) {
                     pTask->loopCallback(ticker);
                 } else {
-                    if (pTask->oloopCallback != nullptr) {
+                    if (pTask->oloopCallback != nullptr && pTask->pEnt != nullptr) {
                         // Serial.println(t.first+" going to be called! Nr: "+String(pTask->numberOfCalls));
-                        MW_Entity *pE;
-                        pE=pTask->pEnt;
-                        if (pE==nullptr) Serial.println("Bad pe=NULL");
-                        // Serial.println("Starting");
-                        T_OLOOPCALLBACK lc;
-                        lc=pTask->oloopCallback;
-                        if (lc==nullptr) Serial.println("Bad lc=NULL");
-                        // Serial.println("Calling:");
-                        (pE->*lc)(ticker);
+                        // This nasty bugger calls the class-instances virtual override member loop:
+                        ((pTask->pEnt)->*(pTask->oloopCallback))(ticker);
                         // Serial.println("DONE");
                     }   
                 }
@@ -135,6 +128,7 @@ class MW_Scheduler {
         }
     }
 
+    // This adds tasks as static functions:
     bool addTask(String name, T_LOOPCALLBACK loopCallback, unsigned long minMicroSecs=0, unsigned int priority=1) {
         T_TASK* pTask=new T_TASK;
         if (pTask==nullptr) return false;
@@ -151,6 +145,7 @@ class MW_Scheduler {
         return true;
     }
 
+    // This supports derived objects from MW_Entity: the scheduler accesses the virtual overrides for loop and receiveMessage:
     bool registerEntity(String name, MW_Entity* pEnt, T_OLOOPCALLBACK loopCallback, T_ORECVCALLBACK recvCallback, unsigned long minMicroSecs=100000L, unsigned int priority=1) {
         T_TASK* pTask=new T_TASK;
         if (pTask==nullptr) return false;
