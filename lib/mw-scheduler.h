@@ -1,3 +1,6 @@
+#ifndef _MW_SCHEDULER_H
+#define _MW_SCHEDULER_H
+
 #include <functional>
 #include <map>
 
@@ -13,75 +16,85 @@ typedef function<void(unsigned long)> T_LOOPCALLBACK;
 #define MW_PRIORITY_LOWEST         5
 
 typedef struct t_task {
-    T_LOOPCALLBACK loopcallback; // = function <void(unsigned long)> loopcallback; // = void (* loopcallback)(unsigned long);
-    unsigned long minmicros;      // Intervall task should be called in microsecs.
-    unsigned long lastcall;       // last microsec timestamp task was called
+    MW_Entity* pEnt;               // Entity object
+    T_LOOPCALLBACK loopCallback;  // = function <void(unsigned long)> loopcallback; // = void (* loopcallback)(unsigned long);
+    unsigned long minMicros;      // Intervall task should be called in microsecs.
+    unsigned long lastCall;       // last microsec timestamp task was called
     unsigned long numberOfCalls;  // number of times, task has been executed
     unsigned long budget;         // Sum of microsecs used by this task during all calls
-    unsigned long latetime;       // Sum of microsecs the task was scheduled later than requested by minmicros
+    unsigned long lateTime;       // Sum of microsecs the task was scheduled later than requested by minmicros
     unsigned int priority;        // MW_PRIORITY_*
 } T_TASK;
-
-class MW_Entity {
-    virtual ~MW_Entity() {}; // Otherwise destructor of derived classes is never called!
-
-    bool sendToQueue() {
-        // ... sends to scheduler-queue
-    }
-    bool registerEntity() {
-
-    }
-    virtual void setup()  { return; }
-    virtual void loop(unsigned long ticker)  { return; }
-    virtual void receiveCmds()  { return; }
-};
 
 class MW_Scheduler {
     private:
     // The task list;
-    std::map<String, T_TASK *> mw_tasklist;
+    std::map<String, T_TASK *> mw_taskList;
 
     bool bDebug;
-    unsigned long lasttick;
+    unsigned long lastTick;
     public:
     MW_Scheduler(bool bDebugMsg=false) {
-        mw_tasklist.clear();
+        mw_taskList.clear();
         bDebug=bDebugMsg;
-        lasttick=micros();
+        lastTick=micros();
     }
     ~MW_Scheduler() {
-        for (auto t : mw_tasklist) {
+        for (auto t : mw_taskList) {
             delete t.second;
         }
-        mw_tasklist.clear();
+        mw_taskList.clear();
     }
     void loop() { 
         unsigned long ticker=micros(); // XXX: handle ticker overflow!
-        unsigned long schedulerdelta=ticker-lasttick;
+        unsigned long schedulerDelta=ticker-lastTick;
         // XXX: sort tasks according to urgency
-        for (auto t : mw_tasklist) {
+        for (auto t : mw_taskList) {
             ticker=micros();
-            T_TASK* ptask=t.second;
-            unsigned long tdelta=ticker-ptask->lastcall;
-            if (tdelta>=ptask->minmicros) {
+            T_TASK* pTask=t.second;
+            unsigned long tDelta=ticker-pTask->lastCall;
+            if (tDelta>=pTask->minMicros) {
                 // Serial.println("Scheduling: "+t.first+" ticker: "+String(ticker)+" tdelta: "+String(tdelta));
-                ptask->loopcallback(ticker);
-                ptask->lastcall=ticker;
-                ptask->budget+=micros()-ticker;
-                ptask->latetime+=tdelta-ptask->minmicros;
-                ++(ptask->numberOfCalls);
+                if (pTask->loopCallback != nullptr)
+                    pTask->loopCallback(ticker); // Old callback style
+                else {
+                    if (pTask->pEnt != nullptr) { 
+                        pTask->pEnt->loop(ticker); // new entity method
+                    }
+                }
+                pTask->lastCall=ticker;
+                pTask->budget+=micros()-ticker;
+                pTask->lateTime+=tDelta-pTask->minMicros;
+                ++(pTask->numberOfCalls);
             }
 
         }
     }
-    void addTask(String name, T_LOOPCALLBACK loopcallback, unsigned long minmicrosecs=0, unsigned int priority=1) {
-        T_TASK* ptask=new T_TASK; // XXX: check
-        ptask->loopcallback=loopcallback;
-        ptask->minmicros=minmicrosecs;
-        ptask->lastcall=0;
-        ptask->numberOfCalls=0;
-        ptask->budget=0;
-        ptask->priority=priority;
-        mw_tasklist[name]=ptask;
+    void addTask(String name, T_LOOPCALLBACK loopCallback, unsigned long minMicroSecs=0, unsigned int priority=1) {
+        T_TASK* pTask=new T_TASK; // XXX: check
+        memset(pTask, 0, sizeof(T_TASK));
+        pTask->pEnt=nullptr;
+        pTask->loopCallback=loopCallback;
+        pTask->minMicros=minMicroSecs;
+        pTask->lastCall=0;
+        pTask->numberOfCalls=0;
+        pTask->budget=0;
+        pTask->priority=priority;
+        mw_taskList[name]=pTask;
+    }
+
+    void registerEntity(String name, MW_Entity* pEnt, unsigned long minMicroSecs=0, unsigned int priority=1) {
+        T_TASK* pTask=new T_TASK; // XXX: check
+        memset(pTask, 0, sizeof(T_TASK));
+        pTask->pEnt=pEnt;
+        pTask->loopCallback=nullptr;
+        pTask->minMicros=minMicroSecs;
+        pTask->lastCall=0;
+        pTask->numberOfCalls=0;
+        pTask->budget=0;
+        pTask->priority=priority;
+        mw_taskList[name]=pTask;
     }
 };
+
+#endif

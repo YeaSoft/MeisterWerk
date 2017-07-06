@@ -1,3 +1,6 @@
+#ifndef _MW_BASICNET_H
+#define _MW_BASICNET_H
+
 /*
 ESP Wlan & web configurator
 */
@@ -350,3 +353,5 @@ class MW_BasicNet
         return ret;
     }
 };
+
+#endif

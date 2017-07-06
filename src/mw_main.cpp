@@ -8,6 +8,8 @@
 // pio lib install <ID>
 #include <PubSubClient.h>
 
+#include "../lib/mw-queue.h"
+#include "../lib/mw-entity.h"
 #include "../lib/mw-scheduler.h"
 
 #include "../lib/mw-basicnet.h"

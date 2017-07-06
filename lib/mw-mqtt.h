@@ -1,3 +1,6 @@
+#ifndef _MW_MQTT_H
+#define _MW_MQTT_H
+
 /* MQTT support stub */
 
 WiFiClient mw_mq_wf_client;
@@ -94,3 +97,5 @@ class MW_MQTT
         return ret;
     }
 };
+
+#endif
