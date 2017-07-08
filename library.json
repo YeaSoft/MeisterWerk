@@ -1,0 +1,25 @@
+{
+    "name": "MeisterWerk",
+    "version": "0.0.1",
+    "keywords": "i2c",
+    "description": "TBD",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/YeaSoft/MeisterWerk.git"
+    },
+    "authors": [
+        {
+            "name": "Dominik Schlösser",
+            "email": "dsc@dosc.net"
+        },
+        {
+            "name": "Leo Moll",
+            "email": "leo.moll@yeasoft.com",
+            "url": "http://tuxpoldo.de"
+        }
+    ],
+    "frameworks": "arduino",
+    "platforms": [
+        "espressif8266"
+    ]
+}
