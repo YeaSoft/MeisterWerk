@@ -11,9 +11,9 @@ AllowShortCaseLabelsOnASingleLine: false
 AllowShortFunctionsOnASingleLine: false
 AllowShortIfStatementsOnASingleLine: false
 AllowShortLoopsOnASingleLine: false
-FixNamespaceComments: true
+ColumnLimit: 100
 KeepEmptyLinesAtTheStartOfBlocks: false
-# NamespaceIndentation: All
+NamespaceIndentation: All
 SpacesInCStyleCastParentheses: false
 SpacesInContainerLiterals: true
 SpacesInParentheses: true

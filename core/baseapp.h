@@ -1,3 +1,8 @@
+// baseapp.h - The base application class
+//
+// This is the declaration of the base class for an
+// embedded application.
+
 #ifndef baseapp_h
 #define baseapp_h
 
@@ -20,7 +25,7 @@ namespace meisterwerk {
         };
 
         // initialization of static member
-        baseapp *baseapp::_app = 0;
+        baseapp *baseapp::_app = nullptr;
 
     } // namespace core
 } // namespace meisterwerk
