@@ -26,6 +26,7 @@
 
 namespace meisterwerk {
     namespace core {
+
         class message {
             public:
             static const unsigned int MSG_NONE      = 0;
@@ -38,7 +39,7 @@ namespace meisterwerk {
                                      char *_pBuf, unsigned int _len, bool isBufAllocated = false ) {
                 message *msg = new message();
                 if ( msg == nullptr ) {
-                    DBG( "sendMessage: failed to allocate message" );
+                    DBG( "message::sendMessage, failed to allocate message" );
                     return false;
                 }
                 if ( msg->create( _type, _originator, _topic, _pBuf, _len, isBufAllocated ) ) {
@@ -56,7 +57,7 @@ namespace meisterwerk {
                 unsigned int _length = _content.length() + 1;
                 char *       _buffer = (char *)malloc( _length );
                 if ( _buffer == nullptr ) {
-                    DBG( "sendMessage: failed to allocate content" );
+                    DBG( "message::sendMessage, failed to allocate content" );
                     return false;
                 }
                 strcpy( _buffer, _content.c_str() );
@@ -80,13 +81,13 @@ namespace meisterwerk {
 
             bool create( unsigned int _type, String _originator, String _topic, char *_pBuf,
                          unsigned int _len, bool isBufAllocated = false ) {
-                DBG( "Begin message::create, from: " + _originator + ", topic: " + _topic );
+                DBG( "message::create, from: " + _originator + ", topic: " + _topic );
                 int tLen = _topic.length() + 1;
                 if ( tLen > MW_MSG_MAX_TOPIC_LENGTH || _len > MW_MSG_MAX_MSGBUFFER_LENGTH ) {
-                    DBG( "Msg discard, size too large. " + topic );
+                    DBG( "message::create, size too large. " + topic );
                     return false;
                 }
-                // free previous content
+                // free previous content if any
                 discard();
 
                 // set type
@@ -96,7 +97,7 @@ namespace meisterwerk {
                 int olen   = _originator.length() + 1;
                 originator = (char *)malloc( olen );
                 if ( originator == nullptr ) {
-                    DBG( "Cannot allocate originator" );
+                    DBG( "message::create, Cannot allocate originator" );
                     return false;
                 }
                 strcpy( originator, _originator.c_str() );
@@ -104,7 +105,7 @@ namespace meisterwerk {
                 // set topic
                 topic = (char *)malloc( tLen );
                 if ( topic == nullptr ) {
-                    DBG( "Cannot allocate topic" );
+                    DBG( "message::create, Cannot allocate topic" );
                     discard();
                     return false;
                 }
@@ -117,7 +118,7 @@ namespace meisterwerk {
                     } else {
                         pBuf = (char *)malloc( _len );
                         if ( pBuf == nullptr ) {
-                            DBG( "Cannot allocate content" );
+                            DBG( "message::create, Cannot allocate content" );
                             discard();
                             return false;
                         }
