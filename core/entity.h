@@ -8,11 +8,6 @@
 #ifndef entity_h
 #define entity_h
 
-// states for buttons and leds
-#define MW_STATE_OFF 0
-#define MW_STATE_ON 1
-#define MW_STATE_UNDEFINED 2
-
 // entity configuration
 #ifndef MW_MSG_REG_MAXNAME
 #define MW_MSG_REG_MAXNAME 32
@@ -28,59 +23,79 @@ namespace meisterwerk {
 
         class entity;
 
-        // Type declaration for virtual override member functions onLoop and
-        // onReceiveMessage of entity:
-        typedef void ( entity::*T_OLOOPCALLBACK )( unsigned long );
-        typedef void ( entity::*T_ORECVCALLBACK )( String, char *pBuf, unsigned int len );
-        // Type declaration for static tasks:
-        typedef function<void( unsigned long )> T_LOOPCALLBACK;
-
-        typedef struct t_mw_msg_register {
-            entity *        pEnt;  // instance object pointer to derived object instance
-            T_OLOOPCALLBACK pLoop; // pointer to virtual override loop
-            T_ORECVCALLBACK pRecv; // pointer to virtual override recvMessage
-            char            entName[MW_MSG_REG_MAXNAME]; // Entity instance name
-            unsigned long   minMicroSecs; // intervall in micro seconds the loop method
-                                          // should be called
-            unsigned int priority;        // Priority MW_PRIORITY_*
-        } T_MW_MSG_REGISTER;
-
-        class entity {
-            protected:
-            // This sends messages to scheduler via messageQueue
-            bool sendMessage( unsigned int type, String topic, char *pBuf, unsigned int len,
-                              bool isBufAllocated = false ) {
-                DBG( "entity::sendMessage, from: " + entName + ", topic: " + topic );
-                return message::sendMessage( type, entName, topic, pBuf, len, isBufAllocated );
-            }
-
-            // Send text message to Scheduler
-            bool sendMessage( unsigned int type, String topic, String content ) {
-                DBG( "entity::sendMessage, from: " + entName + ", topic: " + topic );
-                return message::sendMessage( type, entName, topic, content );
-            }
-
+        class msgregister {
             public:
-            virtual ~entity(){}; // Otherwise destructor of derived classes is never
-                                 // called!
+            // Type declaration for virtual override member functions onLoop and
+            // onReceiveMessage of entity:
+            typedef void ( entity::*T_OLOOPCALLBACK )( unsigned long );
+            typedef void ( entity::*T_ORECVCALLBACK )( String, char *pBuf, unsigned int len );
+            // Type declaration for static tasks:
+            typedef function<void( unsigned long )> T_LOOPCALLBACK;
 
-            bool registerEntity( String eName, entity *pen, T_OLOOPCALLBACK pLoop,
-                                 T_ORECVCALLBACK pRecv, unsigned long minMicroSecs = 0,
-                                 unsigned int priority = 1 ) {
-                T_MW_MSG_REGISTER mr;
+            // methods
+            msgregister() {
+                pEnt         = nullptr;
+                pLoop        = nullptr;
+                pRecv        = nullptr;
+                entName[0]   = 0;
+                priority     = 0;
+                minMicroSecs = 0;
+            }
+
+            bool init( String eName, entity *_pEnt, T_OLOOPCALLBACK _pLoop, T_ORECVCALLBACK _pRecv,
+                       unsigned long _minMicroSecs = 0, unsigned int _priority = 1 ) {
                 if ( eName.length() >= MW_MSG_REG_MAXNAME - 1 ) {
                     DBG( "entity::registerEntity, Name to long for registration: " + eName );
                     return false;
                 }
-                memset( &mr, 0, sizeof( mr ) );
-                mr.pEnt  = pen;
-                mr.pLoop = pLoop;
-                mr.pRecv = pRecv;
-                strcpy( mr.entName, eName.c_str() );
-                mr.minMicroSecs = minMicroSecs;
-                mr.priority     = priority;
+                pEnt         = _pEnt;
+                pLoop        = _pLoop;
+                pRecv        = _pRecv;
+                priority     = _priority;
+                minMicroSecs = _minMicroSecs;
+                strcpy( entName, eName.c_str() );
+                return true;
+            }
+
+            // members
+            entity *        pEnt;  // instance object pointer to derived object instance
+            T_OLOOPCALLBACK pLoop; // pointer to virtual override loop
+            T_ORECVCALLBACK pRecv; // pointer to virtual override recvMessage
+            char            entName[MW_MSG_REG_MAXNAME]; // Entity instance name
+            unsigned int    priority;                    // Priority MW_PRIORITY_*
+            unsigned long   minMicroSecs; // intervall in micro seconds the loop method
+                                          // should be called
+        };
+
+        class entity {
+            public:
+            virtual ~entity(){}; // Otherwise destructor of derived classes is never
+                                 // called!
+
+            public:
+            bool registerEntity( unsigned long minMicroSecs = 0, unsigned int priority = 1 ) {
+                msgregister reg;
+                if ( !reg.init( entName, this, nullptr, nullptr, minMicroSecs, priority ) ) {
+                    return false;
+                }
                 bool ret =
-                    sendMessage( message::MSG_DIRECT, "register", (char *)&mr, sizeof( mr ) );
+                    sendMessage( message::MSG_DIRECT, "register", (char *)&reg, sizeof( reg ) );
+                if ( !ret ) {
+                    DBG( "entity::registerEntity, sendMessage failed for register " + eName );
+                }
+                return ret;
+            }
+
+            bool registerEntity( String eName, entity *pen, msgregister::T_OLOOPCALLBACK pLoop,
+                                 msgregister::T_ORECVCALLBACK pRecv, unsigned long minMicroSecs = 0,
+                                 unsigned int priority = 1 ) {
+                msgregister reg;
+                if ( !reg.init( eName, pen, pLoop, pRecv, minMicroSecs, priority ) ) {
+                    return false;
+                }
+
+                bool ret =
+                    sendMessage( message::MSG_DIRECT, "register", (char *)&reg, sizeof( reg ) );
                 if ( !ret ) {
                     DBG( "entity::registerEntity, sendMessage failed for register " + eName );
                 }
@@ -104,6 +119,20 @@ namespace meisterwerk {
             virtual void onReceiveMessage( String topic, char *pBuf, unsigned int len ) {
                 DBG( "entity:receiveMessage, class for " + entName +
                      " doesnt implement override! Wrong instance!" );
+            }
+
+            protected:
+            // This sends messages to scheduler via messageQueue
+            bool sendMessage( unsigned int type, String topic, char *pBuf, unsigned int len,
+                              bool isBufAllocated = false ) {
+                DBG( "entity::sendMessage, from: " + entName + ", topic: " + topic );
+                return message::send( type, entName, topic, pBuf, len, isBufAllocated );
+            }
+
+            // Send text message to Scheduler
+            bool sendMessage( unsigned int type, String topic, String content ) {
+                DBG( "entity::sendMessage, from: " + entName + ", topic: " + topic );
+                return message::send( type, entName, topic, content );
             }
 
             // members

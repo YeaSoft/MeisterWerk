@@ -35,8 +35,8 @@ namespace meisterwerk {
             static const unsigned int MSG_SUBSCRIBE = 3;
 
             // static operations
-            static bool sendMessage( unsigned int _type, String _originator, String _topic,
-                                     char *_pBuf, unsigned int _len, bool isBufAllocated = false ) {
+            static bool send( unsigned int _type, String _originator, String _topic, char *_pBuf,
+                              unsigned int _len, bool isBufAllocated = false ) {
                 message *msg = new message();
                 if ( msg == nullptr ) {
                     DBG( "message::sendMessage, failed to allocate message" );
@@ -49,10 +49,10 @@ namespace meisterwerk {
                 return false;
             }
 
-            static bool sendMessage( unsigned int _type, String _originator, String _topic,
-                                     String _content ) {
+            static bool send( unsigned int _type, String _originator, String _topic,
+                              String _content ) {
                 if ( _content == nullptr || _content.length() == 0 ) {
-                    return sendMessage( _type, _originator, _topic, nullptr, 0 );
+                    return send( _type, _originator, _topic, nullptr, 0 );
                 }
                 unsigned int _length = _content.length() + 1;
                 char *       _buffer = (char *)malloc( _length );
@@ -61,7 +61,7 @@ namespace meisterwerk {
                     return false;
                 }
                 strcpy( _buffer, _content.c_str() );
-                return sendMessage( _type, _originator, _topic, _buffer, _length );
+                return send( _type, _originator, _topic, _buffer, _length );
             }
 
             // methods
