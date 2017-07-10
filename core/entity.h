@@ -70,14 +70,16 @@ namespace meisterwerk {
                 return false;
             }
 
+            virtual void onSetup() {
+                DBG( "entity::onSetup, missing override for class " + entName );
+            }
+
             virtual void onLoop( unsigned long ticker ) {
-                DBG( "entity:onLook, class for " + entName +
-                     " doesnt implement override! Wrong instance!" );
+                DBG( "entity:onLook, missing override for class " + entName );
             }
 
             virtual void onReceiveMessage( String topic, const char *pBuf, unsigned int len ) {
-                DBG( "entity:receiveMessage, class for " + entName +
-                     " doesnt implement override! Wrong instance!" );
+                DBG( "entity:receiveMessage, missing override for class " + entName );
             }
 
             protected:

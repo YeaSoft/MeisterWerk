@@ -78,12 +78,14 @@ namespace meisterwerk {
             }
 
             void loop() {
-                // XXX: sort tasks according to urgency
+                // process entity and kernel tasks
                 processMsgQueue();
+
+                // XXX: sort tasks according to urgency
                 for ( auto pTask : taskList ) {
                     // process message queue
                     processMsgQueue();
-                    // process entity tasks
+                    // process entity and kernel tasks
                     processTask( pTask );
                 }
             }
@@ -168,6 +170,7 @@ namespace meisterwerk {
                     return false;
                 }
                 taskList.push_back( pTask );
+                pEnt->onSetup();
                 return true;
             }
 
