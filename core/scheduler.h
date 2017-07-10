@@ -11,7 +11,6 @@
 // dependencies
 #include "entity.h"
 #include <list>
-#include <map>
 
 namespace meisterwerk {
     namespace core {
@@ -27,26 +26,35 @@ namespace meisterwerk {
             static const unsigned int PRIORITY_LOWEST         = 5;
 
             // internal types
-            private:
+            protected:
             typedef struct {
                 String subscriber;
                 String topic;
             } T_SUBSCRIPTION;
 
-            typedef struct {
-                msgregister::T_LOOPCALLBACK  loopCallback;
-                entity *                     pEnt;
-                msgregister::T_OLOOPCALLBACK oloopCallback;
-                msgregister::T_ORECVCALLBACK orecvCallback;
-                unsigned long                minMicros;
-                unsigned long                lastCall;
-                unsigned long                numberOfCalls;
-                unsigned long                budget;
-                unsigned long                lateTime;
-                unsigned int                 priority;
-            } T_TASK;
+            class task {
+                public:
+                task( entity *_pEnt, unsigned long _minMicros, unsigned int _priority ) {
+                    pEnt          = _pEnt;
+                    minMicros     = _minMicros;
+                    lastCall      = 0;
+                    numberOfCalls = 0;
+                    budget        = 0;
+                    lateTime      = 0;
+                    priority      = _priority;
+                }
 
-            typedef std::map<String, T_TASK *> T_TASKLIST;
+                entity *      pEnt;
+                unsigned long minMicros;
+                unsigned long lastCall;
+                unsigned long numberOfCalls;
+                unsigned long budget;
+                unsigned long lateTime;
+                unsigned int  priority;
+            };
+
+            typedef task *                    T_PTASK;
+            typedef std::list<T_PTASK>        T_TASKLIST;
             typedef std::list<T_SUBSCRIPTION> T_SUBSCRIPTIONLIST;
 
             // members
@@ -59,204 +67,118 @@ namespace meisterwerk {
             }
 
             virtual ~scheduler() {
-                for ( auto t : taskList ) {
-                    delete t.second;
+                for ( auto pTask : taskList ) {
+                    delete pTask;
                 }
                 taskList.clear();
             }
 
-            /*
-                        void discardMsg( T_MW_MSG *pMsg ) {
-                            if ( pMsg != nullptr ) {
-                                if ( pMsg->pBuf != nullptr ) {
-                                    free( pMsg->pBuf );
-                                }
-                                if ( pMsg->topic != nullptr ) {
-                                    free( pMsg->topic );
-                                }
-                                if ( pMsg->originator != nullptr ) {
-                                    free( pMsg->originator );
-                                }
-                                free( pMsg );
+            void loop() {
+                // XXX: sort tasks according to urgency
+                for ( auto t : taskList ) {
+                    // process message queue
+                    processMsgQueue();
+                    // process entity tasks
+                    processTask( t );
+                }
+            }
+
+            // internal methods
+            protected:
+            void processMsgQueue() {
+                for ( message *pMsg = message::messageQueue.pop(); pMsg != nullptr;
+                      pMsg          = message::messageQueue.pop() ) {
+                    switch ( pMsg->type ) {
+                    case message::MSG_DIRECT:
+                        directMsg( pMsg );
+                        break;
+                    case message::MSG_PUBLISH:
+                        publishMsg( pMsg );
+                        break;
+                    case message::MSG_SUBSCRIBE:
+                        subscribeMsg( pMsg );
+                        break;
+                    default:
+                        DBG( "Unexpected message type: " + String( pMsg->type ) );
+                        break;
+                    }
+                    delete pMsg;
+                }
+            }
+
+            void processTask( T_PTASK pTask ) {
+                unsigned long ticker = micros();
+                unsigned long tDelta = ticker - pTask->lastCall;
+                if ( tDelta >= pTask->minMicros ) {
+                    // SLOW: DBG("Scheduling: "+t.first+" ticker: " +String(ticker)+" tdelta:
+                    // "+String(tdelta));
+                    if ( pTask->pEnt != nullptr ) {
+                        pTask->pEnt->onLoop( ticker );
+                    }
+                    pTask->lastCall = ticker;
+                    pTask->budget += micros() - ticker;
+                    pTask->lateTime += tDelta - pTask->minMicros;
+                    ++( pTask->numberOfCalls );
+                }
+            }
+
+            void directMsg( message *pMsg ) {
+                if ( String( pMsg->topic ) == "register" ) {
+                    if ( pMsg->pBufLen != sizeof( msgregister ) ) {
+                        DBG( "Direct message: invalid message buffer size!" +
+                             String( pMsg->topic ) );
+                    } else {
+                        msgregister *pReg = (msgregister *)pMsg->pBuf;
+                        registerEntity( pReg->pEnt, pReg->minMicroSecs, pReg->priority );
+                        DBG( "Registered entity: " + String( pReg->pEnt->entName ) );
+                    }
+                } else {
+                    DBG( "Direct message: not implemented: " + String( pMsg->topic ) );
+                }
+            }
+
+            void publishMsg( message *pMsg ) {
+                for ( auto sub : subscriptionList ) {
+                    String topic( pMsg->topic );
+                    if ( msgmatches( sub.topic, topic ) ) {
+                        for ( auto pTask : taskList ) {
+                            if ( pTask->pEnt && pTask->pEnt->entName == sub.subscriber ) {
+                                pTask->pEnt->onReceiveMessage( topic, pMsg->pBuf, pMsg->pBufLen );
                             }
                         }
-                        void directMsg( T_MW_MSG *pMsg ) {
-                            if ( String( pMsg->topic ) == "register" ) {
-                                if ( pMsg->pBufLen != sizeof( T_MW_MSG_REGISTER ) ) {
-                                    Serial.println( "Direct message: invalid message buffer size!" +
-                                                    String( pMsg->topic ) );
-                                } else {
-                                    T_MW_MSG_REGISTER *pReg = (T_MW_MSG_REGISTER *)pMsg->pBuf;
-                                    registerEntity( String( pReg->entName ), pReg->pEnt,
-               pReg->pLoop,
-                                                    pReg->pRecv, pReg->minMicroSecs, pReg->priority
-               );
-                                    Serial.println( "Registered entity: " + String( pReg->entName )
-               );
-                                }
-                            } else {
-                                Serial.println( "Direct message: not implemented: " + String(
-               pMsg->topic ) );
-                            }
-                            discardMsg( pMsg );
-                        }
+                    }
+                }
+            }
 
-                        bool msgmatches( char *t1, char *t2 ) {
-                            if ( String( t1 ) == "*" )
-                                return true;
-                            if ( String( t1 ) == String( t2 ) )
-                                return true; // XXX: proper wildcard support
-                            else
-                                return false;
-                        }
+            void subscribeMsg( message *pMsg ) {
+                T_SUBSCRIPTION subs;
+                subs.subscriber = pMsg->originator;
+                subs.topic      = pMsg->topic;
+                subscriptionList.emplace_back( subs );
+            }
 
-                        void publishMsg( T_MW_MSG *pMsg ) {
-                            for ( auto sub : subscriptions ) {
-                                if ( msgmatches( sub.topic, pMsg->topic ) ) {
-                                    for ( auto t : mw_taskList ) {
-                                        if ( t.first == String( sub.subscriber ) ) {
-                                            T_TASK *pTask = t.second;
-                                            if ( pTask->orecvCallback != nullptr && pTask->pEnt !=
-               nullptr ) {
-                                                // This nasty bugger calls the class-instances
-               virtual override
-                                                // member
-                                                // recvMsg:
-                                                String topic   = String( pMsg->topic );
-                                                char * pBufNew = (char *)malloc( pMsg->pBufLen );
-                                                memcpy( pBufNew, pMsg->pBuf, pMsg->pBufLen );
-                                                unsigned int len = pMsg->pBufLen;
-                                                ( ( pTask->pEnt )->*( pTask->orecvCallback ) )(
-               topic, pBufNew,
-                                                                                                len
-               );
-                                                // Serial.println("DONE");
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                            discardMsg( pMsg );
-                        }
+            bool registerEntity( entity *pEnt, unsigned long minMicroSecs = 100000L,
+                                 unsigned int priority = 3 ) {
+                task *pTask = new task( pEnt, minMicroSecs, priority );
+                if ( pTask == nullptr ) {
+                    return false;
+                }
+                taskList.push_back( pTask );
+                return true;
+            }
 
-                        void subscribeMsg( T_MW_MSG *pMsg ) {
-                            T_SUBSCRIPTION subs;
-                            subs.subscriber = pMsg->originator;
-                            subs.topic      = pMsg->topic;
-                            subscriptions.emplace_back( subs );
-                            delete pMsg; // pointers of content are recycled in subs.
-                        }
+            bool msgmatches( String tSearch, String topic ) {
+                // XXX Implement serious pattern matching
+                if ( tSearch == "*" ) {
+                    return true;
+                } else if ( tSearch == topic ) {
+                    return true;
+                }
+                return false;
+            }
 
-                        void checkMsgQueue() {
-                            T_MW_MSG *pMsg;
-                            while ( !mw_msgQueue.isEmpty() ) {
-                                pMsg = mw_msgQueue.pop();
-                                if ( pMsg != nullptr ) {
-                                    switch ( pMsg->type ) {
-                                    case MW_MSG_DIRECT:
-                                        directMsg( pMsg );
-                                        break;
-                                    case MW_MSG_PUBLISH:
-                                        publishMsg( pMsg );
-                                        break;
-                                    case MW_MSG_SUBSCRIBE:
-                                        subscribeMsg( pMsg );
-                                        break;
-                                    default:
-                                        Serial.println( "Unexpected message type: " + String(
-               pMsg->type ) );
-                                        discardMsg( pMsg );
-                                        break;
-                                    }
-                                }
-                            }
-                        }
-                        void loop() {
-                            unsigned long ticker         = micros(); // XXX: handle ticker overflow!
-                            unsigned long schedulerDelta = ticker - lastTick;
-                            // XXX: sort tasks according to urgency
-                            for ( auto t : mw_taskList ) {
-                                checkMsgQueue();
-                                ticker               = micros();
-                                T_TASK *      pTask  = t.second;
-                                unsigned long tDelta = ticker - pTask->lastCall;
-                                if ( tDelta >= pTask->minMicros ) {
-                                    // SLOW: Serial.println("Scheduling: "+t.first+" ticker:
-               "+String(ticker)+"
-                                    // tdelta:
-                                    // "+String(tdelta));
-                                    if ( pTask->loopCallback != nullptr ) {
-                                        pTask->loopCallback( ticker );
-                                    } else {
-                                        if ( pTask->oloopCallback != nullptr && pTask->pEnt !=
-               nullptr ) {
-                                            // Serial.println(t.first+" going to be called! Nr:
-                                            // "+String(pTask->numberOfCalls));
-                                            // This nasty bugger calls the class-instances virtual
-               override
-                                            // member loop:
-                                            ( ( pTask->pEnt )->*( pTask->oloopCallback ) )( ticker
-               );
-                                            // Serial.println("DONE");
-                                        }
-                                    }
-                                    pTask->lastCall = ticker;
-                                    pTask->budget += micros() - ticker;
-                                    pTask->lateTime += tDelta - pTask->minMicros;
-                                    ++( pTask->numberOfCalls );
-                                }
-                            }
-                        }
-
-                        // This adds tasks as static functions:
-                        bool addTask( String eName, T_LOOPCALLBACK loopCallback, unsigned long
-               minMicroSecs = 0,
-                                      unsigned int priority = 1 ) {
-                            T_TASK *pTask = new T_TASK;
-                            if ( pTask == nullptr )
-                                return false;
-                            memset( pTask, 0, sizeof( T_TASK ) );
-                            pTask->loopCallback  = loopCallback;
-                            pTask->oloopCallback = nullptr;
-                            pTask->orecvCallback = nullptr;
-                            pTask->minMicros     = minMicroSecs;
-                            pTask->lastCall      = 0;
-                            pTask->numberOfCalls = 0;
-                            pTask->budget        = 0;
-                            pTask->priority      = priority;
-                            mw_taskList[eName]   = pTask;
-                            return true;
-                        }
-
-                        // This supports derived objects from MW_Entity: the scheduler accesses the
-               virtual
-                        // overrides for onLoop and onReceiveMessage:
-                        bool registerEntity( String eName, entity *pEnt, T_OLOOPCALLBACK
-               loopCallback,
-                                             T_ORECVCALLBACK recvCallback, unsigned long
-               minMicroSecs = 100000L,
-                                             unsigned int priority = 1 ) {
-                            T_TASK *pTask = new T_TASK;
-                            if ( pTask == nullptr ) {
-                                return false;
-                            }
-
-                            memset( pTask, 0, sizeof( T_TASK ) );
-                            pTask->pEnt          = pEnt;
-                            pTask->loopCallback  = nullptr;
-                            pTask->oloopCallback = loopCallback;
-                            pTask->orecvCallback = recvCallback;
-                            pTask->minMicros     = minMicroSecs;
-                            pTask->lastCall      = 0;
-                            pTask->numberOfCalls = 0;
-                            pTask->budget        = 0;
-                            pTask->priority      = priority;
-                            mw_taskList[eName]   = pTask;
-                            return true;
-                        }
-            */
             // members
-            private:
+            protected:
             bool               bDebug;
             unsigned long      lastTick;
             T_TASKLIST         taskList;

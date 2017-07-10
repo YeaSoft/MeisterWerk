@@ -70,6 +70,10 @@ namespace meisterwerk {
                 init();
             }
 
+            virtual ~message() {
+                discard();
+            }
+
             void init( unsigned int _type = 0, char *_originator = nullptr, char *_topic = nullptr,
                        char *_pBuf = nullptr, unsigned int _pBufLen = 0 ) {
                 type       = _type;
@@ -84,7 +88,7 @@ namespace meisterwerk {
                 DBG( "message::create, from: " + _originator + ", topic: " + _topic );
                 int tLen = _topic.length() + 1;
                 if ( tLen > MW_MSG_MAX_TOPIC_LENGTH || _len > MW_MSG_MAX_MSGBUFFER_LENGTH ) {
-                    DBG( "message::create, size too large. " + topic );
+                    DBG( "message::create, size too large. " + _topic );
                     return false;
                 }
                 // free previous content if any
@@ -154,7 +158,7 @@ namespace meisterwerk {
         };
 
         // Instantiate the message queue
-        queue<message> messageQueue( MW_MAX_QUEUE );
+        queue<message> message::messageQueue( MW_MAX_QUEUE );
     }
 }
 

@@ -8,15 +8,8 @@
 #ifndef entity_h
 #define entity_h
 
-// entity configuration
-#ifndef MW_MSG_REG_MAXNAME
-#define MW_MSG_REG_MAXNAME 32
-#endif
-
 #include "helpers.h"
 #include "message.h"
-
-using std::function;
 
 namespace meisterwerk {
     namespace core {
@@ -25,89 +18,51 @@ namespace meisterwerk {
 
         class msgregister {
             public:
-            // Type declaration for virtual override member functions onLoop and
-            // onReceiveMessage of entity:
-            typedef void ( entity::*T_OLOOPCALLBACK )( unsigned long );
-            typedef void ( entity::*T_ORECVCALLBACK )( String, char *pBuf, unsigned int len );
-            // Type declaration for static tasks:
-            typedef function<void( unsigned long )> T_LOOPCALLBACK;
-
             // methods
-            msgregister() {
-                pEnt         = nullptr;
-                pLoop        = nullptr;
-                pRecv        = nullptr;
-                entName[0]   = 0;
-                priority     = 0;
-                minMicroSecs = 0;
-            }
-
-            bool init( String eName, entity *_pEnt, T_OLOOPCALLBACK _pLoop, T_ORECVCALLBACK _pRecv,
-                       unsigned long _minMicroSecs = 0, unsigned int _priority = 1 ) {
-                if ( eName.length() >= MW_MSG_REG_MAXNAME - 1 ) {
-                    DBG( "entity::registerEntity, Name to long for registration: " + eName );
-                    return false;
-                }
+            msgregister( entity *_pEnt, unsigned long _minMicroSecs, unsigned int _priority ) {
                 pEnt         = _pEnt;
-                pLoop        = _pLoop;
-                pRecv        = _pRecv;
                 priority     = _priority;
                 minMicroSecs = _minMicroSecs;
-                strcpy( entName, eName.c_str() );
-                return true;
             }
 
             // members
-            entity *        pEnt;  // instance object pointer to derived object instance
-            T_OLOOPCALLBACK pLoop; // pointer to virtual override loop
-            T_ORECVCALLBACK pRecv; // pointer to virtual override recvMessage
-            char            entName[MW_MSG_REG_MAXNAME]; // Entity instance name
-            unsigned int    priority;                    // Priority MW_PRIORITY_*
-            unsigned long   minMicroSecs; // intervall in micro seconds the loop method
-                                          // should be called
+            entity *      pEnt;         // instance object pointer to derived object instance
+            unsigned int  priority;     // Priority MW_PRIORITY_*
+            unsigned long minMicroSecs; // intervall in micro seconds the loop method
+                                        // should be called. 0 means never (used for
+                                        // messaging only entities)
         };
 
         class entity {
             public:
-            virtual ~entity(){}; // Otherwise destructor of derived classes is never
-                                 // called!
-
-            public:
-            bool registerEntity( unsigned long minMicroSecs = 0, unsigned int priority = 1 ) {
-                msgregister reg;
-                if ( !reg.init( entName, this, nullptr, nullptr, minMicroSecs, priority ) ) {
-                    return false;
-                }
-                bool ret =
-                    sendMessage( message::MSG_DIRECT, "register", (char *)&reg, sizeof( reg ) );
-                if ( !ret ) {
-                    DBG( "entity::registerEntity, sendMessage failed for register " + eName );
-                }
-                return ret;
+            entity( String name ) {
+                entName = name;
             }
 
-            bool registerEntity( String eName, entity *pen, msgregister::T_OLOOPCALLBACK pLoop,
-                                 msgregister::T_ORECVCALLBACK pRecv, unsigned long minMicroSecs = 0,
-                                 unsigned int priority = 1 ) {
-                msgregister reg;
-                if ( !reg.init( eName, pen, pLoop, pRecv, minMicroSecs, priority ) ) {
-                    return false;
-                }
+            virtual ~entity(){};
 
-                bool ret =
-                    sendMessage( message::MSG_DIRECT, "register", (char *)&reg, sizeof( reg ) );
-                if ( !ret ) {
-                    DBG( "entity::registerEntity, sendMessage failed for register " + eName );
+            public:
+            bool registerEntity( unsigned long minMicroSecs = 0, unsigned int priority = 3 ) {
+                msgregister reg( this, minMicroSecs, priority );
+                if ( sendMessage( message::MSG_DIRECT, "register", (char *)&reg, sizeof( reg ) ) ) {
+                    return true;
                 }
-                return ret;
+                DBG( "entity::registerEntity, sendMessage failed for register " + entName );
+                return false;
             }
 
             bool publish( String topic, String msg ) {
-                sendMessage( message::MSG_PUBLISH, topic, msg );
+                if ( sendMessage( message::MSG_PUBLISH, topic, msg ) ) {
+                    return true;
+                }
+                DBG( "entity::publish, sendMessage failed for publish " + entName );
                 return false;
             }
             bool subscribe( String topic ) {
-                sendMessage( message::MSG_SUBSCRIBE, topic, nullptr, 0 );
+                if ( sendMessage( message::MSG_SUBSCRIBE, topic, nullptr, 0 ) ) {
+                    return true;
+                }
+                DBG( "entity::publish, sendMessage failed for subscribe " + entName );
                 return false;
             }
 
@@ -116,7 +71,7 @@ namespace meisterwerk {
                      " doesnt implement override! Wrong instance!" );
             }
 
-            virtual void onReceiveMessage( String topic, char *pBuf, unsigned int len ) {
+            virtual void onReceiveMessage( String topic, const char *pBuf, unsigned int len ) {
                 DBG( "entity:receiveMessage, class for " + entName +
                      " doesnt implement override! Wrong instance!" );
             }

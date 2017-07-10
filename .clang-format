@@ -14,6 +14,7 @@ AllowShortLoopsOnASingleLine: false
 ColumnLimit: 100
 KeepEmptyLinesAtTheStartOfBlocks: false
 NamespaceIndentation: All
+PointerAlignment: Right
 SpacesInCStyleCastParentheses: false
 SpacesInContainerLiterals: true
 SpacesInParentheses: true

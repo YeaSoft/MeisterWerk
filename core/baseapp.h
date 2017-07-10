@@ -6,21 +6,31 @@
 #ifndef baseapp_h
 #define baseapp_h
 
+// dependencies
+#include "scheduler.h"
+
 namespace meisterwerk {
     namespace core {
 
         class baseapp {
             public:
-            baseapp() {
-                _app = this;
+            baseapp( String name ) {
+                appName = name;
+                _app    = this;
             }
 
             virtual void onSetup() {
             }
 
             virtual void onLoop() {
+                sched.loop();
             }
 
+            // members
+            String    appName;
+            scheduler sched;
+
+            // general availability
             static baseapp *_app;
         };
 

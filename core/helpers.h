@@ -2,7 +2,7 @@
 #define helpers_h
 
 #ifdef DEBUG
-#define DBG( n ) Serial.Println( n )
+#define DBG( n ) Serial.println( n )
 #else
 #define DBG( n )
 #endif

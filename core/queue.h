@@ -37,11 +37,14 @@ namespace meisterwerk {
                 }
             }
             bool push( T *ent ) {
-                if ( size >= maxSize )
+                if ( size >= maxSize ) {
                     return false;
-                que[quePtr1] = ent;
-                quePtr1      = ( quePtr1 + 1 ) % maxSize;
-                ++size;
+                }
+                if ( ent != nullptr ) {
+                    que[quePtr1] = ent;
+                    quePtr1      = ( quePtr1 + 1 ) % maxSize;
+                    ++size;
+                }
                 return true;
             }
             T *pop() {
