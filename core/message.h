@@ -29,12 +29,23 @@ namespace meisterwerk {
 
         class message {
             public:
+            // constants
             static const unsigned int MSG_NONE      = 0;
             static const unsigned int MSG_DIRECT    = 1;
             static const unsigned int MSG_PUBLISH   = 2;
             static const unsigned int MSG_SUBSCRIBE = 3;
 
-            // static operations
+            // static members
+            static queue<message> messageQueue;
+
+            // message members
+            unsigned int type;       // MW_MSG_*
+            unsigned int pBufLen;    // Length of binary buffer pBuf
+            char *       originator; // allocated instance name of originator
+            char *       topic;      // allocated zero terminated string
+            char *       pBuf;       // allocated bin buffer of size pBufLen
+
+            // static methods
             static bool send( unsigned int _type, String _originator, String _topic, char *_pBuf,
                               unsigned int _len, bool isBufAllocated = false ) {
                 message *msg = new message();
@@ -61,11 +72,10 @@ namespace meisterwerk {
                     return false;
                 }
                 strcpy( _buffer, _content.c_str() );
-                return send( _type, _originator, _topic, _buffer, _length );
+                return send( _type, _originator, _topic, _buffer, _length, true );
             }
 
             // methods
-            public:
             message() {
                 init();
             }
@@ -145,21 +155,11 @@ namespace meisterwerk {
                 }
                 init();
             }
-
-            // static members
-            static queue<message> messageQueue;
-
-            // message members
-            unsigned int type;       // MW_MSG_*
-            unsigned int pBufLen;    // Length of binary buffer pBuf
-            char *       originator; // allocated instance name of originator
-            char *       topic;      // allocated zero terminated string
-            char *       pBuf;       // allocated bin buffer of size pBufLen
         };
 
         // Instantiate the message queue
         queue<message> message::messageQueue( MW_MAX_QUEUE );
-    }
-}
+    } // namespace core
+} // namespace meisterwerk
 
 #endif
