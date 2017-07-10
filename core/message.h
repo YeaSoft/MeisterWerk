@@ -36,7 +36,7 @@ namespace meisterwerk {
             static const unsigned int MSG_SUBSCRIBE = 3;
 
             // static members
-            static queue<message> messageQueue;
+            static queue<message> que;
 
             // message members
             unsigned int type;       // MW_MSG_*
@@ -54,7 +54,7 @@ namespace meisterwerk {
                     return false;
                 }
                 if ( msg->create( _type, _originator, _topic, _pBuf, _len, isBufAllocated ) ) {
-                    messageQueue.push( msg );
+                    que.push( msg );
                     return true;
                 }
                 return false;
@@ -158,7 +158,7 @@ namespace meisterwerk {
         };
 
         // Instantiate the message queue
-        queue<message> message::messageQueue( MW_MAX_QUEUE );
+        queue<message> message::que( MW_MAX_QUEUE );
     } // namespace core
 } // namespace meisterwerk
 

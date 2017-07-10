@@ -58,11 +58,15 @@ namespace meisterwerk {
             typedef std::list<T_SUBSCRIPTION> T_SUBSCRIPTIONLIST;
 
             // members
+            unsigned long      lastTick;
+            T_TASKLIST         taskList;
+            T_SUBSCRIPTIONLIST subscriptionList;
+
+            // methods
             public:
-            scheduler( bool bDebugMsg = false ) {
+            scheduler() {
                 taskList.clear();
                 subscriptionList.clear();
-                bDebug   = bDebugMsg;
                 lastTick = micros();
             }
 
@@ -75,19 +79,19 @@ namespace meisterwerk {
 
             void loop() {
                 // XXX: sort tasks according to urgency
-                for ( auto t : taskList ) {
+                for ( auto pTask : taskList ) {
                     // process message queue
                     processMsgQueue();
                     // process entity tasks
-                    processTask( t );
+                    processTask( pTask );
                 }
             }
 
             // internal methods
             protected:
             void processMsgQueue() {
-                for ( message *pMsg = message::messageQueue.pop(); pMsg != nullptr;
-                      pMsg          = message::messageQueue.pop() ) {
+                for ( message *pMsg = message::que.pop(); pMsg != nullptr;
+                      pMsg          = message::que.pop() ) {
                     switch ( pMsg->type ) {
                     case message::MSG_DIRECT:
                         directMsg( pMsg );
@@ -109,12 +113,11 @@ namespace meisterwerk {
             void processTask( T_PTASK pTask ) {
                 unsigned long ticker = micros();
                 unsigned long tDelta = ticker - pTask->lastCall;
-                if ( tDelta >= pTask->minMicros ) {
+                // XXX: missing overflow handling
+                if ( ( pTask->minMicros > 0 ) && ( tDelta >= pTask->minMicros ) ) {
                     // SLOW: DBG("Scheduling: "+t.first+" ticker: " +String(ticker)+" tdelta:
                     // "+String(tdelta));
-                    if ( pTask->pEnt != nullptr ) {
-                        pTask->pEnt->onLoop( ticker );
-                    }
+                    pTask->pEnt->onLoop( ticker );
                     pTask->lastCall = ticker;
                     pTask->budget += micros() - ticker;
                     pTask->lateTime += tDelta - pTask->minMicros;
@@ -142,7 +145,7 @@ namespace meisterwerk {
                     String topic( pMsg->topic );
                     if ( msgmatches( sub.topic, topic ) ) {
                         for ( auto pTask : taskList ) {
-                            if ( pTask->pEnt && pTask->pEnt->entName == sub.subscriber ) {
+                            if ( pTask->pEnt->entName == sub.subscriber ) {
                                 pTask->pEnt->onReceiveMessage( topic, pMsg->pBuf, pMsg->pBufLen );
                             }
                         }
@@ -158,7 +161,7 @@ namespace meisterwerk {
             }
 
             bool registerEntity( entity *pEnt, unsigned long minMicroSecs = 100000L,
-                                 unsigned int priority = 3 ) {
+                                 unsigned int priority = PRIORITY_NORMAL ) {
                 task *pTask = new task( pEnt, minMicroSecs, priority );
                 if ( pTask == nullptr ) {
                     return false;
@@ -176,14 +179,7 @@ namespace meisterwerk {
                 }
                 return false;
             }
-
-            // members
-            protected:
-            bool               bDebug;
-            unsigned long      lastTick;
-            T_TASKLIST         taskList;
-            T_SUBSCRIPTIONLIST subscriptionList;
         };
-    }
-}
+    } // namespace core
+} // namespace meisterwerk
 #endif
