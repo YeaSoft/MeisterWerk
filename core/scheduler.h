@@ -1,0 +1,249 @@
+// scheduler.h - The internal queue class
+//
+// This is the declaration of the internal scheduler
+// class that is part of the implementation of the
+// application method for non blocking communication
+// between the components and scheduling
+
+#ifndef scheduler_h
+#define scheduler_h
+
+// dependencies
+#include "entity.h"
+#include <map>
+
+#define MW_PRIORITY_SYSTEMCRITICAL 0
+#define MW_PRIORITY_TIMECRITICAL 1
+#define MW_PRIORITY_HIGH 2
+#define MW_PRIORITY_NORMAL 3
+#define MW_PRIORITY_LOW 4
+#define MW_PRIORITY_LOWEST 5
+
+namespace meisterwerk {
+    namespace core {
+
+        typedef struct t_task {
+            // For static tasks:
+            T_LOOPCALLBACK loopCallback; // Static task function, function <void(unsigned long)>
+                                         // loopcallback; // = void (* loopcallback)(unsigned long);
+            // For entity derived objects: (note: virtual methods have different pointer sizes than
+            // static function pointers!)
+            MW_Entity *pEnt; // pointer to derived instance of MW_Entity
+            T_OLOOPCALLBACK
+            oloopCallback; // loop virtual override, = void (MW_Entity::* loopcallback)(unsigned
+                           // long);
+            T_ORECVCALLBACK
+            orecvCallback; // receiveMessage virtual override, receives incoming messages.
+            // Common:
+            unsigned long minMicros;     // Intervall task should be called in microsecs.
+            unsigned long lastCall;      // last microsec timestamp task was called
+            unsigned long numberOfCalls; // number of times, task has been executed
+            unsigned long budget;        // Sum of microsecs used by this task during all calls
+            unsigned long lateTime; // Sum of microsecs the task was scheduled later than requested
+                                    // by minmicros
+            unsigned int priority;  // MW_PRIORITY_*
+        } T_TASK;
+
+        typedef struct subscription {
+            char *subscriber;
+            char *topic;
+        } T_SUBSCRIPTION;
+
+        std::vector<T_SUBSCRIPTION> subscriptions;
+
+        class scheduler {
+            public:
+            MW_Scheduler( bool bDebugMsg = false ) {
+                mw_taskList.clear();
+                bDebug   = bDebugMsg;
+                lastTick = micros();
+            }
+            ~MW_Scheduler() {
+                for ( auto t : mw_taskList ) {
+                    delete t.second;
+                }
+                mw_taskList.clear();
+            }
+            void discardMsg( T_MW_MSG *pMsg ) {
+                if ( pMsg != nullptr ) {
+                    if ( pMsg->pBuf != nullptr ) {
+                        free( pMsg->pBuf );
+                    }
+                    if ( pMsg->topic != nullptr ) {
+                        free( pMsg->topic );
+                    }
+                    if ( pMsg->originator != nullptr ) {
+                        free( pMsg->originator );
+                    }
+                    free( pMsg );
+                }
+            }
+            void directMsg( T_MW_MSG *pMsg ) {
+                if ( String( pMsg->topic ) == "register" ) {
+                    if ( pMsg->pBufLen != sizeof( T_MW_MSG_REGISTER ) ) {
+                        Serial.println( "Direct message: invalid message buffer size!" +
+                                        String( pMsg->topic ) );
+                    } else {
+                        T_MW_MSG_REGISTER *pReg = (T_MW_MSG_REGISTER *)pMsg->pBuf;
+                        registerEntity( String( pReg->entName ), pReg->pEnt, pReg->pLoop,
+                                        pReg->pRecv, pReg->minMicroSecs, pReg->priority );
+                        Serial.println( "Registered entity: " + String( pReg->entName ) );
+                    }
+                } else {
+                    Serial.println( "Direct message: not implemented: " + String( pMsg->topic ) );
+                }
+                discardMsg( pMsg );
+            }
+
+            bool msgmatches( char *t1, char *t2 ) {
+                if ( String( t1 ) == "*" )
+                    return true;
+                if ( String( t1 ) == String( t2 ) )
+                    return true; // XXX: proper wildcard support
+                else
+                    return false;
+            }
+
+            void publishMsg( T_MW_MSG *pMsg ) {
+                for ( auto sub : subscriptions ) {
+                    if ( msgmatches( sub.topic, pMsg->topic ) ) {
+                        for ( auto t : mw_taskList ) {
+                            if ( t.first == String( sub.subscriber ) ) {
+                                T_TASK *pTask = t.second;
+                                if ( pTask->orecvCallback != nullptr && pTask->pEnt != nullptr ) {
+                                    // This nasty bugger calls the class-instances virtual override
+                                    // member
+                                    // recvMsg:
+                                    String topic   = String( pMsg->topic );
+                                    char * pBufNew = (char *)malloc( pMsg->pBufLen );
+                                    memcpy( pBufNew, pMsg->pBuf, pMsg->pBufLen );
+                                    unsigned int len = pMsg->pBufLen;
+                                    ( ( pTask->pEnt )->*( pTask->orecvCallback ) )( topic, pBufNew,
+                                                                                    len );
+                                    // Serial.println("DONE");
+                                }
+                            }
+                        }
+                    }
+                }
+                discardMsg( pMsg );
+            }
+
+            void subscribeMsg( T_MW_MSG *pMsg ) {
+                T_SUBSCRIPTION subs;
+                subs.subscriber = pMsg->originator;
+                subs.topic      = pMsg->topic;
+                subscriptions.emplace_back( subs );
+                delete pMsg; // pointers of content are recycled in subs.
+            }
+
+            void checkMsgQueue() {
+                T_MW_MSG *pMsg;
+                while ( !mw_msgQueue.isEmpty() ) {
+                    pMsg = mw_msgQueue.pop();
+                    if ( pMsg != nullptr ) {
+                        switch ( pMsg->type ) {
+                        case MW_MSG_DIRECT:
+                            directMsg( pMsg );
+                            break;
+                        case MW_MSG_PUBLISH:
+                            publishMsg( pMsg );
+                            break;
+                        case MW_MSG_SUBSCRIBE:
+                            subscribeMsg( pMsg );
+                            break;
+                        default:
+                            Serial.println( "Unexpected message type: " + String( pMsg->type ) );
+                            discardMsg( pMsg );
+                            break;
+                        }
+                    }
+                }
+            }
+            void loop() {
+                unsigned long ticker         = micros(); // XXX: handle ticker overflow!
+                unsigned long schedulerDelta = ticker - lastTick;
+                // XXX: sort tasks according to urgency
+                for ( auto t : mw_taskList ) {
+                    checkMsgQueue();
+                    ticker               = micros();
+                    T_TASK *      pTask  = t.second;
+                    unsigned long tDelta = ticker - pTask->lastCall;
+                    if ( tDelta >= pTask->minMicros ) {
+                        // SLOW: Serial.println("Scheduling: "+t.first+" ticker: "+String(ticker)+"
+                        // tdelta:
+                        // "+String(tdelta));
+                        if ( pTask->loopCallback != nullptr ) {
+                            pTask->loopCallback( ticker );
+                        } else {
+                            if ( pTask->oloopCallback != nullptr && pTask->pEnt != nullptr ) {
+                                // Serial.println(t.first+" going to be called! Nr:
+                                // "+String(pTask->numberOfCalls));
+                                // This nasty bugger calls the class-instances virtual override
+                                // member loop:
+                                ( ( pTask->pEnt )->*( pTask->oloopCallback ) )( ticker );
+                                // Serial.println("DONE");
+                            }
+                        }
+                        pTask->lastCall = ticker;
+                        pTask->budget += micros() - ticker;
+                        pTask->lateTime += tDelta - pTask->minMicros;
+                        ++( pTask->numberOfCalls );
+                    }
+                }
+            }
+
+            // This adds tasks as static functions:
+            bool addTask( String eName, T_LOOPCALLBACK loopCallback, unsigned long minMicroSecs = 0,
+                          unsigned int priority = 1 ) {
+                T_TASK *pTask = new T_TASK;
+                if ( pTask == nullptr )
+                    return false;
+                memset( pTask, 0, sizeof( T_TASK ) );
+                pTask->loopCallback  = loopCallback;
+                pTask->oloopCallback = nullptr;
+                pTask->orecvCallback = nullptr;
+                pTask->minMicros     = minMicroSecs;
+                pTask->lastCall      = 0;
+                pTask->numberOfCalls = 0;
+                pTask->budget        = 0;
+                pTask->priority      = priority;
+                mw_taskList[eName]   = pTask;
+                return true;
+            }
+
+            // This supports derived objects from MW_Entity: the scheduler accesses the virtual
+            // overrides for onLoop and onReceiveMessage:
+            bool registerEntity( String eName, entity *pEnt, T_OLOOPCALLBACK loopCallback,
+                                 T_ORECVCALLBACK recvCallback, unsigned long minMicroSecs = 100000L,
+                                 unsigned int priority = 1 ) {
+                T_TASK *pTask = new T_TASK;
+                if ( pTask == nullptr ) {
+                    return false;
+                }
+
+                memset( pTask, 0, sizeof( T_TASK ) );
+                pTask->pEnt          = pEnt;
+                pTask->loopCallback  = nullptr;
+                pTask->oloopCallback = loopCallback;
+                pTask->orecvCallback = recvCallback;
+                pTask->minMicros     = minMicroSecs;
+                pTask->lastCall      = 0;
+                pTask->numberOfCalls = 0;
+                pTask->budget        = 0;
+                pTask->priority      = priority;
+                mw_taskList[eName]   = pTask;
+                return true;
+            }
+
+            // members
+            private:
+            // The task list;
+            std::map<String, T_TASK *> mw_taskList;
+
+            bool          bDebug;
+            unsigned long lastTick;
+        };
+    }
+}
+#endif
