@@ -79,6 +79,7 @@ namespace meisterwerk {
 
             void loop() {
                 // XXX: sort tasks according to urgency
+                processMsgQueue();
                 for ( auto pTask : taskList ) {
                     // process message queue
                     processMsgQueue();
