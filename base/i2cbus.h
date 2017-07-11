@@ -74,7 +74,8 @@ typedef struct t_i2c_properties {
     unsigned char addresses[16];
 } T_I2C_PROPERTIES;
 
-const T_I2C_PROPERTIES i2cProps[] PROGMEM = {
+/*
+const T_I2C_PROPERTIES i2cProps[] = {
     {OLED, SSD1306, "SSD1306", "OLED-display (128x64)", false, {0x3C, 0x3D}},
     // http://www.solomon-systech.com/en/product/display-ic/oled-driver-controller/ssd1306/
     {NFC, PN532, "PN532", "RFID controller", false, {0x48}},
@@ -121,7 +122,7 @@ const T_I2C_PROPERTIES i2cProps[] PROGMEM = {
     {Radio, Si4713, "Si4713", "", false, {0x11, 0x63}},
     {Touch, FT6206, "FT6206", "", false, {0x38}},
     {Touch, STMPE610, "STMPE610", "", false, {0x41}}};
-
+*/
 namespace meisterwerk {
     namespace base {
         class i2cbus : public meisterwerk::core::entity {
@@ -205,7 +206,6 @@ namespace meisterwerk {
             }
 
             virtual void onLoop( unsigned long ticker ) override {
-                DBG("LOOP");
                 if ( bInternalError )
                     return;
                 if ( !bEnum ) {
@@ -214,7 +214,6 @@ namespace meisterwerk {
             }
             virtual void onReceiveMessage( String topic, const char *pBuf,
                                            unsigned int len ) override {
-                DBG("REC");
                 if ( topic == "i2cbus/enum" ) {
                     i2cScan();
                 }
