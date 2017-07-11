@@ -78,6 +78,7 @@ namespace meisterwerk {
 
             void dumpSystemInfo() {
                 String pre = "dumper(" + entName + ") ";
+                DBG( "" );
                 DBG( pre + "System Information:" );
                 DBG( pre + "-------------------" );
                 DBG( pre + "Chip ID: " + ESP.getChipId() );
