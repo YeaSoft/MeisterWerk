@@ -173,7 +173,8 @@ namespace meisterwerk {
                 pEnt->onSetup();
                 return true;
             }
-
+            
+            public:
             bool msgmatches( String s1, String s2 ) {
                 // compares topic-paths <subtopic>/<subtopic/...
                 // the compare is symmetric, s1==s2 <=> s2==s1.
