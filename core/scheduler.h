@@ -172,10 +172,13 @@ namespace meisterwerk {
             }
 
             bool msgmatches( String s1, String s2 ) {
-                // compares paths of topics <topic>/<topic/...
+                // compares topic-paths <subtopic>/<subtopic/...
                 // the compare is symmetric, s1==s2 <=> s2==s1.
-                // topic can be <chars> or <chars>+'*', '*' must be last char of topic.
+                // subtopic can be <chars> or <chars>+'*', '*' must be last char of a subtopic.
+                // '*' acts within only the current subtopic. Exception: a '*' as last character of a topic-path
+                //    matches all deeper subptopics:  a*==a/b/c/d/e, but a*/c1!=a1/b1/c1
                 // Samples:   abc/def/ghi == */de*/*, abc/def!=abc, ab*==abc, a*==a/b/c/d
+                //    a/b*==a/b/c/d/e, a/b*/d!=a/b/c/d            
                 if ( s1 == s2 )
                     return true;
                 int l1 = s1.length();
