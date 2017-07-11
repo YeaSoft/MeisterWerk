@@ -77,12 +77,7 @@ typedef struct t_i2c_properties {
         // https://www.adafruit.com/product/364
         {Sensor, TSL2561, "TSL2561", "Luminosity sensor", false, {0x29, 0x39, 0x49}},
         // https://www.adafruit.com/product/439
-        {Sensor,
-         BMP085,
-         "BMP085",
-         "Barometric pressure, temperature, altitude Sensor",
-         false,
-         {0x77}},
+        {Sensor, BMP085, "BMP085", "Pressure, temperature, altitude Sensor", false, {0x77}},
         // https://www.adafruit.com/product/391
         {Sensor, ADXL345, "ADXL345", "Accelerometer", false, {0x1D, 0x53}},
         // http://www.analog.com/en/products/mems/accelerometers/adxl345.html
@@ -209,7 +204,7 @@ namespace meisterwerk {
             }
             virtual void onReceiveMessage( String topic, const char *pBuf,
                                            unsigned int len ) override {
-                if (topic=="i2cbus/enum") {
+                if ( topic == "i2cbus/enum" ) {
                     i2cScan();
                 }
             }
