@@ -44,15 +44,6 @@ namespace meisterwerk {
                 if ( len = 0 ) {
                     Serial.println( "messagespy(" + entName + "): topic='" + topic + "'" );
                 } else {
-                    for ( int i = 0; i < len - 1; i++ ) {
-                        if ( pBuf[i] < 32 || pBuf[i] > 126 ) {
-                            // binary body
-                            // XXX: output Hexdump?
-                            Serial.println( "messagespy(" + entName + "): topic='" + topic +
-                                            "' body=(binary data)" );
-                            return;
-                        }
-                    }
                     Serial.println( "messagespy(" + entName + "): topic='" + topic + "' body='" +
                                     String( pBuf ) + "'" );
                 }

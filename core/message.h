@@ -95,7 +95,7 @@ namespace meisterwerk {
 
             bool create( unsigned int _type, String _originator, String _topic, char *_pBuf,
                          unsigned int _len, bool isBufAllocated = false ) {
-                DBG( "message::create, from: " + _originator + ", topic: " + _topic );
+                // DBG( "message::create, from: " + _originator + ", topic: " + _topic );
                 int tLen = _topic.length() + 1;
                 if ( tLen > MW_MSG_MAX_TOPIC_LENGTH || _len > MW_MSG_MAX_MSGBUFFER_LENGTH ) {
                     DBG( "message::create, size too large. " + _topic );

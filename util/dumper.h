@@ -50,9 +50,9 @@ namespace meisterwerk {
                 subscribe( "*/sysinfo" );
                 subscribe( "*/taskinfo" );
                 // Debug Button
-                subscribe( debugButton + "/push" );
-                subscribe( debugButton + "/longpush" );
-                subscribe( debugButton + "/longestpush" );
+                subscribe( debugButton + "/short" );
+                subscribe( debugButton + "/long" );
+                subscribe( debugButton + "/extralong" );
             }
 
             virtual void onLoop( unsigned long ticker ) override {
@@ -67,44 +67,19 @@ namespace meisterwerk {
             }
 
             virtual void onReceiveMessage( String topic, const char *pBuf, unsigned int len ) {
-                if ( topic == debugButton + "/push" ) {
+                if ( topic == debugButton + "/short" ) {
                     dumpRuntimeInfo();
-                } else if ( topic == debugButton + "/longpush" ) {
+                } else if ( topic == debugButton + "/long" ) {
                     dumpSystemInfo();
-                } else if ( topic == debugButton + "/longestpush" ) {
+                } else if ( topic == debugButton + "/extralong" ) {
                     dumpTaskInfo();
                 }
             }
 
             void dumpSystemInfo() {
-                char szBuffer[256];
+                String pre = "dumper(" + entName + ") ";
                 DBG( "System Information:" );
                 DBG( "-------------------" );
-                /*
-                sprintf( szBuffer, "Chip ID: %d", ESP.getChipId() );
-                DBG( szBuffer );
-                sprintf( szBuffer, "Core Verion: %s", ESP.getCoreVersion() );
-                DBG( szBuffer );
-                sprintf( szBuffer, "SDK Verion: %s", ESP.getSdkVersion() );
-                DBG( szBuffer );
-                sprintf( szBuffer, "CPU Frequency: %d MHz", ESP.getCpuFreqMHz() );
-                DBG( szBuffer );
-                sprintf( szBuffer, "Program Size: %d bytes", ESP.getSketchSize() );
-                DBG( szBuffer );
-                sprintf( szBuffer, "Program Free: %d bytes", ESP.getFreeSketchSpace() );
-                DBG( szBuffer );
-                sprintf( szBuffer, "Flash Chip ID: %d", ESP.getFlashChipId() );
-                DBG( szBuffer );
-                sprintf( szBuffer, "Flash Chip Size: %d bytes", ESP.getFlashChipSize() );
-                DBG( szBuffer );
-                sprintf( szBuffer, "Flash Chip Real Size: %d bytes", ESP.getFlashChipRealSize() );
-                DBG( szBuffer );
-                sprintf( szBuffer, "Flash Chip Speed: %d hz", ESP.getFlashChipSpeed() );
-                DBG( szBuffer );
-                sprintf( szBuffer, "Last Reset Reason: %s", ESP.getResetReason() );
-                DBG( szBuffer );
-                */
-                String pre = "dumper(" + entName + ") ";
                 DBG( pre + "Chip ID: " + ESP.getChipId() );
                 DBG( pre + "Core Verion: " + ESP.getCoreVersion() );
                 DBG( pre + "SDK Verion: " + ESP.getSdkVersion() );
@@ -128,6 +103,8 @@ namespace meisterwerk {
 
             void dumpTaskInfo() {
                 String pre = "dumper(" + entName + ") ";
+                DBG( "Task Information" );
+                DBG( "----------------" );
                 // XXX dump task statistics
             }
 #endif
