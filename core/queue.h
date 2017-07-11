@@ -13,7 +13,10 @@ namespace meisterwerk {
 
         template <class T> class queue {
             private:
-            T **         que;
+            T **que;
+#ifdef DEBUG
+            unsigned int peakSize;
+#endif
             unsigned int maxSize;
             unsigned int size;
             unsigned int quePtr0;
@@ -21,6 +24,9 @@ namespace meisterwerk {
 
             public:
             queue( unsigned int maxQueueSize ) {
+#ifdef DEBUG
+                peakSize = 0;
+#endif
                 quePtr0 = 0;
                 quePtr1 = 0;
                 size    = 0;
@@ -45,6 +51,11 @@ namespace meisterwerk {
                     quePtr1      = ( quePtr1 + 1 ) % maxSize;
                     ++size;
                 }
+#ifdef DEBUG
+                if ( size > peakSize ) {
+                    peakSize = size;
+                }
+#endif
                 return true;
             }
             T *pop() {
@@ -64,6 +75,11 @@ namespace meisterwerk {
             unsigned int length() {
                 return ( size );
             }
+#ifdef DEBUG
+            unsigned int peak() {
+                return ( peakSize );
+            }
+#endif
         };
     }
 }
