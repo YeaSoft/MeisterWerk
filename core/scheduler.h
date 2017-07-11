@@ -171,15 +171,82 @@ namespace meisterwerk {
                 return true;
             }
 
-            bool msgmatches( String tSearch, String topic ) {
-                // XXX Implement serious pattern matching
-                if ( tSearch == "*" ) {
+            bool msgmatches( string s1, string s2 ) {
+                // compares paths of topics <topic>/<topic/...
+                // the compare is symmetric, s1==s2 <=> s2==s1.
+                // topic can be <chars> or <chars>+'*', '*' must be last char of topic.
+                // Samples:   abc/def/ghi == */de*/*, abc/def!=abc, ab*==abc, a*==a/b/c/d
+                if ( s1 == s2 )
                     return true;
-                } else if ( tSearch == topic ) {
-                    return true;
+                int l1 = s1.length();
+                int l2 = s2.length();
+                int l;
+                if ( l1 < l2 )
+                    l = l2;
+                else
+                    l = l1;
+                int p1 = 0, p2 = 0;
+                for ( int i = 0; i < l; l++ ) {
+                    if ( ( p1 > l1 ) || ( p2 > l2 ) )
+                        return false;
+                    if ( s1[p1] == s2[p2] ) {
+                        ++p1;
+                        ++p2;
+                        if ( ( p1 == l1 ) && ( p2 == l2 ) )
+                            return true;
+                        continue;
+                    }
+                    if ( ( s1[p1] != '*' ) && ( s2[p2] != '*' ) )
+                        return false;
+                    if ( s1[p1] == '*' ) {
+                        ++p1;
+                        if ( p1 == l1 )
+                            return true;
+                        if ( s1[p1] != '/' )
+                            return false;
+                        else
+                            ++p1;
+                        while ( p2 < l2 && s2[p2] != '/' )
+                            ++p2;
+                        if ( p2 == l2 ) {
+                            if ( p1 == l1 )
+                                return true;
+                            else
+                                return false;
+                        }
+                        if ( s2[p2] != '/' )
+                            return false;
+                        else
+                            ++p2;
+                        continue;
+                    }
+                    if ( s2[p2] == '*' ) {
+                        ++p2;
+                        if ( p2 == l2 )
+                            return true;
+                        if ( s2[p2] != '/' )
+                            return false;
+                        else
+                            ++p2;
+                        while ( p1 < l1 && s1[p1] != '/' )
+                            ++p1;
+                        if ( p1 == l1 ) {
+                            if ( p2 == l2 )
+                                return true;
+                            else
+                                return false;
+                        }
+                        if ( s1[p1] != '/' )
+                            return false;
+                        else
+                            ++p1;
+                        continue;
+                    }
+                    return false;
                 }
                 return false;
             }
+            
         };
     } // namespace core
 } // namespace meisterwerk
