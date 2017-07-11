@@ -10,8 +10,11 @@
 
 // dependencies
 #include "entity.h"
-#include "helpers.h"
 #include <list>
+
+#ifdef DEBUG
+#include "../util/timebudget.h"
+#endif
 
 namespace meisterwerk {
     namespace core {
@@ -41,41 +44,16 @@ namespace meisterwerk {
                     priority  = _priority;
                     lastCall  = 0;
                     lateTime  = 0;
-#ifdef DEBUG
-                    numberOfCalls    = 0;
-                    numberOfMessages = 0;
-                    msgTime          = 0;
-                    msgTimeFine      = 0;
-                    msgTimeMax       = 0;
-                    tskTime          = 0;
-                    tskTimeFine      = 0;
-                    tskTimeMax       = 0;
-#endif
                 }
 
-#ifdef DEBUG
-                unsigned long getMsgTime() {
-                    return msgTime + ( msgTimeFine / 1000 );
-                }
-
-                unsigned long getTskTime() {
-                    return tskTime + ( tskTimeFine / 1000 );
-                }
-#endif
                 entity *      pEnt;
                 unsigned long minMicros;
                 unsigned int  priority;
                 unsigned long lastCall;
                 unsigned long lateTime;
 #ifdef DEBUG
-                unsigned long numberOfCalls;
-                unsigned long numberOfMessages;
-                unsigned long msgTime;
-                unsigned long msgTimeFine;
-                unsigned long msgTimeMax;
-                unsigned long tskTime;
-                unsigned long tskTimeFine;
-                unsigned long tskTimeMax;
+                meisterwerk::util::timebudget msgTime;
+                meisterwerk::util::timebudget tskTime;
 #endif
             };
 
@@ -86,66 +64,15 @@ namespace meisterwerk {
             // members
             T_TASKLIST         taskList;
             T_SUBSCRIPTIONLIST subscriptionList;
-#ifdef DEBUG
-            public:
-            unsigned long msgDispatched    = 0;
-            unsigned long msgQueueTime     = 0;
-            unsigned long msgQueueTimeFine = 0;
-            unsigned long taskCalls        = 0;
-            unsigned long taskTime         = 0;
-            unsigned long taskTimeFine     = 0;
-            unsigned long lifeTime         = 0;
-            unsigned long lifeTimeFine     = 0;
-            unsigned long lifeTimeLast     = micros();
 
-            unsigned long getMsgDispatched() {
-                return msgDispatched;
-            }
-
-            unsigned long getMsgQueueTime() {
-                return msgQueueTime + ( msgQueueTimeFine / 1000 );
-            }
-
-            unsigned long getTaskCalls() {
-                return taskCalls;
-            }
-
-            unsigned long getTaskTime() {
-                return taskTime + ( taskTimeFine / 1000 );
-            }
-
-            unsigned long getLifeTime() {
-                return lifeTime + ( lifeTimeFine / 1000 );
-            }
-
-            void dumpInfo( String pre ) {
-                DBG( "" );
-                DBG( "Task Information" );
-                DBG( "----------------" );
-                DBG( pre + "Dispatched Messages: " + getMsgDispatched() );
-                DBG( pre + "Dispatched Tasks: " + getTaskCalls() );
-                DBG( pre + "Message Time: " + getMsgQueueTime() + " ms" );
-                DBG( pre + "Task Time: " + getTaskTime() + " ms" );
-                DBG( pre + "Tital Time: " + getLifeTime() + " ms" );
-                DBG( "" );
-                DBG( pre + "Individual Tast Statistics:" );
-                for ( auto pTask : taskList ) {
-                    DBG( "" );
-                    DBG( pre + "  Name: " + pTask->pEnt->entName );
-                    DBG( pre + "  Calls: " + pTask->numberOfCalls );
-                    DBG( pre + "  Calls Time: " + pTask->getTskTime() + " ms" );
-                    DBG( pre + "  Calls Max Time: " + pTask->tskTimeMax + " us" );
-                    DBG( pre + "  Messages: " + pTask->numberOfMessages );
-                    DBG( pre + "  Message Time: " + pTask->getMsgTime() + " ms" );
-                    DBG( pre + "  Message Max Time: " + pTask->msgTimeMax + " us" );
-                }
-            }
-#endif
             // methods
             public:
             scheduler() {
                 taskList.clear();
                 subscriptionList.clear();
+#ifdef DEBUG
+                allTime.snap();
+#endif
             }
 
             virtual ~scheduler() {
@@ -167,13 +94,7 @@ namespace meisterwerk {
                     processTask( pTask );
                 }
 #ifdef DEBUG
-                unsigned long lifeTimeNow = micros();
-                lifeTimeFine += superdelta( lifeTimeLast, lifeTimeNow );
-                lifeTimeLast = lifeTimeNow;
-                if ( lifeTimeFine > 1000000000L ) {
-                    lifeTime += ( lifeTimeFine / 1000 );
-                    lifeTimeFine = 0;
-                }
+                allTime.shot();
 #endif
             }
 
@@ -181,13 +102,10 @@ namespace meisterwerk {
             protected:
             void processMsgQueue() {
 #ifdef DEBUG
-                unsigned long msgStartTime = micros();
+                msgTime.snap();
 #endif
                 for ( message *pMsg = message::que.pop(); pMsg != nullptr;
                       pMsg          = message::que.pop() ) {
-#ifdef DEBUG
-                    ++msgDispatched;
-#endif
                     switch ( pMsg->type ) {
                     case message::MSG_DIRECT:
                         directMsg( pMsg );
@@ -203,43 +121,28 @@ namespace meisterwerk {
                         break;
                     }
                     delete pMsg;
-                }
 #ifdef DEBUG
-                msgQueueTimeFine += superdelta( msgStartTime, micros() );
-                if ( msgQueueTimeFine > 1000000000L ) {
-                    msgQueueTime += ( msgQueueTimeFine / 1000 );
-                    msgQueueTimeFine = 0;
-                }
+                    msgTime.shot();
 #endif
+                }
             }
 
             void processTask( T_PTASK pTask ) {
                 unsigned long ticker = micros();
-                unsigned long tDelta = superdelta( pTask->lastCall, ticker );
+                unsigned long tDelta =
+                    meisterwerk::util::timebudget::delta( pTask->lastCall, ticker );
                 if ( ( pTask->minMicros > 0 ) && ( tDelta >= pTask->minMicros ) ) {
+#ifdef DEBUG
+                    tskTime.snap();
+                    pTask->tskTime.snap();
+#endif
                     pTask->pEnt->onLoop( ticker );
+#ifdef DEBUG
+                    pTask->tskTime.shot();
+                    tskTime.shot();
+#endif
                     pTask->lastCall = ticker;
                     pTask->lateTime += tDelta - pTask->minMicros;
-#ifdef DEBUG
-                    unsigned long budget = superdelta( ticker, micros() );
-                    // task
-                    ++pTask->numberOfCalls;
-                    if ( budget > pTask->tskTimeMax ) {
-                        pTask->tskTimeMax = budget;
-                    }
-                    pTask->tskTimeFine += budget;
-                    if ( pTask->tskTimeFine > 1000000000L ) {
-                        pTask->tskTime += ( pTask->tskTimeFine / 1000 );
-                        pTask->tskTimeFine = 0;
-                    }
-                    // totals
-                    ++taskCalls;
-                    taskTimeFine += budget;
-                    if ( taskTimeFine > 1000000000L ) {
-                        taskTime += ( taskTimeFine / 1000 );
-                        taskTimeFine = 0;
-                    }
-#endif
                 }
             }
 
@@ -265,18 +168,9 @@ namespace meisterwerk {
                         for ( auto pTask : taskList ) {
                             if ( pTask->pEnt->entName == sub.subscriber ) {
 #ifdef DEBUG
-                                unsigned long ticker = micros();
+                                pTask->msgTime.snap();
                                 pTask->pEnt->onReceiveMessage( topic, pMsg->pBuf, pMsg->pBufLen );
-                                unsigned long budget = superdelta( ticker, micros() );
-                                ++pTask->numberOfMessages;
-                                if ( budget > pTask->tskTimeMax ) {
-                                    pTask->tskTimeMax = budget;
-                                }
-                                pTask->msgTimeFine += budget;
-                                if ( pTask->msgTimeFine > 1000000000L ) {
-                                    pTask->msgTime += ( pTask->msgTimeFine / 1000 );
-                                    pTask->msgTimeFine = 0;
-                                }
+                                pTask->msgTime.shot();
 #else
                                 pTask->pEnt->onReceiveMessage( topic, pMsg->pBuf, pMsg->pBufLen );
 #endif
@@ -308,10 +202,11 @@ namespace meisterwerk {
                 // compares topic-paths <subtopic>/<subtopic/...
                 // the compare is symmetric, s1==s2 <=> s2==s1.
                 // subtopic can be <chars> or <chars>+'*', '*' must be last char of a subtopic.
-                // '*' acts within only the current subtopic. Exception: a '*' as last character of a topic-path
+                // '*' acts within only the current subtopic. Exception: a '*' as last character of
+                // a topic-path
                 //    matches all deeper subptopics:  a*==a/b/c/d/e, but a*/c1!=a1/b1/c1
                 // Samples:   abc/def/ghi == */de*/*, abc/def!=abc, ab*==abc, a*==a/b/c/d
-                //    a/b*==a/b/c/d/e, a/b*/d!=a/b/c/d            
+                //    a/b*==a/b/c/d/e, a/b*/d!=a/b/c/d
                 if ( s1 == s2 )
                     return true;
                 int l1 = s1.length();
@@ -320,7 +215,7 @@ namespace meisterwerk {
                 if ( l1 < l2 )
                     l = l2;
                 else
-                    l = l1;
+                    l  = l1;
                 int p1 = 0, p2 = 0;
                 for ( int i = 0; i < l; l++ ) {
                     if ( ( p1 > l1 ) || ( p2 > l2 ) )
@@ -383,6 +278,35 @@ namespace meisterwerk {
                 return false;
             }
 
+#ifdef DEBUG
+            public:
+            meisterwerk::util::timebudget msgTime;
+            meisterwerk::util::timebudget tskTime;
+            meisterwerk::util::timebudget allTime;
+
+            void dumpInfo( String pre ) {
+                DBG( "" );
+                DBG( "Task Information" );
+                DBG( "----------------" );
+                DBG( pre + "Dispatched Messages: " + msgTime.getcount() );
+                DBG( pre + "Dispatched Tasks: " + tskTime.getcount() );
+                DBG( pre + "Message Time: " + msgTime.getms() + " ms" );
+                DBG( pre + "Task Time: " + tskTime.getms() + " ms" );
+                DBG( pre + "Total Time: " + allTime.getms() + " ms" );
+                DBG( "" );
+                DBG( pre + "Individual Tast Statistics:" );
+                for ( auto pTask : taskList ) {
+                    DBG( "" );
+                    DBG( pre + "  Name: " + pTask->pEnt->entName );
+                    DBG( pre + "  Calls: " + pTask->tskTime.getcount() );
+                    DBG( pre + "  Calls Time: " + pTask->tskTime.getms() + " ms" );
+                    DBG( pre + "  Calls Max Time: " + pTask->tskTime.getmaxus() + " us" );
+                    DBG( pre + "  Messages: " + pTask->msgTime.getcount() );
+                    DBG( pre + "  Message Time: " + pTask->msgTime.getms() + " ms" );
+                    DBG( pre + "  Message Max Time: " + pTask->msgTime.getmaxus() + " us" );
+                }
+            }
+#endif
         };
     } // namespace core
 } // namespace meisterwerk

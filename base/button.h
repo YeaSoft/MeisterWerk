@@ -4,7 +4,7 @@
 
 // dependencies
 #include "../core/entity.h"
-#include "../core/helpers.h"
+#include "../util/timebudget.h"
 
 namespace meisterwerk {
     namespace base {
@@ -39,10 +39,11 @@ namespace meisterwerk {
 
             virtual void change( bool toState ) {
                 if ( fromState != toState ) {
-                    unsigned long last     = micros();
-                    unsigned long duration = superdelta( lastChange, last );
-                    lastChange             = last;
-                    fromState              = toState;
+                    unsigned long last = micros();
+                    unsigned long duration =
+                        meisterwerk::util::timebudget::delta( lastChange, last );
+                    lastChange = last;
+                    fromState  = toState;
                     // handle state change
                     onChange( toState, duration );
                 }
