@@ -171,7 +171,7 @@ namespace meisterwerk {
                 return true;
             }
 
-            bool msgmatches( string s1, string s2 ) {
+            bool msgmatches( String s1, String s2 ) {
                 // compares paths of topics <topic>/<topic/...
                 // the compare is symmetric, s1==s2 <=> s2==s1.
                 // topic can be <chars> or <chars>+'*', '*' must be last char of topic.
@@ -246,7 +246,7 @@ namespace meisterwerk {
                 }
                 return false;
             }
-            
+
         };
     } // namespace core
 } // namespace meisterwerk
