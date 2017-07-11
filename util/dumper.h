@@ -10,9 +10,6 @@
 // dependencies
 #include "../core/entity.h"
 
-// dependencies
-#include "../core/entity.h"
-
 namespace meisterwerk {
     namespace util {
 
@@ -97,11 +94,11 @@ namespace meisterwerk {
             void dumpRuntimeInfo() {
                 unsigned int  qps  = meisterwerk::core::message::que.peak();
                 unsigned int  qln  = meisterwerk::core::message::que.length();
-                unsigned long smdp = meisterwerk::core::baseapp::_app->sched.getMsgDispatched();
-                unsigned long smqt = meisterwerk::core::baseapp::_app->sched.getMsgQueueTime();
-                unsigned long stkc = meisterwerk::core::baseapp::_app->sched.getTaskCalls();
-                unsigned long stkt = meisterwerk::core::baseapp::_app->sched.getTaskTime();
-                unsigned long slit = meisterwerk::core::baseapp::_app->sched.getLifeTime();
+                unsigned long smdp = meisterwerk::core::baseapp::_app->sched.msgTime.getcount();
+                unsigned long smqt = meisterwerk::core::baseapp::_app->sched.msgTime.getms();
+                unsigned long stkc = meisterwerk::core::baseapp::_app->sched.tskTime.getcount();
+                unsigned long stkt = meisterwerk::core::baseapp::_app->sched.tskTime.getms();
+                unsigned long slit = meisterwerk::core::baseapp::_app->sched.allTime.getms();
                 String        pre  = "dumper(" + entName + ") Runtime Information - ";
 
                 DBG( pre + "Memory(Free Heap=" + ESP.getFreeHeap() + " bytes), Queue(cur=" + qln +
