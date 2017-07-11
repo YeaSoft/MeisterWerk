@@ -71,28 +71,28 @@ namespace meisterwerk {
             }
 
             virtual void onSetup() {
-                DBG( "entity::onSetup, missing override for class " + entName );
+                DBG( "entity::onSetup, missing override for entity " + entName );
             }
 
             virtual void onLoop( unsigned long ticker ) {
-                DBG( "entity:onLook, missing override for class " + entName );
+                DBG( "entity:onLook, missing override for entity " + entName );
             }
 
             virtual void onReceiveMessage( String topic, const char *pBuf, unsigned int len ) {
-                DBG( "entity:receiveMessage, missing override for class " + entName );
+                DBG( "entity:receiveMessage, missing override for entity " + entName );
             }
 
             protected:
             // This sends messages to scheduler via messageQueue
             bool sendMessage( unsigned int type, String topic, char *pBuf, unsigned int len,
                               bool isBufAllocated = false ) {
-                DBG( "entity::sendMessage, from: " + entName + ", topic: " + topic );
+                // DBG( "entity::sendMessage, from: " + entName + ", topic: " + topic );
                 return message::send( type, entName, topic, pBuf, len, isBufAllocated );
             }
 
             // Send text message to Scheduler
             bool sendMessage( unsigned int type, String topic, String content ) {
-                DBG( "entity::sendMessage, from: " + entName + ", topic: " + topic );
+                // DBG( "entity::sendMessage, from: " + entName + ", topic: " + topic );
                 return message::send( type, entName, topic, content );
             }
         };
