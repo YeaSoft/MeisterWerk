@@ -67,7 +67,7 @@ typedef struct t_i2c_properties {
     String        name;
     String        description;
     bool          supported;
-    unsigned char addresses{};
+    unsigned char addresses[];
 } T_I2C_PROPERTIES;
 
 const T_I2C_PROPERTIES i2cProps[] PROGMEM = {
