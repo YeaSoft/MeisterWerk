@@ -137,6 +137,11 @@ namespace meisterwerk {
                 bSetup         = false;
                 bEnum          = false;
                 bInternalError = false;
+                DBG("INIT i2c");
+            }
+
+            bool registerEntity() {
+                return meisterwerk::core::entity::registerEntity( 50000 );
             }
 
             virtual void onSetup() override {
@@ -200,6 +205,7 @@ namespace meisterwerk {
             }
 
             virtual void onLoop( unsigned long ticker ) override {
+                DBG("LOOP");
                 if ( bInternalError )
                     return;
                 if ( !bEnum ) {
@@ -208,6 +214,7 @@ namespace meisterwerk {
             }
             virtual void onReceiveMessage( String topic, const char *pBuf,
                                            unsigned int len ) override {
+                DBG("REC");
                 if ( topic == "i2cbus/enum" ) {
                     i2cScan();
                 }
