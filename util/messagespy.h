@@ -19,7 +19,7 @@ namespace meisterwerk {
 
             public:
 #ifdef DEBUG
-            messagespy( String name = "dbg", String subscription = "*" )
+            messagespy( String name = "spy", String subscription = "*" )
                 : meisterwerk::core::entity( name ) {
                 tmpSubscribedTopic = subscription;
             }

@@ -14,6 +14,14 @@ namespace meisterwerk {
 
         class baseapp {
             public:
+            // static members
+            static baseapp *_app;
+
+            // members
+            String    appName;
+            scheduler sched;
+
+            // mthods
             baseapp( String name ) {
                 appName = name;
                 _app    = this;
@@ -25,13 +33,6 @@ namespace meisterwerk {
             virtual void onLoop() {
                 sched.loop();
             }
-
-            // members
-            String    appName;
-            scheduler sched;
-
-            // general availability
-            static baseapp *_app;
         };
 
         // initialization of static member

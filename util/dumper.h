@@ -78,8 +78,8 @@ namespace meisterwerk {
 
             void dumpSystemInfo() {
                 String pre = "dumper(" + entName + ") ";
-                DBG( "System Information:" );
-                DBG( "-------------------" );
+                DBG( pre + "System Information:" );
+                DBG( pre + "-------------------" );
                 DBG( pre + "Chip ID: " + ESP.getChipId() );
                 DBG( pre + "Core Verion: " + ESP.getCoreVersion() );
                 DBG( pre + "SDK Verion: " + ESP.getSdkVersion() );
@@ -94,18 +94,25 @@ namespace meisterwerk {
             }
 
             void dumpRuntimeInfo() {
-                unsigned int qps = meisterwerk::core::message::que.peak();
-                unsigned int qln = meisterwerk::core::message::que.length();
-                String       pre = "dumper(" + entName + ") ";
-                DBG( pre + "Free Heap: " + ESP.getFreeHeap() + " bytes, Queue(cur/max): " + qln +
-                     "/" + qps );
+                unsigned int  qps  = meisterwerk::core::message::que.peak();
+                unsigned int  qln  = meisterwerk::core::message::que.length();
+                unsigned long smdp = meisterwerk::core::baseapp::_app->sched.getMsgDispatched();
+                unsigned long smqt = meisterwerk::core::baseapp::_app->sched.getMsgQueueTime();
+                unsigned long stkc = meisterwerk::core::baseapp::_app->sched.getTaskCalls();
+                unsigned long stkt = meisterwerk::core::baseapp::_app->sched.getTaskTime();
+                unsigned long slit = meisterwerk::core::baseapp::_app->sched.getLifeTime();
+                String        pre  = "dumper(" + entName + ") Runtime Information - ";
+
+                DBG( pre + "Memory(Free Heap=" + ESP.getFreeHeap() + " bytes), Queue(cur=" + qln +
+                     " / max=" + qps + "), Scheduler(msg=" + smdp + " / tasks=" + stkc +
+                     " / msg_time=" + smqt + " ms / task_time=" + stkt + " ms / life_time=" + slit +
+                     " ms)" );
             }
 
             void dumpTaskInfo() {
-                String pre = "dumper(" + entName + ") ";
-                DBG( "Task Information" );
-                DBG( "----------------" );
-                // XXX dump task statistics
+                if ( meisterwerk::core::baseapp::_app ) {
+                    meisterwerk::core::baseapp::_app->sched.dumpInfo( "dumper(" + entName + ") " );
+                }
             }
 #endif
         };
