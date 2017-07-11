@@ -46,8 +46,10 @@ namespace meisterwerk {
                     numberOfMessages = 0;
                     msgTime          = 0;
                     msgTimeFine      = 0;
+                    msgTimeMax       = 0;
                     tskTime          = 0;
                     tskTimeFine      = 0;
+                    tskTimeMax       = 0;
 #endif
                 }
 
@@ -70,8 +72,10 @@ namespace meisterwerk {
                 unsigned long numberOfMessages;
                 unsigned long msgTime;
                 unsigned long msgTimeFine;
+                unsigned long msgTimeMax;
                 unsigned long tskTime;
                 unsigned long tskTimeFine;
+                unsigned long tskTimeMax;
 #endif
             };
 
@@ -115,6 +119,7 @@ namespace meisterwerk {
             }
 
             void dumpInfo( String pre ) {
+                DBG( "" );
                 DBG( "Task Information" );
                 DBG( "----------------" );
                 DBG( pre + "Dispatched Messages: " + getMsgDispatched() );
@@ -129,8 +134,10 @@ namespace meisterwerk {
                     DBG( pre + "  Name: " + pTask->pEnt->entName );
                     DBG( pre + "  Calls: " + pTask->numberOfCalls );
                     DBG( pre + "  Calls Time: " + pTask->getTskTime() + " ms" );
+                    DBG( pre + "  Calls Max Time: " + pTask->tskTimeMax + " us" );
                     DBG( pre + "  Messages: " + pTask->numberOfMessages );
                     DBG( pre + "  Message Time: " + pTask->getMsgTime() + " ms" );
+                    DBG( pre + "  Message Max Time: " + pTask->msgTimeMax + " us" );
                 }
             }
 #endif
@@ -217,6 +224,9 @@ namespace meisterwerk {
                     unsigned long budget = superdelta( ticker, micros() );
                     // task
                     ++pTask->numberOfCalls;
+                    if ( budget > pTask->tskTimeMax ) {
+                        pTask->tskTimeMax = budget;
+                    }
                     pTask->tskTimeFine += budget;
                     if ( pTask->tskTimeFine > 1000000000L ) {
                         pTask->tskTime += ( pTask->tskTimeFine / 1000 );
@@ -257,8 +267,12 @@ namespace meisterwerk {
 #ifdef DEBUG
                                 unsigned long ticker = micros();
                                 pTask->pEnt->onReceiveMessage( topic, pMsg->pBuf, pMsg->pBufLen );
+                                unsigned long budget = superdelta( ticker, micros() );
                                 ++pTask->numberOfMessages;
-                                pTask->msgTimeFine += superdelta( ticker, micros() );
+                                if ( budget > pTask->tskTimeMax ) {
+                                    pTask->tskTimeMax = budget;
+                                }
+                                pTask->msgTimeFine += budget;
                                 if ( pTask->msgTimeFine > 1000000000L ) {
                                     pTask->msgTime += ( pTask->msgTimeFine / 1000 );
                                     pTask->msgTimeFine = 0;
