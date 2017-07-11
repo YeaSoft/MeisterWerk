@@ -3,8 +3,7 @@
 // This is the declaration of the base class for an
 // embedded application.
 
-#ifndef baseapp_h
-#define baseapp_h
+#pragma once
 
 // dependencies
 #include "scheduler.h"
@@ -49,5 +48,3 @@ void setup() {
 void loop() {
     meisterwerk::core::baseapp::_app->onLoop();
 }
-
-#endif

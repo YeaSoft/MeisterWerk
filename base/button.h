@@ -1,6 +1,18 @@
+// button.h - Base class for a button
+//
+// This is the declaration of the base class for a
+// button. A button publishes an event when its
+// push state changes:
+//
+// Messages are published when the button is pushed
+// and when the button is released. The message content
+// is the duration of the previous state.
+//
+// Publish:
+// - "NAME/push"
+// - "NAME/release"
 
-#ifndef button_h
-#define button_h
+#pragma once
 
 // dependencies
 #include "../core/entity.h"
@@ -22,10 +34,10 @@ namespace meisterwerk {
                 // fire a message
                 if ( toState ) {
                     // press
-                    publish( entName + "/press", String( duration / 1000 ) );
+                    publish( entName + "/press", "{d:" + String( duration / 1000 ) + "}" );
                 } else {
                     // release
-                    publish( entName + "/release", String( duration / 1000 ) );
+                    publish( entName + "/release", "{d:" + String( duration / 1000 ) + "}" );
                 }
             }
 
@@ -49,7 +61,5 @@ namespace meisterwerk {
                 }
             }
         };
-    }
-}
-
-#endif
+    } // namespace base
+} // namespace meisterwerk

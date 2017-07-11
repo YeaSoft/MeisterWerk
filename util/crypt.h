@@ -1,6 +1,8 @@
 // crypt.h - A helper for symmetric encrytpion
 // based on XXTEA algorithm.
 
+#pragma once
+
 namespace meisterwerk {
     namespace util {
 
@@ -62,7 +64,7 @@ namespace meisterwerk {
             //      RETURN crc
             //
             //*************************************************************************
-            uint16_t crc16( uint8_t *data_p, uint16_t length ) {
+            static uint16_t crc16( uint8_t *data_p, uint16_t length ) {
                 uint8_t  i;
                 uint16_t data;
                 uint16_t crc;
@@ -89,13 +91,14 @@ namespace meisterwerk {
                 return ( crc );
             }
 
-            //==CRYPT-XXTEA==================================================================
-            //
-            //  - Source: http://en.wikipedia.org/wiki/XXTEA
-            //
+//==CRYPT-XXTEA==================================================================
+//
+//  - Source: http://en.wikipedia.org/wiki/XXTEA
+//
 
-            #define DELTA 0x9e3779b9
-            #define MX ( ( ( z >> 5 ^ y << 2 ) + ( y >> 3 ^ z << 4 ) ) ^ ( ( sum ^ y ) + ( key[( p & 3 ) ^ e] ^ z ) ) )
+#define DELTA 0x9e3779b9
+#define MX                                                                                         \
+    ( ( ( z >> 5 ^ y << 2 ) + ( y >> 3 ^ z << 4 ) ) ^ ( ( sum ^ y ) + ( key[( p & 3 ) ^ e] ^ z ) ) )
 
             //-------------------------------------------------------------------------------
             // According to Needham and Wheeler:
@@ -107,7 +110,7 @@ namespace meisterwerk {
             // * assumes 32 bit 'long' and same endian coding and decoding
             //
 
-            void xxtea_encrypt( uint32_t *v, int n, uint32_t const key[4] ) {
+            static void xxtea_encrypt( uint32_t *v, int n, uint32_t const key[4] ) {
                 uint32_t y, z, sum;
                 uint16_t p, rounds, e;
 
@@ -129,7 +132,7 @@ namespace meisterwerk {
                 } while ( --rounds );
             }
 
-            void xxtea_decrypt( uint32_t *v, int n, uint32_t const key[4] ) {
+            static void xxtea_decrypt( uint32_t *v, int n, uint32_t const key[4] ) {
                 uint32_t y, z, sum;
                 uint16_t p, rounds, e;
 

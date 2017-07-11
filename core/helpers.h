@@ -1,10 +1,7 @@
-#ifndef helpers_h
-#define helpers_h
+#pragma once
 
 #ifdef DEBUG
 #define DBG( n ) Serial.println( n )
 #else
 #define DBG( n )
-#endif
-
 #endif

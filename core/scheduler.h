@@ -5,8 +5,7 @@
 // application method for non blocking communication
 // between the components and scheduling
 
-#ifndef scheduler_h
-#define scheduler_h
+#pragma once
 
 // dependencies
 #include "entity.h"
@@ -198,7 +197,7 @@ namespace meisterwerk {
                 return true;
             }
 
-            bool msgmatches( String s1, String s2 ) {
+            static bool msgmatches( String s1, String s2 ) {
                 // compares topic-paths <subtopic>/<subtopic/...
                 // the compare is symmetric, s1==s2 <=> s2==s1.
                 // subtopic can be <chars> or <chars>+'*', '*' must be last char of a subtopic.
@@ -285,29 +284,30 @@ namespace meisterwerk {
             meisterwerk::util::timebudget allTime;
 
             void dumpInfo( String pre ) {
+                const __FlashStringHelper *ms = F( " ms" );
+                const __FlashStringHelper *us = F( " us" );
                 DBG( "" );
-                DBG( "Task Information" );
-                DBG( "----------------" );
-                DBG( pre + "Dispatched Messages: " + msgTime.getcount() );
-                DBG( pre + "Dispatched Tasks: " + tskTime.getcount() );
-                DBG( pre + "Message Time: " + msgTime.getms() + " ms" );
-                DBG( pre + "Task Time: " + tskTime.getms() + " ms" );
-                DBG( pre + "Total Time: " + allTime.getms() + " ms" );
+                DBG( F( "Task Information" ) );
+                DBG( F( "----------------" ) );
+                DBG( pre + F( "Dispatched Messages: " ) + msgTime.getcount() );
+                DBG( pre + F( "Dispatched Tasks: " ) + tskTime.getcount() );
+                DBG( pre + F( "Message Time: " ) + msgTime.getms() + ms );
+                DBG( pre + F( "Task Time: " ) + tskTime.getms() + ms );
+                DBG( pre + F( "Total Time: " ) + allTime.getms() + ms );
                 DBG( "" );
-                DBG( pre + "Individual Tast Statistics:" );
+                DBG( pre + F( "Individual Tast Statistics:" ) );
                 for ( auto pTask : taskList ) {
                     DBG( "" );
-                    DBG( pre + "  Name: " + pTask->pEnt->entName );
-                    DBG( pre + "  Calls: " + pTask->tskTime.getcount() );
-                    DBG( pre + "  Calls Time: " + pTask->tskTime.getms() + " ms" );
-                    DBG( pre + "  Calls Max Time: " + pTask->tskTime.getmaxus() + " us" );
-                    DBG( pre + "  Messages: " + pTask->msgTime.getcount() );
-                    DBG( pre + "  Message Time: " + pTask->msgTime.getms() + " ms" );
-                    DBG( pre + "  Message Max Time: " + pTask->msgTime.getmaxus() + " us" );
+                    DBG( pre + F( "  Name: " ) + pTask->pEnt->entName );
+                    DBG( pre + F( "  Calls: " ) + pTask->tskTime.getcount() );
+                    DBG( pre + F( "  Calls Time: " ) + pTask->tskTime.getms() + ms );
+                    DBG( pre + F( "  Calls Max Time: " ) + pTask->tskTime.getmaxus() + us );
+                    DBG( pre + F( "  Messages: " ) + pTask->msgTime.getcount() );
+                    DBG( pre + F( "  Message Time: " ) + pTask->msgTime.getms() + ms );
+                    DBG( pre + F( "  Message Max Time: " ) + pTask->msgTime.getmaxus() + us );
                 }
             }
 #endif
         };
     } // namespace core
 } // namespace meisterwerk
-#endif
