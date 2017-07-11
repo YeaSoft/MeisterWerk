@@ -7,6 +7,8 @@
 // at regular intervals or only on request.
 // The class works only if #define DEBUG
 
+#pragma once
+
 // dependencies
 #include "../core/entity.h"
 
@@ -30,7 +32,8 @@ namespace meisterwerk {
                 : meisterwerk::core::entity( "" ) {
             }
 
-            bool registerEntity() {
+            bool registerEntity( unsigned long minMicroSecs = 0, unsigned int priority = 3 ) {
+                // never register
                 return true;
             }
 #endif
@@ -42,11 +45,11 @@ namespace meisterwerk {
 
             void onSetup() override {
                 dumpSystemInfo();
-                // explicit dump messages
+                // explicit commands
                 subscribe( "*/dump" );
                 subscribe( "*/sysinfo" );
                 subscribe( "*/taskinfo" );
-                // Debug Button
+                // events from debug Button
                 subscribe( debugButton + "/short" );
                 subscribe( debugButton + "/long" );
                 subscribe( debugButton + "/extralong" );
@@ -74,21 +77,22 @@ namespace meisterwerk {
             }
 
             void dumpSystemInfo() {
-                String pre = "dumper(" + entName + ") ";
+                String                     pre   = "dumper(" + entName + ") ";
+                const __FlashStringHelper *bytes = F( " bytes" );
                 DBG( "" );
-                DBG( pre + "System Information:" );
-                DBG( pre + "-------------------" );
-                DBG( pre + "Chip ID: " + ESP.getChipId() );
-                DBG( pre + "Core Verion: " + ESP.getCoreVersion() );
-                DBG( pre + "SDK Verion: " + ESP.getSdkVersion() );
-                DBG( pre + "CPU Frequency: " + ESP.getCpuFreqMHz() + " MHz" );
-                DBG( pre + "Program Size: " + ESP.getSketchSize() + " bytes" );
-                DBG( pre + "Program Free: " + ESP.getFreeSketchSpace() + " bytes" );
-                DBG( pre + "Flash Chip ID: " + ESP.getFlashChipId() );
-                DBG( pre + "Flash Chip Size: " + ESP.getFlashChipSize() + " bytes" );
-                DBG( pre + "Flash Chip Real Size: " + ESP.getFlashChipRealSize() + " bytes" );
-                DBG( pre + "Flash Chip Speed: " + ESP.getFlashChipSpeed() + " hz" );
-                DBG( pre + "Last Reset Reason: " + ESP.getResetReason() );
+                DBG( pre + F( "System Information:" ) );
+                DBG( pre + F( "-------------------" ) );
+                DBG( pre + F( "Chip ID: " ) + ESP.getChipId() );
+                DBG( pre + F( "Core Verion: " ) + ESP.getCoreVersion() );
+                DBG( pre + F( "SDK Verion: " ) + ESP.getSdkVersion() );
+                DBG( pre + F( "CPU Frequency: " ) + ESP.getCpuFreqMHz() + " MHz" );
+                DBG( pre + F( "Program Size: " ) + ESP.getSketchSize() + bytes );
+                DBG( pre + F( "Program Free: " ) + ESP.getFreeSketchSpace() + bytes );
+                DBG( pre + F( "Flash Chip ID: " ) + ESP.getFlashChipId() );
+                DBG( pre + F( "Flash Chip Size: " ) + ESP.getFlashChipSize() + bytes );
+                DBG( pre + F( "Flash Chip Real Size: " ) + ESP.getFlashChipRealSize() + bytes );
+                DBG( pre + F( "Flash Chip Speed: " ) + ESP.getFlashChipSpeed() + " hz" );
+                DBG( pre + F( "Last Reset Reason: " ) + ESP.getResetReason() );
             }
 
             void dumpRuntimeInfo() {
@@ -114,5 +118,5 @@ namespace meisterwerk {
             }
 #endif
         };
-    }
-}
+    } // namespace util
+} // namespace meisterwerk

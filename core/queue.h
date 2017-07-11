@@ -5,8 +5,7 @@
 // application method for non blocking communication
 // between the components and scheduling
 
-#ifndef queue_h
-#define queue_h
+#pragma once
 
 namespace meisterwerk {
     namespace core {
@@ -81,7 +80,5 @@ namespace meisterwerk {
             }
 #endif
         };
-    }
-}
-
-#endif
+    } // namespace core
+} // namespace meisterwerk

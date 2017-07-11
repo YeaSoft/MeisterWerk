@@ -5,9 +5,9 @@
 // application method for non blocking communication
 // between the components and scheduling
 
-#ifndef entity_h
-#define entity_h
+#pragma once
 
+// dependencies
 #include "helpers.h"
 #include "message.h"
 
@@ -98,4 +98,3 @@ namespace meisterwerk {
         };
     } // namespace core
 } // namespace meisterwerk
-#endif

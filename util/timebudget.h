@@ -1,16 +1,24 @@
-#ifndef timebudget_h
-#define timebudget_h
+// Copyright Dominik Schloesser and Leo Moll 2017
+// MIT License
+//
+// MeisterWerk IoT Framework
+// https://github.com/YeaSoft/MeisterWerk/
+// If you like this project, please add a star!
+
+#pragma once
 
 namespace meisterwerk {
     namespace util {
+
         class timebudget {
-            public:
+            private:
             unsigned long cnt     = 0;
             unsigned long val     = 0;
             unsigned long valMax  = 0;
             unsigned long valFine = 0;
             unsigned long valSnap = 0;
 
+            public:
             static unsigned long delta( const unsigned long then, const unsigned long now ) {
                 return now > then ? now - then : ( (unsigned long)-1 ) - then + now;
             }
@@ -52,7 +60,5 @@ namespace meisterwerk {
                 return cnt;
             }
         };
-    }
-}
-
-#endif
+    } // namespace util
+} // namespace meisterwerk
