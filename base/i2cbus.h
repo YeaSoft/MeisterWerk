@@ -2,6 +2,9 @@
 #ifndef i2cbus_h
 #define i2cbus_h
 
+#include <ESP8266WiFi.h>
+#include <Wire.h>
+
 // dependencies
 #include "../core/entity.h"
 
@@ -18,6 +21,7 @@
 
 enum I2CDevType {
     OLED,
+    NFC,
     Sensor,
     RTC,
     IO,
@@ -26,7 +30,7 @@ enum I2CDevType {
     Radio,
     Touch,
     EEPROM,
-}
+};
 
 enum I2CDev {
     SSD1306,
@@ -59,15 +63,15 @@ enum I2CDev {
     Si4713,
     FT6206,
     STMPE610
-}
+};
 
 typedef struct t_i2c_properties {
-    I2CDev        id;
-    I2CDevType    type;
+    I2CDevType        id;
+    I2CDev    type;
     String        name;
     String        description;
     bool          supported;
-    unsigned char addresses[];
+    unsigned char addresses[16];
 } T_I2C_PROPERTIES;
 
 const T_I2C_PROPERTIES i2cProps[] PROGMEM = {
@@ -128,7 +132,7 @@ namespace meisterwerk {
             uint8_t      sdaport, sclport;
             unsigned int nDevices;
 
-            i2cbus( String name, int sdaport, int sclport )
+            i2cbus( String name, uint8_t sdaport, uint8_t sclport )
                 : meisterwerk::core::entity( name ), sdaport{sdaport}, sclport{sclport} {
                 bSetup         = false;
                 bEnum          = false;
@@ -144,7 +148,7 @@ namespace meisterwerk {
             bool check( uint8_t address ) {
                 bool bDevFound = false;
                 Wire.beginTransmission( address );
-                error = Wire.endTransmission();
+                byte error = Wire.endTransmission();
 
                 if ( error == 0 ) {
                     bDevFound = true;
@@ -156,7 +160,7 @@ namespace meisterwerk {
             }
 
             unsigned int i2cScan() {
-                byte   error, address;
+                byte  address;
                 String portlist = "";
 
                 if ( !bSetup ) {
@@ -187,7 +191,7 @@ namespace meisterwerk {
                     publish( "i2cbus/offline", "" );
                 } else {
                     String json =
-                        "{\"devs\":" + String( nDevices ) + ",\"portlist\": [" + portlist "]}";
+                        "{\"devs\":" + String( nDevices ) + ",\"portlist\": [" + portlist + "]}";
                     DBG( "jsonstate i2c:" + json );
                     publish( "i2cbus/online", json );
                 }
