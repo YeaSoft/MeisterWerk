@@ -7,6 +7,7 @@
 
 // dependencies
 #include "../core/entity.h"
+#include "../util/hextools.h"
 
 // This is based on: http://www.ladyada.net/library/i2caddr.html
 // and web dom's sensorclock research
@@ -134,14 +135,6 @@ namespace meisterwerk {
                 bSetup         = false;
                 bEnum          = false;
                 bInternalError = false;
-                DBG("INIT i2c");
-            }
-
-            String hexByte(uint8_t byte) {
-                char b[3];
-                itoa(byte,b,16);
-                if (byte<16) return "0"+String(b);
-                else return String(b);
             }
 
             bool registerEntity() {
