@@ -65,6 +65,17 @@ namespace meisterwerk {
                 }
             }
 
+            void config(String msg) {
+                // XXX: do things
+            }
+            
+            virtual void onReceive( String topic, String msg ) override {
+                meisterwerk::base::i2cdev::onReceive( topic, msg);
+                if ( topic == entName+"/config" ) {
+                    config( msg );
+                }
+            }
+
         };
     } // namespace base
 } // namespace meisterwerk
