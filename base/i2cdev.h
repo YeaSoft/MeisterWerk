@@ -39,7 +39,7 @@ namespace meisterwerk {
                 publish( "i2cbus/enum", "" );
             }
 
-            virtual void onReceive( String topic, String msg ) override {
+            virtual void onReceive( String origin, String topic, String msg ) override {
                 if ( topic == "i2cbus/online" ) {
                     i2cSetup( msg );
                 }

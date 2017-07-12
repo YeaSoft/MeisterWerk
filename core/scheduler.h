@@ -162,16 +162,17 @@ namespace meisterwerk {
 
             void publishMsg( message *pMsg ) {
                 for ( auto sub : subscriptionList ) {
-                    String topic( pMsg->topic );
-                    if ( msgmatches( sub.topic, topic ) ) {
+                    if ( msgmatches( sub.topic, pMsg->topic ) ) {
                         for ( auto pTask : taskList ) {
                             if ( pTask->pEnt->entName == sub.subscriber ) {
 #ifdef DEBUG
                                 pTask->msgTime.snap();
-                                pTask->pEnt->onReceive( topic, (char *)pMsg->pBuf );
+                                pTask->pEnt->onReceive( pMsg->originator, pMsg->topic,
+                                                        (char *)pMsg->pBuf );
                                 pTask->msgTime.shot();
 #else
-                                pTask->pEnt->onReceive( topic, (char *)pMsg->pBuf );
+                                pTask->pEnt->onReceive( pMsg->originator, pMsg->topic,
+                                                        (char *)pMsg->pBuf );
 #endif
                             }
                         }
