@@ -152,7 +152,8 @@ namespace meisterwerk {
                 Wire.begin( sdaport, sclport ); // SDA, SCL;
                 bSetup = true;
                 bEnum  = false;
-            }
+                subscribe( "i2cbus/enum" );
+           }
 
             int identify(uint8_t address) {
                 int numDevs=0;
@@ -209,10 +210,7 @@ namespace meisterwerk {
                     bInternalError = true;
                     return 0;
                 }
-
                 DBG( "Scanning I2C-Bus, SDA=" + String( sdaport ) + ", SCL=" + String( sclport ) );
-                subscribe( "i2cbus/enum" );
-
                 nDevices = 0;
                 niDevs = 0;
                 for ( uint8_t address = 1; address < 127; address++ ) {
@@ -253,6 +251,7 @@ namespace meisterwerk {
             virtual void onReceiveMessage( String topic, const char *pBuf,
                                            unsigned int len ) override {
                 if ( topic == "i2cbus/enum" ) {
+                    DBG("i2cbus: received enum request.");
                     i2cScan();
                 }
             }
