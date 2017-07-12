@@ -171,14 +171,14 @@ namespace meisterwerk {
                 }
                 if ( numDevs == 1 ) {
                     DBG( i2cProps[last].name + ", " + i2cProps[last].description + " at port: 0x" +
-                         meisterwerk::utils::hexByte( address ) );
+                         meisterwerk::util::hexByte( address ) );
                 } else if ( numDevs > 1 ) {
                     last = -1;
                     DBG( "WARNING: ambiguous addresses in I2C hardware detection for address 0x" +
-                         meisterwerk::utils::hexByte( address ) + ", cannot securely identify" );
+                         meisterwerk::util::hexByte( address ) + ", cannot securely identify" );
                 } else {
                     last = -1;
-                    DBG( "WARNING: device at address 0x" + meisterwerk::utils::hexByte( address ) +
+                    DBG( "WARNING: device at address 0x" + meisterwerk::util::hexByte( address ) +
                          " is of unknown type." );
                 }
                 return last;
@@ -194,10 +194,9 @@ namespace meisterwerk {
                 byte error = Wire.endTransmission();
                 if ( error == 0 ) {
                     bDevFound = true;
-                    DBG( "I2C device found at address 0x" +
-                         meisterwerk::utils::hexByte( address ) );
+                    DBG( "I2C device found at address 0x" + meisterwerk::util::hexByte( address ) );
                 } else if ( error == 4 ) {
-                    DBG( "Unknow error at address " + meisterwerk::utils::hexByte( address ) );
+                    DBG( "Unknow error at address " + meisterwerk::util::hexByte( address ) );
                 }
                 return bDevFound;
             }

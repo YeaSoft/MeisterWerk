@@ -47,7 +47,7 @@ namespace meisterwerk {
 
             virtual void onInstantiate( String i2ctype, uint8_t address ) {
                 DBG( "Your code should override this function and instantiate a " + i2ctype +
-                     " device at address 0x" + meisterwerk::utils::hexByte( address ) );
+                     " device at address 0x" + meisterwerk::util::hexByte( address ) );
             }
 
             void i2cSetup( String json ) {

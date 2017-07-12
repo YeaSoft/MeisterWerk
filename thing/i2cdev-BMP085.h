@@ -18,6 +18,7 @@
 #include "../base/i2cdev.h"
 #include "../core/entity.h"
 #include "../util/hextools.h"
+#include "../util/sensorprocessor.h"
 
 namespace meisterwerk {
     namespace thing {
@@ -50,7 +51,7 @@ namespace meisterwerk {
 
             virtual void onInstantiate( String i2ctype, uint8_t address ) override {
                 DBG( "Instantiating BMP085 device at address 0x" +
-                     meisterwerk::utils::hexByte( address ) );
+                     meisterwerk::util::hexByte( address ) );
                 pbmp = new Adafruit_BMP085();
                 if ( !pbmp->begin() ) {
                     DBG( "BMP085 initialization failure." );
