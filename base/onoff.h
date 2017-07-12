@@ -48,7 +48,7 @@ namespace meisterwerk {
                 subscribe( entName + "/getconfig" );
             }
 
-            virtual void onReceive( String topic, String msg ) override {
+            virtual void onReceive( String origin, String topic, String msg ) override {
                 DynamicJsonBuffer jsonBuffer( 200 );
                 JsonObject &      root = jsonBuffer.parseObject( msg );
                 if ( !root.success() ) {
