@@ -47,23 +47,42 @@ namespace meisterwerk {
 
             bool registerEntity( unsigned long minMicroSecs = 0, unsigned int priority = 3 ) {
                 msgregister reg( this, minMicroSecs, priority );
-                if ( sendMessage( message::MSG_DIRECT, "register", (char *)&reg, sizeof( reg ) ) ) {
+                if ( message::send( message::MSG_DIRECT, entName, "register", &reg,
+                                    sizeof( reg ) ) ) {
                     return true;
                 }
                 DBG( "entity::registerEntity, sendMessage failed for register " + entName );
                 return false;
             }
 
-            bool publish( String topic, String msg ) {
-                if ( sendMessage( message::MSG_PUBLISH, topic, msg ) ) {
+            bool publish( String topic ) {
+                if ( message::send( message::MSG_PUBLISH, entName, topic, "{}" ) ) {
                     return true;
                 }
                 DBG( "entity::publish, sendMessage failed for publish " + entName );
                 return false;
             }
 
+            bool publish( String topic, String msg ) {
+                if ( message::send( message::MSG_PUBLISH, entName, topic, msg ) ) {
+                    return true;
+                }
+                DBG( "entity::publish, sendMessage failed for publish " + entName );
+                return false;
+            }
+
+            /* Prepared but not supported in the current scheduler
+            bool publish( String topic, const void *pBuf, unsigned long len ) {
+                if ( message::send( message::MSG_PUBLISHRAW, entName, topic, pBuf, len ) ) {
+                    return true;
+                }
+                DBG( "entity::publish, sendMessage failed for publish " + entName );
+                return false;
+            }
+            */
+
             bool subscribe( String topic ) {
-                if ( sendMessage( message::MSG_SUBSCRIBE, topic, nullptr, 0 ) ) {
+                if ( message::send( message::MSG_SUBSCRIBE, entName, topic, nullptr, 0 ) ) {
                     return true;
                 }
                 DBG( "entity::publish, sendMessage failed for subscribe " + entName );
@@ -78,23 +97,15 @@ namespace meisterwerk {
                 DBG( "entity:onLook, missing override for entity " + entName );
             }
 
-            virtual void onReceiveMessage( String topic, const char *pBuf, unsigned int len ) {
-                DBG( "entity:receiveMessage, missing override for entity " + entName );
+            virtual void onReceive( String topic, String msg ) {
+                DBG( "entity:onReceive(string), missing override for entity " + entName );
             }
 
-            protected:
-            // This sends messages to scheduler via messageQueue
-            bool sendMessage( unsigned int type, String topic, char *pBuf, unsigned int len,
-                              bool isBufAllocated = false ) {
-                // DBG( "entity::sendMessage, from: " + entName + ", topic: " + topic );
-                return message::send( type, entName, topic, pBuf, len, isBufAllocated );
+            /* Prepared but not supported in the current scheduler
+            virtual void onReceive( String topic, const void *pBuf, unsigned int len ) {
+                DBG( "entity:onReceive(binary), missing override for entity " + entName );
             }
-
-            // Send text message to Scheduler
-            bool sendMessage( unsigned int type, String topic, String content ) {
-                // DBG( "entity::sendMessage, from: " + entName + ", topic: " + topic );
-                return message::send( type, entName, topic, content );
-            }
+            */
         };
     } // namespace core
 } // namespace meisterwerk

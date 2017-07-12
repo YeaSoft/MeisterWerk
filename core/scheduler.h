@@ -168,10 +168,10 @@ namespace meisterwerk {
                             if ( pTask->pEnt->entName == sub.subscriber ) {
 #ifdef DEBUG
                                 pTask->msgTime.snap();
-                                pTask->pEnt->onReceiveMessage( topic, pMsg->pBuf, pMsg->pBufLen );
+                                pTask->pEnt->onReceive( topic, (char *)pMsg->pBuf );
                                 pTask->msgTime.shot();
 #else
-                                pTask->pEnt->onReceiveMessage( topic, pMsg->pBuf, pMsg->pBufLen );
+                                pTask->pEnt->onReceive( topic, (char *)pMsg->pBuf );
 #endif
                             }
                         }

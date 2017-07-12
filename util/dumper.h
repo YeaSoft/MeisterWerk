@@ -66,7 +66,7 @@ namespace meisterwerk {
                 }
             }
 
-            virtual void onReceiveMessage( String topic, const char *pBuf, unsigned int len ) {
+            virtual void onReceive( String topic, String msg ) override {
                 if ( topic == debugButton + "/short" ) {
                     dumpRuntimeInfo();
                 } else if ( topic == debugButton + "/long" ) {
