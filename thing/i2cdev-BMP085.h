@@ -45,6 +45,7 @@ namespace meisterwerk {
                     DBG("BMP085 initialization failure.");
                 } else {
                     pollSensor=true;
+                    subscribe(entName+"/config");
                 }
             }
 
@@ -68,7 +69,7 @@ namespace meisterwerk {
             void config(String msg) {
                 // XXX: do things
             }
-            
+
             virtual void onReceive( String topic, String msg ) override {
                 meisterwerk::base::i2cdev::onReceive( topic, msg);
                 if ( topic == entName+"/config" ) {
