@@ -18,6 +18,8 @@ namespace meisterwerk {
             public:
             Adafruit_BMP085 *pbmp;
             bool pollSensor=false;
+            SensorProcessor tempProcessor, pressProcessor;
+            String json;
 
             i2cdev_BMP085( String name)
                 : meisterwerk::base::i2cdev( name, "BMP085" ) {
@@ -46,15 +48,17 @@ namespace meisterwerk {
             virtual void onLoop( unsigned long ticker ) override {
                 if (pollSensor) {
                     float temperature=pbmp->readTemperature();
+                    if (tempProcessor.filter(&temperature)) {
+                        json = "{\"temperature\":" + String( temperature ) + "}";
+                        DBG( "jsonstate i2c bmp085:" + json );
+                        publish( entName+"/temperature", json );
+                    }
                     float pressure=pbmp->readPressure()/100.0;
-                    String json =
-                        "{\"temperature\":" + String( temperature ) + "}";
-                    DBG( "jsonstate i2c bmp085:" + json );
-                    publish( entName+"/temperature", json );
-                    json =
-                        "{\"pressure\":" +String(pressure)+"}";
-                    DBG( "jsonstate i2c bmp085:" + json );
-                    publish( entName+"/pressure", json ); 
+                    if (pressProcessor.filter(&pressure)) {
+                        json = "{\"pressure\":" +String(pressure)+"}";
+                        DBG( "jsonstate i2c bmp085:" + json );
+                        publish( entName+"/pressure", json ); 
+                    }
                 }
             }
 

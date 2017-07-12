@@ -11,6 +11,53 @@
 
 namespace meisterwerk {
     namespace base {
+
+        class SensorProcessor {
+            public:
+            int noVals=0;
+            int smoothIntervall;
+            int pollTimeSec;
+            float sum=0.0;
+            float eps;
+            bool first=true;
+            float lastVal=-99999.0;
+            unsigned long last;
+        
+            // average of smoothIntervall measurements
+            // update sensor value, if newvalue differs by at least eps, or if pollTimeSec has elapsed.
+            SensorProcessor(int smoothIntervall=5, int pollTimeSec=60, float eps=0.1): smoothIntervall{smoothIntervall}, 
+                                                                                                pollTimeSec{pollTimeSec}, eps{eps} {
+                last=millis();
+            }
+
+            // changes the value into a smoothed version
+            // returns true, if sensor-value is a valid update
+            // an update is valid, if the new value differs by at least eps from last last value,
+            // or, if pollTimeSec secs have elapsed.
+            bool filter(float *pvalue) {
+                float newVal=(lastVal*noVals+(*pvalue))/(noVals+1);
+                lastVal=newVal;
+                if (noVals<smoothIntervall) ++noVals;
+                float delta=(*pvalue)-newVal;
+                if (delta<0.0) delta= (-1.0)*delta;
+                if (delta>eps || first) {
+                    first=false;
+                    *pvalue=newVal;
+                    last=millis();
+                    return true;
+                } else {
+                    if (pollTimeSec!=0) {
+                        if (millis()-last > pollTimeSec*1000L) {
+                            *pvalue=newVal;
+                            last=millis();
+                            return true;
+                        }
+                    }
+                }
+                return false;
+            }
+        };
+
         class i2cdev : public meisterwerk::core::entity {
             public:
             String i2ctype;
@@ -55,12 +102,8 @@ namespace meisterwerk {
 
             }
 
-            int l=0;
             virtual void onLoop( unsigned long ticker ) override {
-                if (l==0) {
-                    l=1;
-                    DBG("first loop call for "+i2ctype);
-                }
+                
             }
 /*
             virtual void onReceiveMessage( String topic, const char *pBuf,
