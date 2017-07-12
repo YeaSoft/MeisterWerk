@@ -40,7 +40,7 @@ namespace meisterwerk {
                 subscribe( entName + "/config" );
             }
 
-            virtual void onReceive( String topic, String msg ) override {
+            virtual void onReceive( String origin, String topic, String msg ) override {
                 if ( topic == entName + "/config" ) {
                     // XXX: Parse JSON data and set minLongMs,minExtraLongMs
                 }

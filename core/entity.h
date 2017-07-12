@@ -97,12 +97,13 @@ namespace meisterwerk {
                 DBG( "entity:onLook, missing override for entity " + entName );
             }
 
-            virtual void onReceive( String topic, String msg ) {
+            virtual void onReceive( String origin, String topic, String msg ) {
                 DBG( "entity:onReceive(string), missing override for entity " + entName );
             }
 
             /* Prepared but not supported in the current scheduler
-            virtual void onReceive( String topic, const void *pBuf, unsigned int len ) {
+            virtual void onReceive( String origin, String topic, const void *pBuf, unsigned int len
+            ) {
                 DBG( "entity:onReceive(binary), missing override for entity " + entName );
             }
             */

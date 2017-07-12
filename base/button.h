@@ -37,7 +37,8 @@ namespace meisterwerk {
                 subscribe( entName + "/getstate" );
             }
 
-            virtual void onReceive( String topic, String msg ) override {
+            virtual void onReceive( String origin, String topic, String msg ) override {
+                // XXX: implement getstate.
             }
 
             virtual void onChange( bool toState, unsigned long duration ) {
