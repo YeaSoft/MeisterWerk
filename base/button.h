@@ -33,7 +33,7 @@ namespace meisterwerk {
                 lastChange = 0;
             }
 
-            virtual void onSetup() override {
+            virtual void onRegister() override {
                 subscribe( entName + "/getstate" );
             }
 

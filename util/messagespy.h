@@ -37,7 +37,7 @@ namespace meisterwerk {
 #endif
 
 #ifdef DEBUG
-            void onSetup() override {
+            void onRegister() override {
                 subscribe( tmpSubscribedTopic );
                 tmpSubscribedTopic = "";
             }

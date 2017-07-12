@@ -24,7 +24,7 @@ namespace meisterwerk {
                 return meisterwerk::core::entity::registerEntity( 50000 );
             }
 
-            virtual void onSetup() override {
+            virtual void onRegister() override {
                 pinMode( pin, INPUT );
                 fromState  = digitalRead( pin ) == LOW;
                 lastChange = micros();
