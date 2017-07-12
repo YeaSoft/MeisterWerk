@@ -62,11 +62,17 @@ namespace meisterwerk {
                     DBG("first loop call for "+i2ctype);
                 }
             }
-
+/*
             virtual void onReceiveMessage( String topic, const char *pBuf,
                                            unsigned int len ) override {
                 if ( topic == "i2cbus/online" ) {
                     i2cSetup(String(pBuf));
+                }
+            }
+*/
+            virtual void onReceive( String topic, String msg ) override {
+                if ( topic == "i2cbus/online" ) {
+                    i2cSetup(msg);
                 }
             }
         };
