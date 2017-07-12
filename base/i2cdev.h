@@ -47,6 +47,7 @@ namespace meisterwerk {
                     return true;
                 } else {
                     if (pollTimeSec!=0) {
+                        // XXX: use Leo's megaticker:
                         if (millis()-last > pollTimeSec*1000L) {
                             *pvalue=newVal;
                             last=millis();
