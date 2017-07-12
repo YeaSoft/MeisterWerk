@@ -42,14 +42,9 @@ namespace meisterwerk {
                 tmpSubscribedTopic = "";
             }
 
-            virtual void onReceiveMessage( String topic, const char *pBuf,
-                                           unsigned int len ) override {
-                if ( len = 0 ) {
-                    Serial.println( "messagespy(" + entName + "): topic='" + topic + "'" );
-                } else {
-                    Serial.println( "messagespy(" + entName + "): topic='" + topic + "' body='" +
-                                    String( pBuf ) + "'" );
-                }
+            virtual void onReceive( String topic, String msg ) override {
+                Serial.println( "messagespy(" + entName + "): topic='" + topic + "' body='" + msg +
+                                "'" );
             }
 #endif
         };

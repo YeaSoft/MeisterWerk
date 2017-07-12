@@ -11,6 +11,9 @@
 // Publish:
 // - "NAME/push"
 // - "NAME/release"
+//
+// Subscribe:
+// - "NAME/getstate"
 
 #pragma once
 
@@ -28,6 +31,13 @@ namespace meisterwerk {
             button( String name ) : meisterwerk::core::entity( name ) {
                 fromState  = false;
                 lastChange = 0;
+            }
+
+            virtual void onSetup() override {
+                subscribe( entName + "/getstate" );
+            }
+
+            virtual void onReceive( String topic, String msg ) override {
             }
 
             virtual void onChange( bool toState, unsigned long duration ) {
