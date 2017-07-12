@@ -1,7 +1,14 @@
 
-#ifndef i2cbus_h
-#define i2cbus_h
+// Copyright Dominik Schloesser and Leo Moll 2017
+// MIT License
+//
+// MeisterWerk IoT Framework
+// https://github.com/YeaSoft/MeisterWerk/
+// If you like this project, please add a star!
 
+#pragma once
+
+// hardware dependencies
 #include <ESP8266WiFi.h>
 #include <Wire.h>
 
@@ -68,14 +75,13 @@ enum I2CDev {
 
 #define MAX_I2C_ADDRESS_VAR 4
 typedef struct t_i2c_properties {
-    I2CDevType        id;
-    I2CDev    type;
+    I2CDevType    id;
+    I2CDev        type;
     String        name;
     String        description;
     bool          supported;
     unsigned char addresses[MAX_I2C_ADDRESS_VAR];
 } T_I2C_PROPERTIES;
-
 
 const T_I2C_PROPERTIES i2cProps[] = {
     {OLED, SSD1306, "SSD1306", "OLED-display (128x64)", false, {0x3C, 0x3D, 0, 0}},
@@ -108,7 +114,7 @@ const T_I2C_PROPERTIES i2cProps[] = {
     {EEPROM, DS1307_EEPROM, "DS1307_EEPORM", "RTC EEPROM", false, {0x50, 0, 0, 0}},
     //{IO, MCP23008, "MCP23008", "", false, {0x20, 0x21, 0x22, 0x23, 0x24, 0x25, 0x26, 0x27}},
     //{IO, MCP23017, "MCP23017", "", false, {0x20, 0x21, 0x22, 0x23, 0x24, 0x25, 0x26, 0x27}},
-    //{PWM, PCA9685, "PCA9685", "", false, {0x40, 0x41, 0x42, 0x43, 0x44, 0x45, 0x46, 0x47, 
+    //{PWM, PCA9685, "PCA9685", "", false, {0x40, 0x41, 0x42, 0x43, 0x44, 0x45, 0x46, 0x47,
     //                                      0x48, 0x49, 0x4A, 0x4B, 0x4C, 0x4D, 0x4E, 0x4F}},
     //{DAC, MCP4725A0, "MCP4725A0", "", false, {0x60, 0x61}},
     //{DAC, MCP4725A1, "MCP4725A1", "", false, {0x62, 0x63}},
@@ -118,10 +124,11 @@ const T_I2C_PROPERTIES i2cProps[] = {
     //{Radio, Si4713, "Si4713", "", false, {0x11, 0x63}},
     //{Touch, FT6206, "FT6206", "", false, {0x38}},
     //{Touch, STMPE610, "STMPE610", "", false, {0x41}}
-    };
+};
 
 namespace meisterwerk {
     namespace base {
+
         class i2cbus : public meisterwerk::core::entity {
             public:
             bool         bSetup;
@@ -146,30 +153,33 @@ namespace meisterwerk {
                 bSetup = true;
                 bEnum  = false;
                 subscribe( "i2cbus/enum" );
-           }
+            }
 
-            int identify(uint8_t address) {
-                int numDevs=0;
-                int last=-1;
-                for (int i=0; i<sizeof(i2cProps)/sizeof(T_I2C_PROPERTIES); i++) {
-                    for (int j=0; j<MAX_I2C_ADDRESS_VAR; j++) {
-                        if (i2cProps[i].addresses[j]==address) {
+            int identify( uint8_t address ) {
+                int numDevs = 0;
+                int last    = -1;
+                for ( int i = 0; i < sizeof( i2cProps ) / sizeof( T_I2C_PROPERTIES ); i++ ) {
+                    for ( int j = 0; j < MAX_I2C_ADDRESS_VAR; j++ ) {
+                        if ( i2cProps[i].addresses[j] == address ) {
                             ++numDevs;
-                            if (last!=-1) {
-                                DBG("Ambiguous:"+String(last)+"<->"+String(i));
+                            if ( last != -1 ) {
+                                DBG( "Ambiguous:" + String( last ) + "<->" + String( i ) );
                             }
-                            last=i;
+                            last = i;
                         }
                     }
                 }
-                if (numDevs==1) {
-                    DBG(i2cProps[last].name+", "+i2cProps[last].description+" at port: 0x"+hexByte(address));
-                } else if (numDevs>1) {
-                    last=-1;
-                    DBG("WARNING: ambiguous addresses in I2C hardware detection for address 0x"+hexByte(address)+", cannot securely identify");
+                if ( numDevs == 1 ) {
+                    DBG( i2cProps[last].name + ", " + i2cProps[last].description + " at port: 0x" +
+                         meisterwerk::utils::hexByte( address ) );
+                } else if ( numDevs > 1 ) {
+                    last = -1;
+                    DBG( "WARNING: ambiguous addresses in I2C hardware detection for address 0x" +
+                         meisterwerk::utils::hexByte( address ) + ", cannot securely identify" );
                 } else {
-                    last=-1;
-                    DBG("WARNING: device at address 0x"+hexByte(address)+" is of unknown type.");
+                    last = -1;
+                    DBG( "WARNING: device at address 0x" + meisterwerk::utils::hexByte( address ) +
+                         " is of unknown type." );
                 }
                 return last;
             }
@@ -184,18 +194,19 @@ namespace meisterwerk {
                 byte error = Wire.endTransmission();
                 if ( error == 0 ) {
                     bDevFound = true;
-                    DBG( "I2C device found at address 0x" + hexByte( address ) );
+                    DBG( "I2C device found at address 0x" +
+                         meisterwerk::utils::hexByte( address ) );
                 } else if ( error == 4 ) {
-                    DBG( "Unknow error at address " + hexByte( address ) );
+                    DBG( "Unknow error at address " + meisterwerk::utils::hexByte( address ) );
                 }
                 return bDevFound;
             }
 
             unsigned int i2cScan() {
-                byte  address;
+                byte   address;
                 String portlist = "";
-                String devlist= "";
-                int niDevs,i2cid;
+                String devlist  = "";
+                int    niDevs, i2cid;
 
                 if ( !bSetup ) {
                     DBG( "i2cbus not initialized!" );
@@ -205,19 +216,21 @@ namespace meisterwerk {
                 }
                 DBG( "Scanning I2C-Bus, SDA=" + String( sdaport ) + ", SCL=" + String( sclport ) );
                 nDevices = 0;
-                niDevs = 0;
+                niDevs   = 0;
                 for ( uint8_t address = 1; address < 127; address++ ) {
                     if ( check( address ) ) {
                         nDevices++;
-                        if ( nDevices > 1 )
+                        if ( nDevices > 1 ) {
                             portlist += ",";
+                        }
                         portlist += String( address );
-                        i2cid=identify(address);
-                        if (i2cid!=-1) {
+                        i2cid = identify( address );
+                        if ( i2cid != -1 ) {
                             niDevs++;
-                            if (niDevs>1)
-                                devlist+=",";
-                            devlist+="\""+i2cProps[i2cid].name+"\"";
+                            if ( niDevs > 1 ) {
+                                devlist += ",";
+                            }
+                            devlist += "\"" + i2cProps[i2cid].name + "\"";
                         }
                     }
                 }
@@ -225,8 +238,8 @@ namespace meisterwerk {
                     DBG( "No I2C devices found" );
                     publish( "i2cbus/offline", "" );
                 } else {
-                    String json =
-                        "{\"devs\":" + String( nDevices ) + ",\"portlist\":[" + portlist + "],\"i2cdevs\":["+devlist+"]}";
+                    String json = "{\"devs\":" + String( nDevices ) + ",\"portlist\":[" + portlist +
+                                  "],\"i2cdevs\":[" + devlist + "]}";
                     DBG( "jsonstate i2c:" + json );
                     publish( "i2cbus/online", json );
                 }
@@ -243,12 +256,10 @@ namespace meisterwerk {
             }
             virtual void onReceive( String topic, String msg ) override {
                 if ( topic == "i2cbus/enum" ) {
-                    DBG("i2cbus: received enum request.");
+                    DBG( "i2cbus: received enum request." );
                     i2cScan();
                 }
             }
         };
     } // namespace base
 } // namespace meisterwerk
-
-#endif
