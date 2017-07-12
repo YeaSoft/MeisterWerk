@@ -1,17 +1,23 @@
-#ifndef gpiobutton_h
-#define gpiobutton_h
+// Copyright Dominik Schloesser and Leo Moll 2017
+// MIT License
+//
+// MeisterWerk IoT Framework
+// https://github.com/YeaSoft/MeisterWerk/
+// If you like this project, please add a star!
 
+#pragma once
+
+// dependencies
 #include "../base/button.h"
 
 namespace meisterwerk {
     namespace thing {
 
-        class gpiobutton : public meisterwerk::base::button {
+        class button_GPIO : public meisterwerk::base::button {
             public:
             uint8_t pin;
 
-            gpiobutton( String name, uint8_t _pin ) : meisterwerk::base::button( name ) {
-                pin = _pin;
+            button_GPIO( String name, uint8_t pin ) : meisterwerk::base::button( name ), pin{pin} {
             }
 
             bool registerEntity() {
@@ -30,5 +36,3 @@ namespace meisterwerk {
         };
     }
 }
-
-#endif
