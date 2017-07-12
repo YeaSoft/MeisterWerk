@@ -89,10 +89,12 @@ namespace meisterwerk {
                 return false;
             }
 
-            virtual void onSetup() {
-                DBG( "entity::onSetup, missing override for entity " + entName );
+            virtual void onRegister() {
+                DBG( "entity::onRegister, missing override for entity " + entName );
             }
 
+            // there is no clash between baseapp:onLoop and entity;:onLoop
+            // because of the number of parameters.
             virtual void onLoop( unsigned long ticker ) {
                 DBG( "entity:onLook, missing override for entity " + entName );
             }

@@ -35,8 +35,8 @@ namespace meisterwerk {
                 minExtraLongMs = _minExtraLongMs;
             }
 
-            virtual void onSetup() override {
-                button::onSetup();
+            virtual void onRegister() override {
+                button::onRegister();
                 subscribe( entName + "/config" );
             }
 

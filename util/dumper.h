@@ -43,7 +43,7 @@ namespace meisterwerk {
                 return meisterwerk::core::entity::registerEntity( 1000000 );
             }
 
-            void onSetup() override {
+            void onRegister() override {
                 dumpSystemInfo();
                 // explicit commands
                 subscribe( "*/dump" );

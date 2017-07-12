@@ -148,7 +148,7 @@ namespace meisterwerk {
                 return meisterwerk::core::entity::registerEntity( 50000 );
             }
 
-            virtual void onSetup() override {
+            virtual void onRegister() override {
                 Wire.begin( sdaport, sclport ); // SDA, SCL;
                 bSetup = true;
                 bEnum  = false;

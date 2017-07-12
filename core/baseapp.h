@@ -6,29 +6,30 @@
 #pragma once
 
 // dependencies
+#include "entity.h"
 #include "scheduler.h"
 
 namespace meisterwerk {
     namespace core {
 
-        class baseapp {
+        class baseapp : public entity {
             public:
             // static members
             static baseapp *_app;
 
             // members
-            String    appName;
             scheduler sched;
 
             // mthods
-            baseapp( String name ) {
-                appName = name;
-                _app    = this;
+            baseapp( String name ) : entity( name ) {
+                _app = this;
             }
 
             virtual void onSetup() {
             }
 
+            // there is no clash between baseapp:onLoop and entity;:onLoop
+            // because of the number of parameters.
             virtual void onLoop() {
                 sched.loop();
             }
