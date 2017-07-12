@@ -253,7 +253,8 @@ namespace meisterwerk {
                     i2cScan();
                 }
             }
-            virtual void onReceive( String topic, String msg ) override {
+
+            virtual void onReceive( String origin, String topic, String msg ) override {
                 if ( topic == "i2cbus/enum" ) {
                     DBG( "i2cbus: received enum request." );
                     i2cScan();

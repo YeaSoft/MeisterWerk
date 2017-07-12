@@ -78,8 +78,8 @@ namespace meisterwerk {
                 }
             }
 
-            virtual void onReceive( String topic, String msg ) override {
-                meisterwerk::base::i2cdev::onReceive( topic, msg );
+            virtual void onReceive( String origin, String topic, String msg ) override {
+                meisterwerk::base::i2cdev::onReceive( origin, topic, msg );
                 if ( topic == entName + "/config" ) {
                     config( msg );
                 }
