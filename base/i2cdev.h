@@ -33,7 +33,7 @@ namespace meisterwerk {
                 return meisterwerk::core::entity::registerEntity( 50000 );
             }
 
-            virtual void onSetup() override {
+            virtual void onRegister() override {
                 DBG( "i2cdev pub/sub in setup" );
                 subscribe( "i2cbus/online" );
                 publish( "i2cbus/enum", "" );

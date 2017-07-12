@@ -194,7 +194,7 @@ namespace meisterwerk {
                     return false;
                 }
                 taskList.push_back( pTask );
-                pEnt->onSetup();
+                pEnt->onRegister();
                 return true;
             }
 
