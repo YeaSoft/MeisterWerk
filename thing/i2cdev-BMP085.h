@@ -22,8 +22,8 @@ namespace meisterwerk {
             String json;
 
             i2cdev_BMP085( String name)
-                : meisterwerk::base::i2cdev( name, "BMP085" ), tempProcessor(5, 600, 0.1), pressProcessor(10, 600, 0.05) {
-                    // send temperature updates, if temperature changes for 0.1C over an average of 5 measurements, but at least every 15min
+                : meisterwerk::base::i2cdev( name, "BMP085" ), tempProcessor(5, 900, 0.1), pressProcessor(10, 900, 0.05) {
+                    // send temperature updates, if temperature changes for 0.1C over an average of 5 measurements, but at least every 15min (900sec)
                     // send pressure update, if pressure changes for 0.05mbar over an average of 10 measurements, but at least every 15min
             }
             ~i2cdev_BMP085() {
