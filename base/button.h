@@ -1,9 +1,22 @@
+// button.h - Base class for a button
+//
+// This is the declaration of the base class for a
+// button. A button publishes an event when its
+// push state changes:
+//
+// Messages are published when the button is pushed
+// and when the button is released. The message content
+// is the duration of the previous state.
+//
+// Publish:
+// - "NAME/push"
+// - "NAME/release"
 
-#ifndef button_h
-#define button_h
+#pragma once
 
 // dependencies
 #include "../core/entity.h"
+#include "../util/timebudget.h"
 
 namespace meisterwerk {
     namespace base {
@@ -21,10 +34,10 @@ namespace meisterwerk {
                 // fire a message
                 if ( toState ) {
                     // press
-                    publish( entName + "/press", String( duration / 1000 ) );
+                    publish( entName + "/press", "{d:" + String( duration / 1000 ) + "}" );
                 } else {
                     // release
-                    publish( entName + "/release", String( duration / 1000 ) );
+                    publish( entName + "/release", "{d:" + String( duration / 1000 ) + "}" );
                 }
             }
 
@@ -38,10 +51,9 @@ namespace meisterwerk {
 
             virtual void change( bool toState ) {
                 if ( fromState != toState ) {
-                    unsigned long last     = micros();
-                    unsigned long duration = last > lastChange
-                                                 ? last - lastChange
-                                                 : ( (unsigned long)-1 ) - lastChange + last;
+                    unsigned long last = micros();
+                    unsigned long duration =
+                        meisterwerk::util::timebudget::delta( lastChange, last );
                     lastChange = last;
                     fromState  = toState;
                     // handle state change
@@ -49,7 +61,5 @@ namespace meisterwerk {
                 }
             }
         };
-    }
-}
-
-#endif
+    } // namespace base
+} // namespace meisterwerk

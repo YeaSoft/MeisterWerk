@@ -5,12 +5,15 @@
 // application method for non blocking communication
 // between the components and scheduling
 
-#ifndef scheduler_h
-#define scheduler_h
+#pragma once
 
 // dependencies
 #include "entity.h"
 #include <list>
+
+#ifdef DEBUG
+#include "../util/timebudget.h"
+#endif
 
 namespace meisterwerk {
     namespace core {
@@ -35,22 +38,22 @@ namespace meisterwerk {
             class task {
                 public:
                 task( entity *_pEnt, unsigned long _minMicros, unsigned int _priority ) {
-                    pEnt          = _pEnt;
-                    minMicros     = _minMicros;
-                    lastCall      = 0;
-                    numberOfCalls = 0;
-                    budget        = 0;
-                    lateTime      = 0;
-                    priority      = _priority;
+                    pEnt      = _pEnt;
+                    minMicros = _minMicros;
+                    priority  = _priority;
+                    lastCall  = 0;
+                    lateTime  = 0;
                 }
 
                 entity *      pEnt;
                 unsigned long minMicros;
-                unsigned long lastCall;
-                unsigned long numberOfCalls;
-                unsigned long budget;
-                unsigned long lateTime;
                 unsigned int  priority;
+                unsigned long lastCall;
+                unsigned long lateTime;
+#ifdef DEBUG
+                meisterwerk::util::timebudget msgTime;
+                meisterwerk::util::timebudget tskTime;
+#endif
             };
 
             typedef task *                    T_PTASK;
@@ -58,7 +61,6 @@ namespace meisterwerk {
             typedef std::list<T_SUBSCRIPTION> T_SUBSCRIPTIONLIST;
 
             // members
-            unsigned long      lastTick;
             T_TASKLIST         taskList;
             T_SUBSCRIPTIONLIST subscriptionList;
 
@@ -67,7 +69,9 @@ namespace meisterwerk {
             scheduler() {
                 taskList.clear();
                 subscriptionList.clear();
-                lastTick = micros();
+#ifdef DEBUG
+                allTime.snap();
+#endif
             }
 
             virtual ~scheduler() {
@@ -88,11 +92,17 @@ namespace meisterwerk {
                     // process entity and kernel tasks
                     processTask( pTask );
                 }
+#ifdef DEBUG
+                allTime.shot();
+#endif
             }
 
             // internal methods
             protected:
             void processMsgQueue() {
+#ifdef DEBUG
+                msgTime.snap();
+#endif
                 for ( message *pMsg = message::que.pop(); pMsg != nullptr;
                       pMsg          = message::que.pop() ) {
                     switch ( pMsg->type ) {
@@ -110,21 +120,28 @@ namespace meisterwerk {
                         break;
                     }
                     delete pMsg;
+#ifdef DEBUG
+                    msgTime.shot();
+#endif
                 }
             }
 
             void processTask( T_PTASK pTask ) {
                 unsigned long ticker = micros();
-                unsigned long tDelta = ticker - pTask->lastCall;
-                // XXX: missing overflow handling
+                unsigned long tDelta =
+                    meisterwerk::util::timebudget::delta( pTask->lastCall, ticker );
                 if ( ( pTask->minMicros > 0 ) && ( tDelta >= pTask->minMicros ) ) {
-                    // SLOW: DBG("Scheduling: "+t.first+" ticker: " +String(ticker)+" tdelta:
-                    // "+String(tdelta));
+#ifdef DEBUG
+                    tskTime.snap();
+                    pTask->tskTime.snap();
+#endif
                     pTask->pEnt->onLoop( ticker );
+#ifdef DEBUG
+                    pTask->tskTime.shot();
+                    tskTime.shot();
+#endif
                     pTask->lastCall = ticker;
-                    pTask->budget += micros() - ticker;
                     pTask->lateTime += tDelta - pTask->minMicros;
-                    ++( pTask->numberOfCalls );
                 }
             }
 
@@ -149,7 +166,13 @@ namespace meisterwerk {
                     if ( msgmatches( sub.topic, topic ) ) {
                         for ( auto pTask : taskList ) {
                             if ( pTask->pEnt->entName == sub.subscriber ) {
+#ifdef DEBUG
+                                pTask->msgTime.snap();
                                 pTask->pEnt->onReceiveMessage( topic, pMsg->pBuf, pMsg->pBufLen );
+                                pTask->msgTime.shot();
+#else
+                                pTask->pEnt->onReceiveMessage( topic, pMsg->pBuf, pMsg->pBufLen );
+#endif
                             }
                         }
                     }
@@ -174,14 +197,15 @@ namespace meisterwerk {
                 return true;
             }
 
-            bool msgmatches( String s1, String s2 ) {
+            static bool msgmatches( String s1, String s2 ) {
                 // compares topic-paths <subtopic>/<subtopic/...
                 // the compare is symmetric, s1==s2 <=> s2==s1.
                 // subtopic can be <chars> or <chars>+'*', '*' must be last char of a subtopic.
-                // '*' acts within only the current subtopic. Exception: a '*' as last character of a topic-path
+                // '*' acts within only the current subtopic. Exception: a '*' as last character of
+                // a topic-path
                 //    matches all deeper subptopics:  a*==a/b/c/d/e, but a*/c1!=a1/b1/c1
                 // Samples:   abc/def/ghi == */de*/*, abc/def!=abc, ab*==abc, a*==a/b/c/d
-                //    a/b*==a/b/c/d/e, a/b*/d!=a/b/c/d            
+                //    a/b*==a/b/c/d/e, a/b*/d!=a/b/c/d
                 if ( s1 == s2 )
                     return true;
                 int l1 = s1.length();
@@ -190,7 +214,7 @@ namespace meisterwerk {
                 if ( l1 < l2 )
                     l = l2;
                 else
-                    l = l1;
+                    l  = l1;
                 int p1 = 0, p2 = 0;
                 for ( int i = 0; i < l; l++ ) {
                     if ( ( p1 > l1 ) || ( p2 > l2 ) )
@@ -253,7 +277,37 @@ namespace meisterwerk {
                 return false;
             }
 
+#ifdef DEBUG
+            public:
+            meisterwerk::util::timebudget msgTime;
+            meisterwerk::util::timebudget tskTime;
+            meisterwerk::util::timebudget allTime;
+
+            void dumpInfo( String pre ) {
+                const __FlashStringHelper *ms = F( " ms" );
+                const __FlashStringHelper *us = F( " us" );
+                DBG( "" );
+                DBG( F( "Task Information" ) );
+                DBG( F( "----------------" ) );
+                DBG( pre + F( "Dispatched Messages: " ) + msgTime.getcount() );
+                DBG( pre + F( "Dispatched Tasks: " ) + tskTime.getcount() );
+                DBG( pre + F( "Message Time: " ) + msgTime.getms() + ms );
+                DBG( pre + F( "Task Time: " ) + tskTime.getms() + ms );
+                DBG( pre + F( "Total Time: " ) + allTime.getms() + ms );
+                DBG( "" );
+                DBG( pre + F( "Individual Tast Statistics:" ) );
+                for ( auto pTask : taskList ) {
+                    DBG( "" );
+                    DBG( pre + F( "  Name: " ) + pTask->pEnt->entName );
+                    DBG( pre + F( "  Calls: " ) + pTask->tskTime.getcount() );
+                    DBG( pre + F( "  Calls Time: " ) + pTask->tskTime.getms() + ms );
+                    DBG( pre + F( "  Calls Max Time: " ) + pTask->tskTime.getmaxus() + us );
+                    DBG( pre + F( "  Messages: " ) + pTask->msgTime.getcount() );
+                    DBG( pre + F( "  Message Time: " ) + pTask->msgTime.getms() + ms );
+                    DBG( pre + F( "  Message Max Time: " ) + pTask->msgTime.getmaxus() + us );
+                }
+            }
+#endif
         };
     } // namespace core
 } // namespace meisterwerk
-#endif

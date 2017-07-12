@@ -5,6 +5,8 @@
 // emitted through the serial interface
 // The class works only if #define DEBUG
 
+#pragma once
+
 // dependencies
 #include "../core/entity.h"
 
@@ -19,7 +21,7 @@ namespace meisterwerk {
 
             public:
 #ifdef DEBUG
-            messagespy( String name = "dbg", String subscription = "*" )
+            messagespy( String name = "spy", String subscription = "*" )
                 : meisterwerk::core::entity( name ) {
                 tmpSubscribedTopic = subscription;
             }
@@ -40,7 +42,8 @@ namespace meisterwerk {
                 tmpSubscribedTopic = "";
             }
 
-            virtual void onReceiveMessage( String topic, const char *pBuf, unsigned int len ) {
+            virtual void onReceiveMessage( String topic, const char *pBuf,
+                                           unsigned int len ) override {
                 if ( len = 0 ) {
                     Serial.println( "messagespy(" + entName + "): topic='" + topic + "'" );
                 } else {
@@ -50,5 +53,5 @@ namespace meisterwerk {
             }
 #endif
         };
-    }
-}
+    } // namespace util
+} // namespace meisterwerk

@@ -5,8 +5,7 @@
 // application method for non blocking communication
 // between the components and scheduling
 
-#ifndef message_h
-#define message_h
+#pragma once
 
 // configuration of message properties
 #ifndef MW_MSG_MAX_TOPIC_LENGTH
@@ -21,6 +20,7 @@
 #define MW_MAX_QUEUE 256
 #endif
 
+// dependencies
 #include "helpers.h"
 #include "queue.h"
 
@@ -50,7 +50,7 @@ namespace meisterwerk {
                               unsigned int _len, bool isBufAllocated = false ) {
                 message *msg = new message();
                 if ( msg == nullptr ) {
-                    DBG( "message::sendMessage, failed to allocate message" );
+                    DBG( F( "message::sendMessage, failed to allocate message" ) );
                     return false;
                 }
                 if ( msg->create( _type, _originator, _topic, _pBuf, _len, isBufAllocated ) ) {
@@ -68,7 +68,7 @@ namespace meisterwerk {
                 unsigned int _length = _content.length() + 1;
                 char *       _buffer = (char *)malloc( _length );
                 if ( _buffer == nullptr ) {
-                    DBG( "message::sendMessage, failed to allocate content" );
+                    DBG( F( "message::sendMessage, failed to allocate content" ) );
                     return false;
                 }
                 strcpy( _buffer, _content.c_str() );
@@ -111,7 +111,7 @@ namespace meisterwerk {
                 int olen   = _originator.length() + 1;
                 originator = (char *)malloc( olen );
                 if ( originator == nullptr ) {
-                    DBG( "message::create, Cannot allocate originator" );
+                    DBG( F( "message::create, Cannot allocate originator" ) );
                     return false;
                 }
                 strcpy( originator, _originator.c_str() );
@@ -119,7 +119,7 @@ namespace meisterwerk {
                 // set topic
                 topic = (char *)malloc( tLen );
                 if ( topic == nullptr ) {
-                    DBG( "message::create, Cannot allocate topic" );
+                    DBG( F( "message::create, Cannot allocate topic" ) );
                     discard();
                     return false;
                 }
@@ -132,7 +132,7 @@ namespace meisterwerk {
                     } else {
                         pBuf = (char *)malloc( _len );
                         if ( pBuf == nullptr ) {
-                            DBG( "message::create, Cannot allocate content" );
+                            DBG( F( "message::create, Cannot allocate content" ) );
                             discard();
                             return false;
                         }
@@ -161,5 +161,3 @@ namespace meisterwerk {
         queue<message> message::que( MW_MAX_QUEUE );
     } // namespace core
 } // namespace meisterwerk
-
-#endif
