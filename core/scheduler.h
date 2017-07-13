@@ -290,14 +290,15 @@ namespace meisterwerk {
                 const __FlashStringHelper *us = F( " us" );
                 DBG( "" );
                 DBG( F( "Task Information" ) );
-                DBG( F( "----------------" ) );
+                DBG( F( "================" ) );
                 DBG( pre + F( "Dispatched Messages: " ) + msgTime.getcount() );
                 DBG( pre + F( "Dispatched Tasks: " ) + tskTime.getcount() );
                 DBG( pre + F( "Message Time: " ) + msgTime.getms() + ms );
                 DBG( pre + F( "Task Time: " ) + tskTime.getms() + ms );
                 DBG( pre + F( "Total Time: " ) + allTime.getms() + ms );
                 DBG( "" );
-                DBG( pre + F( "Individual Tast Statistics:" ) );
+                DBG( pre + F( "Individual Task Statistics:" ) );
+                DBG( pre + F( "---------------------------" ) );
                 for ( auto pTask : taskList ) {
                     DBG( "" );
                     DBG( pre + F( "  Name: " ) + pTask->pEnt->entName );
