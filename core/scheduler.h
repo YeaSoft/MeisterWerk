@@ -171,12 +171,16 @@ namespace meisterwerk {
                                  ( String( pMsg->originator ) != sub.subscriber ) ) {
 #ifdef DEBUG
                                 pTask->msgTime.snap();
-                                pTask->pEnt->onReceive( pMsg->originator, pMsg->topic,
-                                                        (char *)pMsg->pBuf );
+#endif
+                                if ( pMsg->pBufLen == 0 ) {
+                                    pTask->pEnt->onReceive( pMsg->originator, pMsg->topic, "" );
+
+                                } else {
+                                    pTask->pEnt->onReceive( pMsg->originator, pMsg->topic,
+                                                            (char *)pMsg->pBuf );
+                                }
+#ifdef DEBUG
                                 pTask->msgTime.shot();
-#else
-                                pTask->pEnt->onReceive( pMsg->originator, pMsg->topic,
-                                                        (char *)pMsg->pBuf );
 #endif
                             }
                         }
