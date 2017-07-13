@@ -62,5 +62,5 @@ namespace meisterwerk {
                 return false;
             }
         };
-    }
-}
+    } // namespace util
+} // namespace meisterwerk

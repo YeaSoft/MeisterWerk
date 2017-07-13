@@ -18,5 +18,5 @@ namespace meisterwerk {
             else
                 return String( b );
         }
-    }
-}
+    } // namespace util
+} // namespace meisterwerk

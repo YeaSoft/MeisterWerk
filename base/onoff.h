@@ -8,7 +8,7 @@
 // - setstate
 
 // Emits:
-// - statechange
+// - state
 
 #pragma once
 
@@ -17,39 +17,43 @@
 
 // dependencies
 #include "../core/entity.h"
+#include "../util/eggtimer.h"
 
 namespace meisterwerk {
     namespace base {
 
         class onoff : public meisterwerk::core::entity {
             public:
-            bool         state      = false;
-            bool         stateNext  = false;
-            unsigned int stateTimer = 0;
+            bool                        state      = false;
+            bool                        stateNext  = false;
+            meisterwerk::util::eggtimer stateTimer = 0;
 
             onoff( String name ) : meisterwerk::core::entity( name ) {
             }
 
-            bool registerEntity() {
-                // the state timer has a second resolution. It is enough
-                // to check it each 250 ms
-                return meisterwerk::core::entity::registerEntity( 1000000 );
+            bool registerEntity( unsigned long minMicroSecs = 250000, unsigned int priority = 3 ) {
+                // The state timer had a millisecond resolution. For most
+                // purposes a 250 ms resolution sbhould be enough, so take
+                // this if a default. Iff needed an entity can be initialized
+                // to a higher resolution
+                return meisterwerk::core::entity::registerEntity( minMicroSecs );
             }
 
             // ABSTRACT CLASS: This override must be implemented in derived classes
             virtual bool onSwitch( bool newstate ) = 0;
 
             virtual void onRegister() override {
+                // standard commands
+                subscribe( entName + "/getstate" );
+                subscribe( entName + "/setstate" );
+                // convenience shortcuts
                 subscribe( entName + "/on" );
                 subscribe( entName + "/off" );
                 subscribe( entName + "/toggle" );
-                subscribe( entName + "/getstate" );
-                subscribe( entName + "/setstate" );
-                subscribe( entName + "/getconfig" );
             }
 
             virtual void onReceive( String origin, String topic, String msg ) override {
-                DynamicJsonBuffer jsonBuffer( 200 );
+                DynamicJsonBuffer jsonBuffer( 300 );
                 JsonObject &      root = jsonBuffer.parseObject( msg );
                 if ( !root.success() ) {
                     DBG( "Invalid JSON received!" );
@@ -69,9 +73,8 @@ namespace meisterwerk {
             }
 
             virtual void onLoop( unsigned long timer ) override {
-                if ( stateTimer ) {
-                    --stateTimer;
-                    if ( stateTimer == 0 ) {
+                if ( stateTimer > 0 ) {
+                    if ( stateTimer.isexpired() ) {
                         // perform action
                         if ( state != stateNext ) {
                             setState( stateNext, 0 );
