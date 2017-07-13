@@ -15,12 +15,12 @@ namespace meisterwerk {
 
         class messagespy : public meisterwerk::core::entity {
             private:
-#ifdef DEBUG
+#ifdef _DEBUG
             String tmpSubscribedTopic;
 #endif
 
             public:
-#ifdef DEBUG
+#ifdef _DEBUG
             messagespy( String name = "spy", String subscription = "*" )
                 : meisterwerk::core::entity( name ) {
                 tmpSubscribedTopic = subscription;
@@ -36,7 +36,7 @@ namespace meisterwerk {
             }
 #endif
 
-#ifdef DEBUG
+#ifdef _DEBUG
             void onRegister() override {
                 subscribe( tmpSubscribedTopic );
                 tmpSubscribedTopic = "";
