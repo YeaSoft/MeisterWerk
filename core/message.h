@@ -21,7 +21,7 @@
 #endif
 
 // dependencies
-#include "helpers.h"
+#include "../util/debug.h"
 #include "queue.h"
 
 namespace meisterwerk {

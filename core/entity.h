@@ -8,7 +8,7 @@
 #pragma once
 
 // dependencies
-#include "helpers.h"
+#include "../util/debug.h"
 #include "message.h"
 
 namespace meisterwerk {
