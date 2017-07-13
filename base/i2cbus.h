@@ -194,7 +194,8 @@ namespace meisterwerk {
                 byte error = Wire.endTransmission();
                 if ( error == 0 ) {
                     bDevFound = true;
-                    DBG( "I2C device found at address 0x" + meisterwerk::util::hexByte( address ) );
+                    // DBG( "I2C device found at address 0x" + meisterwerk::util::hexByte( address )
+                    // );
                 } else if ( error == 4 ) {
                     DBG( "Unknow error at address " + meisterwerk::util::hexByte( address ) );
                 }
@@ -256,7 +257,6 @@ namespace meisterwerk {
 
             virtual void onReceive( String origin, String topic, String msg ) override {
                 if ( topic == "i2cbus/enum" ) {
-                    DBG( "i2cbus: received enum request." );
                     i2cScan();
                 }
             }

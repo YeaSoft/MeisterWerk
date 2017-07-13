@@ -46,10 +46,12 @@ namespace meisterwerk {
 
             bool registerEntity() {
                 // 5sec sensor checks
-                return meisterwerk::core::entity::registerEntity( 5000000 );
+                bool ret = meisterwerk::core::entity::registerEntity( 5000000 );
+                return ret;
             }
 
             virtual void onInstantiate( String i2ctype, uint8_t address ) override {
+                // String sa = meisterwerk::util::hexByte( address );
                 DBG( "Instantiating BMP085 device at address 0x" +
                      meisterwerk::util::hexByte( address ) );
                 pbmp = new Adafruit_BMP085();
@@ -89,5 +91,5 @@ namespace meisterwerk {
                 // XXX: do things
             }
         };
-    } // namespace base
+    } // namespace thing
 } // namespace meisterwerk

@@ -191,7 +191,7 @@ namespace meisterwerk {
                 subscriptionList.emplace_back( subs );
             }
 
-            bool unsubscribeMsg( message *pMsg ) {
+            void unsubscribeMsg( message *pMsg ) {
                 T_SUBSCRIPTIONLIST::iterator iter = subscriptionList.begin();
                 while ( iter != subscriptionList.end() ) {
                     T_SUBSCRIPTION sub = ( *iter );
@@ -200,11 +200,13 @@ namespace meisterwerk {
                     if ( ( sub.topic == String( pMsg->topic ) ) &&
                          ( sub.subscriber == String( pMsg->originator ) ) ) {
                         subscriptionList.erase( iter );
-                        return true;
+                        return;
                     }
                     ++iter;
                 }
-                return false;
+                DBG( "Entity " + String( pMsg->originator ) + " tried to unscribe topic " +
+                     String( pMsg->topic ) + " which had not been subscribed!" );
+                return;
             }
 
             bool registerEntity( entity *pEnt, unsigned long minMicroSecs = 100000L,
