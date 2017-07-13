@@ -42,7 +42,7 @@ namespace meisterwerk {
 
 #else // _DEBUG
 
-##define ASSERT( f )( (void)( 0 ) )
+#define ASSERT( f ) ( (void)( 0 ) )
 #define VERIFY( f ) ( (void)( f ) )
 #define DBG_ONLY( f )
 #define DBG( f )
