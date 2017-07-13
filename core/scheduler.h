@@ -164,7 +164,7 @@ namespace meisterwerk {
                 for ( auto sub : subscriptionList ) {
                     if ( msgmatches( sub.topic, pMsg->topic ) ) {
                         for ( auto pTask : taskList ) {
-                            if ( (pTask->pEnt->entName == sub.subscriber) && (pMsg->originator != sub.subscriber) ) {
+                            if ( (pTask->pEnt->entName == sub.subscriber) && (String(pMsg->originator) != sub.subscriber) ) {
 #ifdef DEBUG
                                 pTask->msgTime.snap();
                                 pTask->pEnt->onReceive( pMsg->originator, pMsg->topic,
