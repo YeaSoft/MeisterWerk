@@ -20,7 +20,7 @@ namespace meisterwerk {
 
             public:
             static unsigned long delta( const unsigned long then, const unsigned long now ) {
-                return now > then ? now - then : ( (unsigned long)-1 ) - then + now;
+                return now >= then ? now - then : ( (unsigned long)-1 ) - then + +1;
             }
 
             void inc( const unsigned long inc ) {
@@ -36,7 +36,8 @@ namespace meisterwerk {
             }
 
             void deltainc( const unsigned long then, const unsigned long now ) {
-                inc( now >= then ? now - then : ( (unsigned long)-1 ) - then + now );
+                inc( now >= then ? now - then
+                                 : ( (unsigned long)-1 ) - then + now + 1 ); // XXX: duplicate
             }
 
             void snap() {
