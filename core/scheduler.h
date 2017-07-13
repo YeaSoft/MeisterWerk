@@ -316,7 +316,8 @@ namespace meisterwerk {
                 DBG( pre + F( "Dispatched Messages: " ) + msgTime.getcount() );
                 DBG( pre + F( "Dispatched Tasks: " ) + tskTime.getcount() );
                 DBG( pre + F( "Message Time: " ) + msgTime.getms() + ms );
-                DBG( pre + F( "Task Time: " ) + tskTime.getms() + ms );
+                DBG( pre + F( "Task Time: " ) + tskTime.getms() + ms + " (" +
+                     tskTime.getPercent( allTime.getms() ) + "%)" );
                 DBG( pre + F( "Total Time: " ) + allTime.getms() + ms );
                 DBG( "" );
                 DBG( pre + F( "Individual Task Statistics:" ) );
@@ -325,10 +326,12 @@ namespace meisterwerk {
                     DBG( "" );
                     DBG( pre + F( "  Name: " ) + pTask->pEnt->entName );
                     DBG( pre + F( "  Calls: " ) + pTask->tskTime.getcount() );
-                    DBG( pre + F( "  Calls Time: " ) + pTask->tskTime.getms() + ms );
+                    DBG( pre + F( "  Calls Time: " ) + pTask->tskTime.getms() + ms + " (" +
+                         pTask->tskTime.getPercent( allTime.getms() ) + "%)" );
                     DBG( pre + F( "  Calls Max Time: " ) + pTask->tskTime.getmaxus() + us );
                     DBG( pre + F( "  Messages: " ) + pTask->msgTime.getcount() );
-                    DBG( pre + F( "  Message Time: " ) + pTask->msgTime.getms() + ms );
+                    DBG( pre + F( "  Message Time: " ) + pTask->msgTime.getms() + ms + " (" +
+                         pTask->msgTime.getPercent( allTime.getms() ) + "%)" );
                     DBG( pre + F( "  Message Max Time: " ) + pTask->msgTime.getmaxus() + us );
                 }
             }

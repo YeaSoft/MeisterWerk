@@ -53,6 +53,12 @@ namespace meisterwerk {
                 return val + ( valFine / 1000 );
             }
 
+            float getPercent( unsigned long ref ) {
+                if ( ref == 0 )
+                    return 0.0;
+                else
+                    return ( getms() * 100.0 ) / ref;
+            }
             unsigned long getmaxus() const {
                 return valMax;
             }
