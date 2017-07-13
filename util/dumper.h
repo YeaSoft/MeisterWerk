@@ -17,7 +17,7 @@ namespace meisterwerk {
 
         class dumper : public meisterwerk::core::entity {
             public:
-#ifdef DEBUG
+#ifdef _DEBUG
             String debugButton;
             int    iMinDumpSecs;
             int    iCount = 0;
@@ -38,7 +38,7 @@ namespace meisterwerk {
             }
 #endif
 
-#ifdef DEBUG
+#ifdef _DEBUG
             bool registerEntity() {
                 return meisterwerk::core::entity::registerEntity( 1000000 );
             }

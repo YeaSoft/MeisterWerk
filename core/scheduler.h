@@ -8,12 +8,9 @@
 #pragma once
 
 // dependencies
+#include "../util/timebudget.h"
 #include "entity.h"
 #include <list>
-
-#ifdef DEBUG
-#include "../util/timebudget.h"
-#endif
 
 namespace meisterwerk {
     namespace core {
@@ -50,10 +47,9 @@ namespace meisterwerk {
                 unsigned int  priority;
                 unsigned long lastCall;
                 unsigned long lateTime;
-#ifdef DEBUG
-                meisterwerk::util::timebudget msgTime;
-                meisterwerk::util::timebudget tskTime;
-#endif
+
+                DBG_ONLY( meisterwerk::util::timebudget msgTime );
+                DBG_ONLY( meisterwerk::util::timebudget tskTime );
             };
 
             typedef task *                    T_PTASK;
@@ -69,9 +65,7 @@ namespace meisterwerk {
             scheduler() {
                 taskList.clear();
                 subscriptionList.clear();
-#ifdef DEBUG
-                allTime.snap();
-#endif
+                DBG_ONLY( allTime.snap() );
             }
 
             virtual ~scheduler() {
@@ -92,17 +86,13 @@ namespace meisterwerk {
                     // process entity and kernel tasks
                     processTask( pTask );
                 }
-#ifdef DEBUG
-                allTime.shot();
-#endif
+                DBG_ONLY( allTime.shot() );
             }
 
             // internal methods
             protected:
             void processMsgQueue() {
-#ifdef DEBUG
-                msgTime.snap();
-#endif
+                DBG_ONLY( msgTime.snap() );
                 for ( message *pMsg = message::que.pop(); pMsg != nullptr;
                       pMsg          = message::que.pop() ) {
                     switch ( pMsg->type ) {
@@ -123,9 +113,7 @@ namespace meisterwerk {
                         break;
                     }
                     delete pMsg;
-#ifdef DEBUG
-                    msgTime.shot();
-#endif
+                    DBG_ONLY( msgTime.shot() );
                 }
             }
 
@@ -134,15 +122,14 @@ namespace meisterwerk {
                 unsigned long tDelta =
                     meisterwerk::util::timebudget::delta( pTask->lastCall, ticker );
                 if ( ( pTask->minMicros > 0 ) && ( tDelta >= pTask->minMicros ) ) {
-#ifdef DEBUG
-                    tskTime.snap();
-                    pTask->tskTime.snap();
-#endif
+                    DBG_ONLY( tskTime.snap() );
+                    DBG_ONLY( pTask->tskTime.snap() );
+
                     pTask->pEnt->onLoop( ticker );
-#ifdef DEBUG
-                    pTask->tskTime.shot();
-                    tskTime.shot();
-#endif
+
+                    DBG_ONLY( pTask->tskTime.shot() );
+                    DBG_ONLY( tskTime.shot() );
+
                     pTask->lastCall = ticker;
                     pTask->lateTime += tDelta - pTask->minMicros;
                 }
@@ -169,9 +156,8 @@ namespace meisterwerk {
                         for ( auto pTask : taskList ) {
                             if ( ( pTask->pEnt->entName == sub.subscriber ) &&
                                  ( String( pMsg->originator ) != sub.subscriber ) ) {
-#ifdef DEBUG
-                                pTask->msgTime.snap();
-#endif
+                                DBG_ONLY( pTask->msgTime.snap() );
+
                                 if ( pMsg->pBufLen == 0 ) {
                                     pTask->pEnt->onReceive( pMsg->originator, pMsg->topic, "" );
 
@@ -179,9 +165,8 @@ namespace meisterwerk {
                                     pTask->pEnt->onReceive( pMsg->originator, pMsg->topic,
                                                             (char *)pMsg->pBuf );
                                 }
-#ifdef DEBUG
-                                pTask->msgTime.shot();
-#endif
+
+                                DBG_ONLY( pTask->msgTime.shot() );
                             }
                         }
                     }
@@ -242,7 +227,7 @@ namespace meisterwerk {
                 if ( l1 < l2 )
                     l = l2;
                 else
-                    l = l1;
+                    l  = l1;
                 int p1 = 0, p2 = 0;
                 for ( int i = 0; i < l; l++ ) {
                     if ( ( p1 > l1 ) || ( p2 > l2 ) )
@@ -305,7 +290,7 @@ namespace meisterwerk {
                 return false;
             }
 
-#ifdef DEBUG
+#ifdef _DEBUG
             public:
             meisterwerk::util::timebudget msgTime;
             meisterwerk::util::timebudget tskTime;

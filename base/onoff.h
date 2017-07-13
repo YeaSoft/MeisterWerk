@@ -80,23 +80,13 @@ namespace meisterwerk {
                 }
             }
 
-            String makeConfig( bool newstate, unsigned long duration ) {
-                char              szBuffer[256];
-                DynamicJsonBuffer jsonBuffer( 200 );
-                JsonObject &      root = jsonBuffer.createObject();
-                root["state"]          = newstate;
-                root["duration"]       = duration;
-                root.printTo( szBuffer );
-                return szBuffer;
-            }
-
             void setState( bool newstate, unsigned long duration ) {
                 if ( newstate != state ) {
                     if ( onSwitch( newstate ) ) {
                         stateTimer = duration;
                         stateNext  = duration ? !newstate : newstate;
                         state      = newstate;
-                        publish( entName + "/state", makeConfig( state, stateTimer ) );
+                        publish( entName + "/state", makeState( state, stateTimer ) );
                     } else {
                         DBG( entName + ": Hardware failure while switching state" );
                     }
@@ -104,12 +94,24 @@ namespace meisterwerk {
                     // do not change the state, but the duration for this state
                     stateTimer = duration;
                     stateNext  = !state;
-                    publish( entName + "/state", makeConfig( state, stateTimer ) );
+                    publish( entName + "/state", makeState( state, stateTimer ) );
                 }
             }
 
             void getState() {
-                publish( entName + "/state", makeConfig( state, stateTimer ) );
+                publish( entName + "/state", makeState( state, stateTimer ) );
+            }
+
+            // internal
+            private:
+            String makeState( bool newstate, unsigned long duration ) {
+                char              szBuffer[256];
+                DynamicJsonBuffer jsonBuffer( 200 );
+                JsonObject &      root = jsonBuffer.createObject();
+                root["state"]          = newstate;
+                root["duration"]       = duration;
+                root.printTo( szBuffer );
+                return szBuffer;
             }
         };
     } // namespace base
