@@ -36,8 +36,7 @@ namespace meisterwerk {
             }
 
             void deltainc( const unsigned long then, const unsigned long now ) {
-                inc( now >= then ? now - then
-                                 : ( (unsigned long)-1 ) - then + now + 1 ); // XXX: duplicate
+                inc( delta( then, now ); // XXX: duplicate
             }
 
             void snap() {
