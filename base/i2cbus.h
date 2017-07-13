@@ -149,7 +149,9 @@ namespace meisterwerk {
             }
 
             virtual void onRegister() override {
+                DBG( "wire begin" );
                 Wire.begin( sdaport, sclport ); // SDA, SCL;
+                DBG( "wire end init" );
                 bSetup = true;
                 bEnum  = false;
                 subscribe( "i2cbus/enum" );
