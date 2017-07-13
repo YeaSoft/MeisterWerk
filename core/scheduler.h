@@ -115,6 +115,9 @@ namespace meisterwerk {
                     case message::MSG_SUBSCRIBE:
                         subscribeMsg( pMsg );
                         break;
+                    case message::MSG_UNSUBSCRIBE:
+                        unsubscribeMsg( pMsg );
+                        break;
                     default:
                         DBG( "Unexpected message type: " + String( pMsg->type ) );
                         break;
@@ -188,6 +191,22 @@ namespace meisterwerk {
                 subscriptionList.emplace_back( subs );
             }
 
+            bool unsubscribeMsg( message *pMsg ) {
+                T_SUBSCRIPTIONLIST::iterator iter = subscriptionList.begin();
+                while ( iter != subscriptionList.end() ) {
+                    T_SUBSCRIPTION sub = ( *iter );
+                    // if ( msgmatches( sub.topic, pMsg->topic ) ) {  // Wild-card unsubscribe not
+                    // supported.
+                    if ( ( sub.topic == String( pMsg->topic ) ) &&
+                         ( sub.subscriber == String( pMsg->originator ) ) ) {
+                        subscriptionList.erase( iter );
+                        return true;
+                    }
+                    ++iter;
+                }
+                return false;
+            }
+
             bool registerEntity( entity *pEnt, unsigned long minMicroSecs = 100000L,
                                  unsigned int priority = PRIORITY_NORMAL ) {
                 task *pTask = new task( pEnt, minMicroSecs, priority );
@@ -217,7 +236,7 @@ namespace meisterwerk {
                 if ( l1 < l2 )
                     l = l2;
                 else
-                    l  = l1;
+                    l = l1;
                 int p1 = 0, p2 = 0;
                 for ( int i = 0; i < l; l++ ) {
                     if ( ( p1 > l1 ) || ( p2 > l2 ) )
