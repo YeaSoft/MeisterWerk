@@ -75,7 +75,6 @@ namespace meisterwerk {
                         // perform action
                         if ( state != stateNext ) {
                             setState( stateNext, 0 );
-                            state = stateNext;
                         }
                     }
                 }
@@ -95,7 +94,7 @@ namespace meisterwerk {
                 if ( newstate != state ) {
                     if ( onSwitch( newstate ) ) {
                         stateTimer = duration;
-                        stateNext  = !newstate;
+                        stateNext  = duration ? !newstate : newstate;
                         state      = newstate;
                         publish( entName + "/state", makeConfig( state, stateTimer ) );
                     } else {
