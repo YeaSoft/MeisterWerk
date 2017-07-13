@@ -25,10 +25,10 @@ namespace meisterwerk {
 
             void inc( const unsigned long inc ) {
                 cnt++;
-                valFine += inc;
+                valFine += inc; // XXX: needs further work.
                 if ( valFine > 1000000000L ) {
                     val += ( valFine / 1000 );
-                    valFine = 0;
+                    valFine = valFine % 1000;
                 }
                 if ( inc > valMax ) {
                     valMax = inc;
@@ -36,7 +36,7 @@ namespace meisterwerk {
             }
 
             void deltainc( const unsigned long then, const unsigned long now ) {
-                inc( now > then ? now - then : ( (unsigned long)-1 ) - then + now );
+                inc( now >= then ? now - then : ( (unsigned long)-1 ) - then + now );
             }
 
             void snap() {
