@@ -33,13 +33,13 @@ namespace meisterwerk {
             bool registerEntity() {
                 // the state timer has a second resolution. It is enough
                 // to check it each 250 ms
-                return meisterwerk::core::entity::registerEntity( 250000 );
+                return meisterwerk::core::entity::registerEntity( 1000000 );
             }
 
             // ABSTRACT CLASS: This override must be implemented in derived classes
-            virtual bool onSwitch( bool on ) = 0;
+            virtual bool onSwitch( bool newstate ) = 0;
 
-            virtual void onSetup() override {
+            virtual void onRegister() override {
                 subscribe( entName + "/on" );
                 subscribe( entName + "/off" );
                 subscribe( entName + "/toggle" );
@@ -86,7 +86,7 @@ namespace meisterwerk {
                 DynamicJsonBuffer jsonBuffer( 200 );
                 JsonObject &      root = jsonBuffer.createObject();
                 root["state"]          = newstate;
-                root["diration"]       = duration;
+                root["duration"]       = duration;
                 root.printTo( szBuffer );
                 return szBuffer;
             }
@@ -95,7 +95,7 @@ namespace meisterwerk {
                 if ( newstate != state ) {
                     if ( onSwitch( newstate ) ) {
                         stateTimer = duration;
-                        stateNext  = state;
+                        stateNext  = !newstate;
                         state      = newstate;
                         publish( entName + "/state", makeConfig( state, stateTimer ) );
                     } else {

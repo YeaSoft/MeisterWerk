@@ -300,6 +300,7 @@ namespace meisterwerk {
                 DBG( pre + F( "Individual Task Statistics:" ) );
                 DBG( pre + F( "---------------------------" ) );
                 for ( auto pTask : taskList ) {
+                    DBG( "" );
                     DBG( pre + F( "  Name: " ) + pTask->pEnt->entName );
                     DBG( pre + F( "  Calls: " ) + pTask->tskTime.getcount() );
                     DBG( pre + F( "  Calls Time: " ) + pTask->tskTime.getms() + ms );
