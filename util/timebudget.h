@@ -20,7 +20,7 @@ namespace meisterwerk {
 
             public:
             static unsigned long delta( const unsigned long then, const unsigned long now ) {
-                return now >= then ? now - then : ( (unsigned long)-1 ) - then + +1;
+                return now >= then ? now - then : ( (unsigned long)-1 ) - then + now + 1;
             }
 
             void inc( const unsigned long inc ) {
