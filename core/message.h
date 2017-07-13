@@ -30,11 +30,12 @@ namespace meisterwerk {
         class message {
             public:
             // constants
-            static const unsigned int MSG_NONE       = 0;
-            static const unsigned int MSG_DIRECT     = 1;
-            static const unsigned int MSG_SUBSCRIBE  = 2;
-            static const unsigned int MSG_PUBLISH    = 3;
-            static const unsigned int MSG_PUBLISHRAW = 3;
+            static const unsigned int MSG_NONE        = 0;
+            static const unsigned int MSG_DIRECT      = 1;
+            static const unsigned int MSG_SUBSCRIBE   = 2;
+            static const unsigned int MSG_UNSUBSCRIBE = 3;
+            static const unsigned int MSG_PUBLISH     = 4;
+            static const unsigned int MSG_PUBLISHRAW  = 5;
 
             // static members
             static queue<message> que;

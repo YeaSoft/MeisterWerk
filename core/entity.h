@@ -85,7 +85,15 @@ namespace meisterwerk {
                 if ( message::send( message::MSG_SUBSCRIBE, entName, topic, nullptr, 0 ) ) {
                     return true;
                 }
-                DBG( "entity::publish, sendMessage failed for subscribe " + entName );
+                DBG( "entity::subscribe, sendMessage failed for subscribe " + entName );
+                return false;
+            }
+
+            bool unsubscribe( String topic ) {
+                if ( message::send( message::MSG_UNSUBSCRIBE, entName, topic, nullptr, 0 ) ) {
+                    return true;
+                }
+                DBG( "entity::unsubscribe, sendMessage failed for unsubscribe " + entName );
                 return false;
             }
 

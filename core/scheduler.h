@@ -115,6 +115,9 @@ namespace meisterwerk {
                     case message::MSG_SUBSCRIBE:
                         subscribeMsg( pMsg );
                         break;
+                    case message::MSG_UNSUBSCRIBE:
+                        unsubscribeMsg( pMsg );
+                        break;
                     default:
                         DBG( "Unexpected message type: " + String( pMsg->type ) );
                         break;
@@ -164,7 +167,8 @@ namespace meisterwerk {
                 for ( auto sub : subscriptionList ) {
                     if ( msgmatches( sub.topic, pMsg->topic ) ) {
                         for ( auto pTask : taskList ) {
-                            if ( pTask->pEnt->entName == sub.subscriber ) {
+                            if ( ( pTask->pEnt->entName == sub.subscriber ) &&
+                                 ( String( pMsg->originator ) != sub.subscriber ) ) {
 #ifdef DEBUG
                                 pTask->msgTime.snap();
                                 pTask->pEnt->onReceive( pMsg->originator, pMsg->topic,
@@ -185,6 +189,24 @@ namespace meisterwerk {
                 subs.subscriber = pMsg->originator;
                 subs.topic      = pMsg->topic;
                 subscriptionList.emplace_back( subs );
+            }
+
+            void unsubscribeMsg( message *pMsg ) {
+                T_SUBSCRIPTIONLIST::iterator iter = subscriptionList.begin();
+                while ( iter != subscriptionList.end() ) {
+                    T_SUBSCRIPTION sub = ( *iter );
+                    // if ( msgmatches( sub.topic, pMsg->topic ) ) {  // Wild-card unsubscribe not
+                    // supported.
+                    if ( ( sub.topic == String( pMsg->topic ) ) &&
+                         ( sub.subscriber == String( pMsg->originator ) ) ) {
+                        subscriptionList.erase( iter );
+                        return;
+                    }
+                    ++iter;
+                }
+                DBG( "Entity " + String( pMsg->originator ) + " tried to unscribe topic " +
+                     String( pMsg->topic ) + " which had not been subscribed!" );
+                return;
             }
 
             bool registerEntity( entity *pEnt, unsigned long minMicroSecs = 100000L,
@@ -216,7 +238,7 @@ namespace meisterwerk {
                 if ( l1 < l2 )
                     l = l2;
                 else
-                    l  = l1;
+                    l = l1;
                 int p1 = 0, p2 = 0;
                 for ( int i = 0; i < l; l++ ) {
                     if ( ( p1 > l1 ) || ( p2 > l2 ) )
@@ -294,7 +316,8 @@ namespace meisterwerk {
                 DBG( pre + F( "Dispatched Messages: " ) + msgTime.getcount() );
                 DBG( pre + F( "Dispatched Tasks: " ) + tskTime.getcount() );
                 DBG( pre + F( "Message Time: " ) + msgTime.getms() + ms );
-                DBG( pre + F( "Task Time: " ) + tskTime.getms() + ms );
+                DBG( pre + F( "Task Time: " ) + tskTime.getms() + ms + " (" +
+                     tskTime.getPercent( allTime.getms() ) + "%)" );
                 DBG( pre + F( "Total Time: " ) + allTime.getms() + ms );
                 DBG( "" );
                 DBG( pre + F( "Individual Task Statistics:" ) );
@@ -303,10 +326,12 @@ namespace meisterwerk {
                     DBG( "" );
                     DBG( pre + F( "  Name: " ) + pTask->pEnt->entName );
                     DBG( pre + F( "  Calls: " ) + pTask->tskTime.getcount() );
-                    DBG( pre + F( "  Calls Time: " ) + pTask->tskTime.getms() + ms );
+                    DBG( pre + F( "  Calls Time: " ) + pTask->tskTime.getms() + ms + " (" +
+                         pTask->tskTime.getPercent( allTime.getms() ) + "%)" );
                     DBG( pre + F( "  Calls Max Time: " ) + pTask->tskTime.getmaxus() + us );
                     DBG( pre + F( "  Messages: " ) + pTask->msgTime.getcount() );
-                    DBG( pre + F( "  Message Time: " ) + pTask->msgTime.getms() + ms );
+                    DBG( pre + F( "  Message Time: " ) + pTask->msgTime.getms() + ms + " (" +
+                         pTask->msgTime.getPercent( allTime.getms() ) + "%)" );
                     DBG( pre + F( "  Message Max Time: " ) + pTask->msgTime.getmaxus() + us );
                 }
             }

@@ -20,15 +20,15 @@ namespace meisterwerk {
 
             public:
             static unsigned long delta( const unsigned long then, const unsigned long now ) {
-                return now > then ? now - then : ( (unsigned long)-1 ) - then + now;
+                return now >= then ? now - then : ( (unsigned long)-1 ) - then + now + 1;
             }
 
             void inc( const unsigned long inc ) {
                 cnt++;
-                valFine += inc;
+                valFine += inc; // XXX: needs further work.
                 if ( valFine > 1000000000L ) {
                     val += ( valFine / 1000 );
-                    valFine = 0;
+                    valFine = valFine % 1000;
                 }
                 if ( inc > valMax ) {
                     valMax = inc;
@@ -36,7 +36,7 @@ namespace meisterwerk {
             }
 
             void deltainc( const unsigned long then, const unsigned long now ) {
-                inc( now > then ? now - then : ( (unsigned long)-1 ) - then + now );
+                inc( delta( then, now ) );
             }
 
             void snap() {
@@ -52,6 +52,12 @@ namespace meisterwerk {
                 return val + ( valFine / 1000 );
             }
 
+            float getPercent( unsigned long ref ) {
+                if ( ref == 0 )
+                    return 0.0;
+                else
+                    return ( getms() * 100.0 ) / ref;
+            }
             unsigned long getmaxus() const {
                 return valMax;
             }
