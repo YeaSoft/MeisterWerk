@@ -27,6 +27,7 @@ namespace meisterwerk {
 
             i2cdev( String name, String i2cType )
                 : meisterwerk::core::entity( name ), i2ctype{i2cType} {
+                DBG( "Constr:" + i2ctype );
             }
 
             bool registerEntity() {
@@ -64,6 +65,7 @@ namespace meisterwerk {
                 for ( int i = 0; i < devs.size(); i++ ) {
                     String  dev     = devs[i];
                     uint8_t address = (uint8_t)ports[i];
+                    DBG( dev + "<->" + i2ctype );
                     if ( dev == i2ctype ) {
                         onInstantiate( i2ctype, address );
                     }
