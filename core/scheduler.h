@@ -307,6 +307,13 @@ namespace meisterwerk {
                 const __FlashStringHelper *ms = F( " ms" );
                 const __FlashStringHelper *us = F( " us" );
                 DBG( "" );
+                DBG( F( "Subscriptions" ) );
+                DBG( F( "=============" ) );
+                for ( auto sub : subscriptionList ) {
+                    DBG( pre + "subscriber='" + sub.subscriber + "' topic='" + sub.topic + "'" );
+                }
+
+                DBG( "" );
                 DBG( F( "Task Information" ) );
                 DBG( F( "================" ) );
                 DBG( pre + F( "Dispatched Messages: " ) + msgTime.getcount() );

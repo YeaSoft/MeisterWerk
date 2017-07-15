@@ -25,18 +25,7 @@ namespace meisterwerk {
                 : meisterwerk::core::entity( name ) {
                 tmpSubscribedTopic = subscription;
             }
-#else
-            messagespy( String name = "", String subscription = "" )
-                : meisterwerk::core::entity( "" ) {
-            }
 
-            bool registerEntity( unsigned long minMicroSecs = 0, unsigned int priority = 3 ) {
-                // never register
-                return true;
-            }
-#endif
-
-#ifdef _DEBUG
             void onRegister() override {
                 subscribe( tmpSubscribedTopic );
                 tmpSubscribedTopic = "";
@@ -45,6 +34,15 @@ namespace meisterwerk {
             virtual void onReceive( String origin, String topic, String msg ) override {
                 Serial.println( "messagespy(" + entName + "): origin='" + origin + "' topic='" +
                                 topic + "' body='" + msg + "'" );
+            }
+#else
+            messagespy( String name = "", String subscription = "" )
+                : meisterwerk::core::entity( "" ) {
+            }
+
+            bool registerEntity( unsigned long minMicroSecs = 0, unsigned int priority = 3 ) {
+                // never register but fake success
+                return true;
             }
 #endif
         };

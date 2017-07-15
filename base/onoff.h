@@ -43,13 +43,13 @@ namespace meisterwerk {
             virtual bool onSwitch( bool newstate ) = 0;
 
             virtual void onRegister() override {
-                // standard commands
-                subscribe( entName + "/getstate" );
-                subscribe( entName + "/setstate" );
+                // standard conditionally mandatory commands
+                subscribeme( "getstate" );
+                subscribeme( "setstate" );
                 // convenience shortcuts
-                subscribe( entName + "/on" );
-                subscribe( entName + "/off" );
-                subscribe( entName + "/toggle" );
+                subscribeme( "on" );
+                subscribeme( "off" );
+                subscribeme( "toggle" );
             }
 
             virtual void onReceive( String origin, String topic, String msg ) override {
@@ -89,7 +89,7 @@ namespace meisterwerk {
                         stateTimer = duration;
                         stateNext  = duration ? !newstate : newstate;
                         state      = newstate;
-                        publish( entName + "/state", makeState( state, stateTimer ) );
+                        publish( entName + "/state", getStateJSON() );
                     } else {
                         DBG( entName + ": Hardware failure while switching state" );
                     }
@@ -97,22 +97,22 @@ namespace meisterwerk {
                     // do not change the state, but the duration for this state
                     stateTimer = duration;
                     stateNext  = !state;
-                    publish( entName + "/state", makeState( state, stateTimer ) );
+                    publish( entName + "/state", getStateJSON() );
                 }
             }
 
             void getState() {
-                publish( entName + "/state", makeState( state, stateTimer ) );
+                publish( entName + "/state", getStateJSON() );
             }
 
             // internal
             private:
-            String makeState( bool newstate, unsigned long duration ) {
+            String getStateJSON() {
                 char              szBuffer[256];
                 DynamicJsonBuffer jsonBuffer( 200 );
                 JsonObject &      root = jsonBuffer.createObject();
-                root["state"]          = newstate;
-                root["duration"]       = duration;
+                root["state"]          = state;
+                root["duration"]       = stateTimer.getduration();
                 root.printTo( szBuffer );
                 return szBuffer;
             }

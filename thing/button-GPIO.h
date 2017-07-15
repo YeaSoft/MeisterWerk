@@ -20,14 +20,18 @@ namespace meisterwerk {
             button_GPIO( String name, uint8_t pin ) : meisterwerk::base::button( name ), pin{pin} {
             }
 
-            bool registerEntity() {
-                return meisterwerk::core::entity::registerEntity( 50000 );
+            bool registerEntity(
+                unsigned long minMicroSecs = 50000,
+                unsigned int  priority     = meisterwerk::core::scheduler::PRIORITY_NORMAL ) {
+                // default sample rate: 50ms
+                return meisterwerk::base::button::registerEntity( minMicroSecs, priority );
             }
 
             virtual void onRegister() override {
+                button::onRegister();
                 pinMode( pin, INPUT );
-                fromState  = digitalRead( pin ) == LOW;
-                lastChange = micros();
+                fromState = digitalRead( pin ) == LOW;
+                lastChange.start();
             }
 
             virtual void onLoop( unsigned long ticker ) override {

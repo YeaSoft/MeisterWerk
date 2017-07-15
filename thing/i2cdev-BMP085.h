@@ -44,10 +44,11 @@ namespace meisterwerk {
                 }
             }
 
-            bool registerEntity() {
-                // 5sec sensor checks
-                bool ret = meisterwerk::core::entity::registerEntity( 5000000 );
-                return ret;
+            bool registerEntity(
+                unsigned long minMicroSecs = 5000000;
+                unsigned int  priority     = meisterwerk::core::scheduler::PRIORITY_NORMAL ) {
+                // default sample rate: 5s
+                return meisterwerk::core::entity::registerEntity( minMicroSecs, priority );
             }
 
             virtual void onInstantiate( String i2ctype, uint8_t address ) override {
