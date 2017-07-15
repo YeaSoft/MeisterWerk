@@ -24,6 +24,7 @@ namespace meisterwerk {
         class i2cdev : public meisterwerk::core::entity {
             public:
             String i2ctype;
+            bool   isInstantiated = false;
 
             i2cdev( String name, String i2cType )
                 : meisterwerk::core::entity( name ), i2ctype{i2cType} {
@@ -35,14 +36,15 @@ namespace meisterwerk {
             }
 
             virtual void onRegister() override {
-                DBG( "i2cdev pub/sub in setup" );
+                // DBG( "i2cdev pub/sub in setup" );
                 subscribe( "i2cbus/online" );
                 publish( "i2cbus/enum", "" );
             }
 
             virtual void onReceive( String origin, String topic, String msg ) override {
                 if ( topic == "i2cbus/online" ) {
-                    i2cSetup( msg );
+                    if ( !isInstantiated )
+                        i2cSetup( msg );
                 }
             }
 
@@ -68,6 +70,7 @@ namespace meisterwerk {
                     DBG( dev + "<->" + i2ctype );
                     if ( dev == i2ctype ) {
                         onInstantiate( i2ctype, address );
+                        isInstantiated = true;
                     }
                 }
             }

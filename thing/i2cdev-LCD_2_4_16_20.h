@@ -9,7 +9,11 @@
 
 // hardware dependencies
 #include <ESP8266WiFi.h>
-#include <LiquidCrystal_I2C.h>
+
+// The LCD libraries are some serious mess, totally different implementations with
+// different APIs have same name etc. use #576.
+//#include <LiquidCrystal_I2C.h>
+#include <LiquidCrystal_PCF8574.h>
 
 // external libraries
 #include <ArduinoJson.h>
@@ -23,13 +27,15 @@ namespace meisterwerk {
     namespace thing {
         class i2cdev_LCD_2_4_16_20 : public meisterwerk::base::i2cdev {
             public:
-            LiquidCrystal_I2C *plcd;
-            bool               pollDisplay = false;
+            // LiquidCrystal_I2C *plcd;
+            LiquidCrystal_PCF8574 *plcd;
+            bool                   pollDisplay = false;
             // meisterwerk::util::sensorprocessor tempProcessor, pressProcessor;
             String json;
+            String dispSize;
 
-            i2cdev_LCD_2_4_16_20( String name )
-                : meisterwerk::base::i2cdev( name, "LCD_2_4_16_20" ) {
+            i2cdev_LCD_2_4_16_20( String name, String dispSize ) // "2x16" or "4x20"
+                : meisterwerk::base::i2cdev( name, "LCD_2_4_16_20" ), dispSize{dispSize} {
             }
             ~i2cdev_LCD_2_4_16_20() {
                 if ( pollDisplay ) {
@@ -47,13 +53,24 @@ namespace meisterwerk {
             virtual void onInstantiate( String i2ctype, uint8_t address ) override {
                 // String sa = meisterwerk::util::hexByte( address );
                 DBG( "Instantiating LCD_2_4_16_20 device at address 0x" +
-                     meisterwerk::util::hexByte( address ) );
-                plcd = new LiquidCrystal_I2C( 0x27, 16, 2 ); // 0: default address;
-                plcd->begin( 16, 2 );
-                // plcd->setBacklight( HIGH );
-                // plcd->setCursor( 0, 0 );
-                plcd->init();
-                plcd->backlight();
+                     meisterwerk::util::hexByte( address ) + "Display: " + dispSize );
+                if ( dispSize == "2x16" ) {
+                    // plcd = new LiquidCrystal_I2C( address, 16, 2 ); // 0: default address;
+                    plcd = new LiquidCrystal_PCF8574( address ); // 0: default address;
+                    plcd->begin( 16, 2 );
+                } else if ( dispSize == "4x20" ) {
+                    // plcd = new LiquidCrystal_I2C( address, 20, 4 ); // 0: default address;
+                    plcd = new LiquidCrystal_PCF8574( address ); // 0: default address;
+                    plcd->begin( 20, 4 );
+                } else {
+                    DBG( "Uknown display size, cannot instantiate LCD entity: ERROR" );
+                    return;
+                }
+                // plcd->init();
+                // plcd->backlight();
+                plcd->setBacklight( 255 );
+                plcd->home();
+                plcd->clear();
                 plcd->print( "test" );
                 DBG( "Instance LCD on." );
                 pollDisplay = true;
@@ -66,7 +83,7 @@ namespace meisterwerk {
             int          l = 0;
             virtual void onLoop( unsigned long ticker ) override {
                 if ( pollDisplay ) {
-                    plcd->print( String( l ) );
+                    // plcd->print( String( l ) );
                     l++;
                 }
             }

@@ -215,6 +215,13 @@ namespace meisterwerk {
 
             bool registerEntity( entity *pEnt, unsigned long minMicroSecs = 100000L,
                                  unsigned int priority = PRIORITY_NORMAL ) {
+                for ( auto pTask : taskList ) {
+                    if ( pTask->pEnt->entName == pEnt->entName ) {
+                        DBG( "ERROR: cannot register another task with existing entity-name: " +
+                             pEnt->entName );
+                        return false;
+                    }
+                }
                 task *pTask = new task( pEnt, minMicroSecs, priority );
                 if ( pTask == nullptr ) {
                     return false;
