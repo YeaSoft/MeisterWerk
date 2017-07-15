@@ -68,7 +68,7 @@ namespace meisterwerk {
                 for ( int i = 0; i < devs.size(); i++ ) {
                     String  dev     = devs[i];
                     uint8_t address = (uint8_t)ports[i];
-                    DBG( dev + "<->" + i2ctype );
+                    // DBG( dev + "<->" + i2ctype );
                     if ( dev == i2ctype ) {
                         onInstantiate( i2ctype, address );
                         isInstantiated = true;
