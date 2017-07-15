@@ -25,39 +25,100 @@
 namespace meisterwerk {
     namespace base {
         class pushbutton : public button {
-            public:
-            unsigned int minLongMs;
-            unsigned int minExtraLongMs;
+            protected:
+            // configuration
+            unsigned long minLongMs;
+            unsigned long minExtraLongMs;
+            // state
+            typedef enum { NONE, SHORT, LONG, EXTRALONG } STATE;
+            STATE         lastState;
+            unsigned long lastDuration;
 
             pushbutton( String name, unsigned int _minLongMs = 0, unsigned int _minExtraLongMs = 0 )
                 : button( name ) {
+                lastState      = NONE;
+                lastDuration   = 0;
                 minLongMs      = _minLongMs;
                 minExtraLongMs = _minExtraLongMs;
             }
 
             virtual void onRegister() override {
                 button::onRegister();
-                subscribe( entName + "/config" );
+                subscribe( entName + "/getconfig" );
+                subscribe( entName + "/setconfig" );
             }
 
             virtual void onReceive( String origin, String topic, String msg ) override {
-                if ( topic == entName + "/config" ) {
-                    // XXX: Parse JSON data and set minLongMs,minExtraLongMs
+                if ( topic == entName + "/getstate" ) {
+                    publish( entName + "/state", getStateJSON() );
+                } else if ( topic == entName + "/getconfig" ) {
+                    publish( entName + "/config", getConfigJSON() );
+                } else if ( topic == entName + "/setconfig" ) {
+                    DynamicJsonBuffer jsonBuffer( 300 );
+                    JsonObject &      root = jsonBuffer.parseObject( msg );
+                    if ( !root.success() ) {
+                        DBG( "Invalid JSON received!" );
+                        return;
+                    }
+                    minLongMs      = root["long"].as<unsigned long>();
+                    minExtraLongMs = root["extraLong"].as<unsigned long>();
                 }
             }
 
             virtual void onChange( bool toState, unsigned long duration ) override {
                 if ( toState ) {
-                    publish( entName + "/press", "{d:" + String( duration / 1000 ) + "}" );
+                    button::onChange( toState, duration );
                 } else {
-                    if ( minExtraLongMs && duration / 1000 > minExtraLongMs ) {
-                        publish( entName + "/extralong", "{d:" + String( duration / 1000 ) + "}" );
-                    } else if ( minLongMs && duration / 1000 > minLongMs ) {
-                        publish( entName + "/long", "{d:" + String( duration / 1000 ) + "}" );
+                    if ( minExtraLongMs && duration > minExtraLongMs ) {
+                        setState( EXTRALONG, duration );
+                    } else if ( minLongMs && duration > minLongMs ) {
+                        setState( LONG, duration );
                     } else {
-                        publish( entName + "/short", "{d:" + String( duration / 1000 ) + "}" );
+                        setState( SHORT, duration );
                     }
                 }
+            }
+
+            // internal
+            protected:
+            String getStateString( STATE state ) const {
+                switch ( state ) {
+                default:
+                    return "none";
+                case SHORT:
+                    return "short";
+                case LONG:
+                    return "long";
+                case EXTRALONG:
+                    return "extralong";
+                }
+            }
+
+            void setState( STATE state, unsigned int duration ) {
+                lastState    = state;
+                lastDuration = duration;
+                publish( entName + "/" + getStateString( state ),
+                         "{\"duration\":" + String( duration ) + "}" );
+            }
+
+            String getStateJSON() const {
+                char              szBuffer[256];
+                DynamicJsonBuffer jsonBuffer( 200 );
+                JsonObject &      root = jsonBuffer.createObject();
+                root["state"]          = getStateString( lastState );
+                root["duration"]       = lastDuration;
+                root.printTo( szBuffer );
+                return szBuffer;
+            }
+
+            String getConfigJSON() const {
+                char              szBuffer[256];
+                DynamicJsonBuffer jsonBuffer( 200 );
+                JsonObject &      root = jsonBuffer.createObject();
+                root["long"]           = minLongMs;
+                root["extraLong"]      = minExtraLongMs;
+                root.printTo( szBuffer );
+                return szBuffer;
             }
         };
     } // namespace base

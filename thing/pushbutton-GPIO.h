@@ -22,14 +22,17 @@ namespace meisterwerk {
                 : meisterwerk::base::pushbutton( name, minLongMs, minExtraLongMs ), pin{pin} {
             }
 
-            bool registerEntity() {
-                return meisterwerk::core::entity::registerEntity( 50000 );
+            bool registerEntity(
+                unsigned long minMicroSecs = 50000,
+                unsigned int  priority     = meisterwerk::core::scheduler::PRIORITY_NORMAL ) {
+                // default sample rate: 50ms
+                return meisterwerk::base::pushbutton::registerEntity( minMicroSecs, priority );
             }
 
             virtual void onRegister() override {
                 pinMode( pin, INPUT );
-                fromState  = digitalRead( pin ) == LOW;
-                lastChange = micros();
+                fromState = digitalRead( pin ) == LOW;
+                lastChange.start();
             }
 
             virtual void onLoop( unsigned long ticker ) override {
