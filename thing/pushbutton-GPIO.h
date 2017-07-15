@@ -30,6 +30,7 @@ namespace meisterwerk {
             }
 
             virtual void onRegister() override {
+                meisterwerk::base::button::onRegister();
                 pinMode( pin, INPUT );
                 fromState = digitalRead( pin ) == LOW;
                 lastChange.start();
