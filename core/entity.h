@@ -97,23 +97,32 @@ namespace meisterwerk {
                 return false;
             }
 
+            const char *getname() const {
+                return entName.c_str();
+            }
+
+            // callbacks
+            public:
             virtual void onRegister() {
-                DBG( "entity::onRegister, missing override for entity " + entName );
+                // implementation not mandatory
             }
 
             // there is no clash between baseapp:onLoop and entity;:onLoop
-            // because of the number of parameters.
+            // because of a different argument list.
             virtual void onLoop( unsigned long ticker ) {
+                // should be implemented if it is called - issue warning
                 DBG( "entity:onLook, missing override for entity " + entName );
             }
 
             virtual void onReceive( String origin, String topic, String msg ) {
+                // should be implemented if it is called - issue warning
                 DBG( "entity:onReceive(string), missing override for entity " + entName );
             }
 
             /* Prepared but not supported in the current scheduler
             virtual void onReceive( String origin, String topic, const void *pBuf, unsigned int len
             ) {
+                // should be implemented if it is called - issue warning
                 DBG( "entity:onReceive(binary), missing override for entity " + entName );
             }
             */
