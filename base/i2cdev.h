@@ -23,12 +23,13 @@ namespace meisterwerk {
 
         class i2cdev : public meisterwerk::core::entity {
             private:
-            String i2ctype;
-            bool   isInstantiated = false;
+            String  i2ctype;
+            bool    isInstantiated = false;
+            uint8_t address;
 
             public:
-            i2cdev( String name, String i2cType )
-                : meisterwerk::core::entity( name ), i2ctype{i2cType} {
+            i2cdev( String name, String i2cType, uint8_t address )
+                : meisterwerk::core::entity( name ), i2ctype{i2cType}, address{address} {
                 DBG( "Constr:" + i2ctype );
             }
 
@@ -66,11 +67,11 @@ namespace meisterwerk {
                 JsonArray &devs  = root["i2cdevs"];
                 JsonArray &ports = root["portlist"];
                 for ( int i = 0; i < devs.size(); i++ ) {
-                    String  dev     = devs[i];
-                    uint8_t address = (uint8_t)ports[i];
+                    String  dev  = devs[i];
+                    uint8_t addr = (uint8_t)ports[i];
                     // DBG( dev + "<->" + i2ctype );
-                    if ( dev == i2ctype ) {
-                        onInstantiate( i2ctype, address );
+                    if ( dev == i2ctype && addr == address ) {
+                        onInstantiate( i2ctype, addr );
                         isInstantiated = true;
                     }
                 }

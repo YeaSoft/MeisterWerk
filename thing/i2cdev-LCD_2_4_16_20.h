@@ -38,7 +38,7 @@ namespace meisterwerk {
 
             i2cdev_LCD_2_4_16_20( String name, uint8_t address,
                                   String dispSize ) // "2x16" or "4x20"
-                : meisterwerk::base::i2cdev( name, "LCD_2_4_16_20" ),
+                : meisterwerk::base::i2cdev( name, "LCD_2_4_16_20", address ),
                   instAddress{address}, dispSize{dispSize} {
             }
             ~i2cdev_LCD_2_4_16_20() {

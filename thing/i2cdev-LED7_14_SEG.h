@@ -25,10 +25,12 @@ namespace meisterwerk {
             public:
             Adafruit_AlphaNum4 *pled;
             bool                pollDisplay = false;
+            uint8_t             address;
             // meisterwerk::util::sensorprocessor tempProcessor, pressProcessor;
             String json;
 
-            i2cdev_LED7_14_SEG( String name ) : meisterwerk::base::i2cdev( name, "LED7_14_SEG" ) {
+            i2cdev_LED7_14_SEG( String name, uint8_t address )
+                : meisterwerk::base::i2cdev( name, "LED7_14_SEG", address ), address{address} {
             }
             ~i2cdev_LED7_14_SEG() {
                 if ( pollDisplay ) {
