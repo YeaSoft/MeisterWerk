@@ -25,9 +25,8 @@ namespace meisterwerk {
             meisterwerk::util::metronome autodump;
             String                       debugButton;
 
-            dumper( String name = "dmp", unsigned long _autodump = 0, String debugButton = "dbg" )
-                : meisterwerk::core::entity( name ), debugButton{debugButton} {
-                autodump = _autodump;
+            dumper( String name = "dmp", unsigned long autodump = 0, String debugButton = "dbg" )
+                : meisterwerk::core::entity( name ), autodump{autodump}, debugButton{debugButton} {
             }
 
             bool registerEntity(
