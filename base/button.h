@@ -7,30 +7,26 @@
 // Messages are published when the button is pushed
 // and when the button is released. The message content
 // is the duration of the previous state.
-//
-// Publish:
-// - "NAME/push"
-// - "NAME/release"
-//
-// Subscribe:
-// - "NAME/getstate"
 
 #pragma once
 
+// external libraries
+#include <ArduinoJson.h>
+
 // dependencies
 #include "../core/entity.h"
-#include "../util/timebudget.h"
+#include "../util/stopwatch.h"
 
 namespace meisterwerk {
     namespace base {
         class button : public meisterwerk::core::entity {
-            public:
-            bool          fromState;
-            unsigned long lastChange;
+            protected:
+            // state
+            bool                         fromState;
+            meisterwerk::util::stopwatch lastChange;
 
             button( String name ) : meisterwerk::core::entity( name ) {
-                fromState  = false;
-                lastChange = 0;
+                fromState = false;
             }
 
             virtual void onRegister() override {
@@ -38,38 +34,35 @@ namespace meisterwerk {
             }
 
             virtual void onReceive( String origin, String topic, String msg ) override {
-                // XXX: implement getstate.
+                if ( topic == entName + "/getstate" ) {
+                    publish( entName + "/state", getStateJSON() );
+                }
             }
 
             virtual void onChange( bool toState, unsigned long duration ) {
                 // fire a message
-                if ( toState ) {
-                    // press
-                    publish( entName + "/press", "{d:" + String( duration / 1000 ) + "}" );
-                } else {
-                    // release
-                    publish( entName + "/release", "{d:" + String( duration / 1000 ) + "}" );
-                }
+                publish( entName + ( toState ? "/press" : "/release" ),
+                         "{\"duration\":" + String( duration ) + "}" );
             }
 
-            virtual void press() {
-                change( true );
-            }
-
-            virtual void release() {
-                change( false );
-            }
-
-            virtual void change( bool toState ) {
+            // internal
+            protected:
+            void change( bool toState ) {
                 if ( fromState != toState ) {
-                    unsigned long last = micros();
-                    unsigned long duration =
-                        meisterwerk::util::timebudget::delta( lastChange, last );
-                    lastChange = last;
-                    fromState  = toState;
                     // handle state change
-                    onChange( toState, duration );
+                    onChange( toState, lastChange.getloop() );
+                    fromState = toState;
                 }
+            }
+
+            String getStateJSON() const {
+                char              szBuffer[256];
+                DynamicJsonBuffer jsonBuffer( 200 );
+                JsonObject &      root = jsonBuffer.createObject();
+                root["state"]          = fromState ? "press" : "release";
+                root["duration"]       = lastChange.getduration();
+                root.printTo( szBuffer );
+                return szBuffer;
             }
         };
     } // namespace base
