@@ -22,10 +22,11 @@ namespace meisterwerk {
     namespace base {
 
         class i2cdev : public meisterwerk::core::entity {
-            public:
+            private:
             String i2ctype;
             bool   isInstantiated = false;
 
+            public:
             i2cdev( String name, String i2cType )
                 : meisterwerk::core::entity( name ), i2ctype{i2cType} {
                 DBG( "Constr:" + i2ctype );

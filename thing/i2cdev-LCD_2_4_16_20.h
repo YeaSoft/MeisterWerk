@@ -31,11 +31,15 @@ namespace meisterwerk {
             LiquidCrystal_PCF8574 *plcd;
             bool                   pollDisplay = false;
             // meisterwerk::util::sensorprocessor tempProcessor, pressProcessor;
-            String json;
-            String dispSize;
+            String  json;
+            String  dispSize;
+            uint8_t adr;
+            uint8_t instAddress;
 
-            i2cdev_LCD_2_4_16_20( String name, String dispSize ) // "2x16" or "4x20"
-                : meisterwerk::base::i2cdev( name, "LCD_2_4_16_20" ), dispSize{dispSize} {
+            i2cdev_LCD_2_4_16_20( String name, uint8_t address,
+                                  String dispSize ) // "2x16" or "4x20"
+                : meisterwerk::base::i2cdev( name, "LCD_2_4_16_20" ),
+                  instAddress{address}, dispSize{dispSize} {
             }
             ~i2cdev_LCD_2_4_16_20() {
                 if ( pollDisplay ) {
@@ -51,9 +55,19 @@ namespace meisterwerk {
             }
 
             virtual void onInstantiate( String i2ctype, uint8_t address ) override {
+                if ( address != instAddress ) {
+                    return; // not me.
+                }
+                if ( pollDisplay ) {
+                    DBG( "Tried to re-instanciate object: {" + i2ctype + "," + entName +
+                         "} at address 0x" + meisterwerk::util::hexByte( address ) +
+                         "Display: " + dispSize );
+                    return;
+                }
                 // String sa = meisterwerk::util::hexByte( address );
-                DBG( "Instantiating LCD_2_4_16_20 device at address 0x" +
-                     meisterwerk::util::hexByte( address ) + "Display: " + dispSize );
+                DBG( "Instantiating LCD_2_4_16_20 device {" + i2ctype + "," + entName +
+                     "} at address 0x" + meisterwerk::util::hexByte( address ) + ", " + dispSize );
+                adr = address;
                 if ( dispSize == "2x16" ) {
                     // plcd = new LiquidCrystal_I2C( address, 16, 2 ); // 0: default address;
                     plcd = new LiquidCrystal_PCF8574( address ); // 0: default address;
@@ -71,7 +85,8 @@ namespace meisterwerk {
                 plcd->setBacklight( 255 );
                 plcd->home();
                 plcd->clear();
-                plcd->print( "test" );
+                plcd->print( entName + ", " + dispSize + ", 0x" +
+                             meisterwerk::util::hexByte( address ) );
                 DBG( "Instance LCD on." );
                 pollDisplay = true;
                 subscribe( entName + "/config" );
@@ -97,7 +112,8 @@ namespace meisterwerk {
                     publish( entName + "/textdisplay" );
                 } else if ( topic == entName + "/display" ) {
                     DBG( "Now there should be something!" );
-                    plcd->print( "Hello, world!" );
+                    // plcd->print( "Hello, " + entName + ", size: " + dispSize + ", 0x" +
+                    //             meisterwerk::util::hexByte( adr ) );
                 }
             }
 
