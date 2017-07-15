@@ -29,6 +29,8 @@
 
 enum I2CDevType {
     OLED,
+    LED,
+    LCD,
     NFC,
     Sensor,
     RTC,
@@ -70,7 +72,9 @@ enum I2CDev {
     TEA5767,
     Si4713,
     FT6206,
-    STMPE610
+    STMPE610,
+    LED7_14_SEG,
+    LCD_2_4_16_20
 };
 
 #define MAX_I2C_ADDRESS_VAR 4
@@ -86,6 +90,10 @@ typedef struct t_i2c_properties {
 const T_I2C_PROPERTIES i2cProps[] = {
     {OLED, SSD1306, "SSD1306", "OLED-display (128x64)", false, {0x3C, 0x3D, 0, 0}},
     // http://www.solomon-systech.com/en/product/display-ic/oled-driver-controller/ssd1306/
+    {LED, LED7_14_SEG, "LED7_14_SEG", "4x 7/14 Segment LED Display", false, {0x70}},
+    {LCD, LCD_2_4_16_20, "LCD_2_4_16_20", "2x16 or 4x20 LCD Display", false, {0x25, 0x26, 0x27}},
+    // I2C backpack for LCD: 0x26: solder bridge on A0, 0x25: on A1.
+    // https://learn.adafruit.com/adafruit-led-backpack/0-54-alphanumeric
     // {NFC, PN532, "PN532", "RFID controller", false, {0x48}},
     // https://www.adafruit.com/product/364
     {Sensor, TSL2561, "TSL2561", "Luminosity sensor", false, {0x29, 0x39, 0x49, 0}},
@@ -112,9 +120,10 @@ const T_I2C_PROPERTIES i2cProps[] = {
     //{Sensor, LSM303_Mag, "LSM303_Mag", "", false, {0x1E}},
     {RTC, DS1307_3231, "DS1307_3231", "Real time clock", false, {0x68, 0, 0, 0}},
     {EEPROM, DS1307_EEPROM, "DS1307_EEPORM", "RTC EEPROM", false, {0x50, 0, 0, 0}},
-    //{IO, MCP23008, "MCP23008", "", false, {0x20, 0x21, 0x22, 0x23, 0x24, 0x25, 0x26, 0x27}},
-    //{IO, MCP23017, "MCP23017", "", false, {0x20, 0x21, 0x22, 0x23, 0x24, 0x25, 0x26, 0x27}},
-    //{PWM, PCA9685, "PCA9685", "", false, {0x40, 0x41, 0x42, 0x43, 0x44, 0x45, 0x46, 0x47,
+    //{IO, MCP23008, "MCP23008", "", false, {0x20, 0x21, 0x22, 0x23, 0x24, 0x25, 0x26, 0x27}}, //
+    // used for LCD displays {IO, MCP23017, "MCP23017", "", false, {0x20, 0x21, 0x22, 0x23, 0x24,
+    // 0x25, 0x26, 0x27}}, {PWM, PCA9685, "PCA9685", "", false, {0x40, 0x41, 0x42, 0x43, 0x44, 0x45,
+    // 0x46, 0x47,
     //                                      0x48, 0x49, 0x4A, 0x4B, 0x4C, 0x4D, 0x4E, 0x4F}},
     //{DAC, MCP4725A0, "MCP4725A0", "", false, {0x60, 0x61}},
     //{DAC, MCP4725A1, "MCP4725A1", "", false, {0x62, 0x63}},
@@ -212,6 +221,10 @@ namespace meisterwerk {
                     DBG( "i2cbus not initialized!" );
                     publish( "i2cbus/offline", "" );
                     bInternalError = true;
+                    return 0;
+                }
+                if ( bEnum ) {
+                    DBG( "For now, mulitple I2C-bus enums are suppressed." );
                     return 0;
                 }
                 DBG( "Scanning I2C-Bus, SDA=" + String( sdaport ) + ", SCL=" + String( sclport ) );
