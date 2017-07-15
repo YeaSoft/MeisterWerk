@@ -34,7 +34,7 @@ namespace meisterwerk {
                 timerStart = millis();
             }
 
-            unsigned long getloop() {
+            unsigned long getleap() {
                 unsigned long check = millis();
                 unsigned long delta = timebudget::delta( timerStart, check );
                 timerStart          = check;

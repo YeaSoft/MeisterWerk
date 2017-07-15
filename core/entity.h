@@ -81,7 +81,7 @@ namespace meisterwerk {
             }
             */
 
-            bool subscribe( String topic ) {
+            bool subscribe( String topic ) const {
                 if ( message::send( message::MSG_SUBSCRIBE, entName, topic, nullptr, 0 ) ) {
                     return true;
                 }
@@ -89,12 +89,28 @@ namespace meisterwerk {
                 return false;
             }
 
-            bool unsubscribe( String topic ) {
+            bool unsubscribe( String topic ) const {
                 if ( message::send( message::MSG_UNSUBSCRIBE, entName, topic, nullptr, 0 ) ) {
                     return true;
                 }
                 DBG( "entity::unsubscribe, sendMessage failed for unsubscribe " + entName );
                 return false;
+            }
+
+            bool subscribeme( String subtopic ) const {
+                return subscribe( entName + "/" + subtopic );
+            }
+
+            bool unsubscribeme( String subtopic ) const {
+                return unsubscribe( entName + "/" + subtopic );
+            }
+
+            bool subscribeall( String subtopic ) const {
+                return subscribe( "*/" + subtopic );
+            }
+
+            bool unsubscribeall( String subtopic ) const {
+                return unsubscribe( "*/" + subtopic );
             }
 
             const char *getname() const {

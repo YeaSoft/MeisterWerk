@@ -9,8 +9,12 @@
 
 #pragma once
 
+// external libraries
+#include <ArduinoJson.h>
+
 // dependencies
 #include "../core/entity.h"
+#include "../util/metronome.h"
 
 namespace meisterwerk {
     namespace util {
@@ -18,37 +22,30 @@ namespace meisterwerk {
         class dumper : public meisterwerk::core::entity {
             public:
 #ifdef _DEBUG
-            String debugButton;
-            int    iMinDumpSecs;
-            int    iCount = 0;
+            meisterwerk::util::metronome autodump;
+            String                       debugButton;
 
-            dumper( String name = "dmp", int _iMinDumpSecs = 0, String _debugButton = "dbg" )
-                : meisterwerk::core::entity( name ) {
-                debugButton  = _debugButton;
-                iMinDumpSecs = _iMinDumpSecs;
-            }
-#else
-            dumper( String name = "", int _iMinDumpSecs = 0, String _debugButton = "" )
-                : meisterwerk::core::entity( "" ) {
+            dumper( String name = "dmp", unsigned long _autodump = 0, String debugButton = "dbg" )
+                : meisterwerk::core::entity( name ), debugButton{debugButton} {
+                autodump = _autodump;
             }
 
-            bool registerEntity( unsigned long minMicroSecs = 0, unsigned int priority = 3 ) {
-                // never register
-                return true;
-            }
-#endif
-
-#ifdef _DEBUG
-            bool registerEntity() {
-                return meisterwerk::core::entity::registerEntity( 1000000 );
+            bool registerEntity(
+                unsigned long minMicroSecs = 250000,
+                unsigned int  priority     = meisterwerk::core::scheduler::PRIORITY_NORMAL ) {
+                // default precision for autodump rate is 250ms
+                return meisterwerk::core::entity::registerEntity( minMicroSecs, priority );
             }
 
             void onRegister() override {
                 dumpSystemInfo();
+                // mandatory
+                subscribeme( "getconfig" );
+                subscribeme( "setconfig" );
                 // explicit commands
-                subscribe( "*/dump" );
-                subscribe( "*/sysinfo" );
-                subscribe( "*/taskinfo" );
+                subscribeall( "dump" );
+                subscribeall( "sysinfo" );
+                subscribeall( "taskinfo" );
                 // events from debug Button
                 subscribe( debugButton + "/short" );
                 subscribe( debugButton + "/long" );
@@ -56,13 +53,8 @@ namespace meisterwerk {
             }
 
             virtual void onLoop( unsigned long ticker ) override {
-                if ( iMinDumpSecs ) {
-                    if ( iCount < 1 ) {
-                        dumpRuntimeInfo();
-                        iCount = iMinDumpSecs;
-                    } else {
-                        --iCount;
-                    }
+                if ( autodump.beat() ) {
+                    dumpRuntimeInfo();
                 }
             }
 
@@ -73,6 +65,16 @@ namespace meisterwerk {
                     dumpSystemInfo();
                 } else if ( topic == debugButton + "/extralong" ) {
                     dumpTaskInfo();
+                } else if ( topic == entName + "/getconfig" ) {
+                    publish( entName + "/config", "{\"autodump\":" + String( autodump ) + "}" );
+                } else if ( topic == entName + "/setconfig" ) {
+                    DynamicJsonBuffer jsonBuffer( 300 );
+                    JsonObject &      root = jsonBuffer.parseObject( msg );
+                    if ( !root.success() ) {
+                        DBG( "Invalid JSON received!" );
+                        return;
+                    }
+                    autodump = root["autodump"].as<unsigned long>();
                 }
             }
 
@@ -115,6 +117,15 @@ namespace meisterwerk {
                 if ( meisterwerk::core::baseapp::_app ) {
                     meisterwerk::core::baseapp::_app->sched.dumpInfo( "dumper(" + entName + ") " );
                 }
+            }
+#else
+            dumper( String name = "", int _iMinDumpSecs = 0, String _debugButton = "" )
+                : meisterwerk::core::entity( "" ) {
+            }
+
+            bool registerEntity( unsigned long minMicroSecs = 0, unsigned int priority = 3 ) {
+                // never register but fake success
+                return true;
             }
 #endif
         };

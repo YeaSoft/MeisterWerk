@@ -19,18 +19,22 @@ namespace meisterwerk {
             unsigned long beatLength;
 
             public:
-            metronome( unsigned long _beatLength = 0 ) {
+            metronome( unsigned long beatLength = 0 ) : beatLength{beatLength} {
                 timerStart = millis();
-                beatLength = _beatLength;
             }
 
-            bool beat() {
-                unsigned int now = millis();
-                if ( beatLength && timebudget::delta( timerStart, now ) >= beatLength ) {
-                    timerStart = now;
-                    return true;
+            operator unsigned long() const {
+                return beatLength;
+            }
+
+            unsigned long beat() {
+                unsigned int now   = millis();
+                unsigned int delta = timebudget::delta( timerStart, now );
+                if ( beatLength && delta >= beatLength ) {
+                    timerStart = now - ( delta % beatLength );
+                    return delta / beatLength;
                 }
-                return false;
+                return 0;
             }
         };
     } // namespace util

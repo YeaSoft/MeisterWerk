@@ -30,7 +30,8 @@ namespace meisterwerk {
             }
 
             virtual void onRegister() override {
-                subscribe( entName + "/getstate" );
+                // standard conditionally mandatory commands
+                subscribeme( "getstate" );
             }
 
             virtual void onReceive( String origin, String topic, String msg ) override {
@@ -50,7 +51,7 @@ namespace meisterwerk {
             void change( bool toState ) {
                 if ( fromState != toState ) {
                     // handle state change
-                    onChange( toState, lastChange.getloop() );
+                    onChange( toState, lastChange.getleap() );
                     fromState = toState;
                 }
             }

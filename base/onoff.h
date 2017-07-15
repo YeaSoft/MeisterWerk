@@ -43,13 +43,13 @@ namespace meisterwerk {
             virtual bool onSwitch( bool newstate ) = 0;
 
             virtual void onRegister() override {
-                // standard commands
-                subscribe( entName + "/getstate" );
-                subscribe( entName + "/setstate" );
+                // standard conditionally mandatory commands
+                subscribeme( "getstate" );
+                subscribeme( "setstate" );
                 // convenience shortcuts
-                subscribe( entName + "/on" );
-                subscribe( entName + "/off" );
-                subscribe( entName + "/toggle" );
+                subscribeme( "on" );
+                subscribeme( "off" );
+                subscribeme( "toggle" );
             }
 
             virtual void onReceive( String origin, String topic, String msg ) override {

@@ -44,8 +44,9 @@ namespace meisterwerk {
 
             virtual void onRegister() override {
                 button::onRegister();
-                subscribe( entName + "/getconfig" );
-                subscribe( entName + "/setconfig" );
+                // standard conditionally mandatory commands
+                subscribeme( "getconfig" );
+                subscribeme( "setconfig" );
             }
 
             virtual void onReceive( String origin, String topic, String msg ) override {
