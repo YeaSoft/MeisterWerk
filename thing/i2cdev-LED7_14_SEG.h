@@ -74,11 +74,19 @@ namespace meisterwerk {
                     publish( entName + "/textdisplay" );
                 } else if ( topic == entName + "/display" ) {
                     pled->clear();
-                    pled->writeDigitAscii( 0, 'a' );
-                    pled->writeDigitAscii( 1, 'b' );
-                    pled->writeDigitAscii( 2, 'c' );
-                    pled->writeDigitAscii( 3, 'd' );
-                    pled->writeDisplay();
+                    if ( address == 0x70 ) {
+                        pled->writeDigitAscii( 0, 'a' );
+                        pled->writeDigitAscii( 1, 'b' );
+                        pled->writeDigitAscii( 2, 'c' );
+                        pled->writeDigitAscii( 3, 'd' );
+                        pled->writeDisplay();
+                    } else {
+                        pled->writeDigitAscii( 0, 'e' );
+                        pled->writeDigitAscii( 1, 'f' );
+                        pled->writeDigitAscii( 2, 'g' );
+                        pled->writeDigitAscii( 3, 'h' );
+                        pled->writeDisplay();
+                    }
                 }
             }
 
