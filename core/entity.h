@@ -61,7 +61,7 @@ namespace meisterwerk {
                                     sizeof( reg ) ) ) {
                     return true;
                 }
-                DBG( "entity::registerEntity, sendMessage failed for update " + entName );
+                DBG( "entity::updateEntity, sendMessage failed for update " + entName );
                 return false;
             }
 
