@@ -55,6 +55,16 @@ namespace meisterwerk {
                 return false;
             }
 
+            bool updateRegisterEntity( unsigned long minMicroSecs = 0, unsigned int priority = 3 ) {
+                msgregister reg( this, minMicroSecs, priority );
+                if ( message::send( message::MSG_DIRECT, entName, "updregister", &reg,
+                                    sizeof( reg ) ) ) {
+                    return true;
+                }
+                DBG( "entity::registerEntity, sendMessage failed for register " + entName );
+                return false;
+            }
+
             bool publish( String topic ) {
                 if ( message::send( message::MSG_PUBLISH, entName, topic, "{}" ) ) {
                     return true;
