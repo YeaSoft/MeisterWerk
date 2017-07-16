@@ -136,11 +136,19 @@ namespace meisterwerk {
             void directMsg( message *pMsg ) {
                 if ( String( pMsg->topic ) == "register" ) {
                     if ( pMsg->pBufLen != sizeof( msgregister ) ) {
-                        DBG( "Direct message: invalid message buffer size!" + String( pMsg->topic ) );
+                        DBG( "Direct message: invalid reg message buffer size!" + String( pMsg->topic ) );
                     } else {
                         msgregister *pReg = (msgregister *)pMsg->pBuf;
                         registerEntity( pReg->pEnt, pReg->minMicroSecs, pReg->priority );
                         DBG( "Registered entity: " + String( pReg->pEnt->entName ) );
+                    }
+                } else if ( String( pMsg->topic ) == "update" ) {
+                    if ( pMsg->pBufLen != sizeof( msgregister ) ) {
+                        DBG( "Direct message: invalid updateEntity message buffer size!" + String( pMsg->topic ) );
+                    } else {
+                        msgregister *pReg = (msgregister *)pMsg->pBuf;
+                        updateEntity( pReg->pEnt, pReg->minMicroSecs, pReg->priority );
+                        DBG( "updateEntity: " + String( pReg->pEnt->entName ) );
                     }
                 } else {
                     DBG( "Direct message: not implemented: " + String( pMsg->topic ) );
@@ -201,6 +209,27 @@ namespace meisterwerk {
                 }
                 taskList.push_back( pTask );
                 pEnt->onRegister();
+                return true;
+            }
+
+            bool updateEntity( entity *pEnt, unsigned long minMicroSecs = 100000L,
+                               unsigned int priority = PRIORITY_NORMAL ) {
+                bool    found = false;
+                T_PTASK pTask;
+                for ( auto pt : taskList ) {
+                    if ( pt->pEnt->entName == pEnt->entName ) {
+                        pTask = pt;
+                        found = true;
+                    }
+                }
+                if ( !found ) {
+                    DBG( "ERROR: cannot updateEntity for not existing entity-name: " + pEnt->entName );
+                    return false;
+                }
+                pTask->minMicros = minMicroSecs;
+                pTask->priority  = priority;
+
+                // pEnt->onUpdateEntity();   // Probably not userful?
                 return true;
             }
 

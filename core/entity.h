@@ -55,6 +55,15 @@ namespace meisterwerk {
                 return false;
             }
 
+            bool updateEntity( unsigned long minMicroSecs = 0, unsigned int priority = 3 ) {
+                msgregister reg( this, minMicroSecs, priority );
+                if ( message::send( message::MSG_DIRECT, entName, "update", &reg, sizeof( reg ) ) ) {
+                    return true;
+                }
+                DBG( "entity::updateEntity, sendMessage failed for update " + entName );
+                return false;
+            }
+
             bool publish( String topic, JsonObject &json ) const {
                 String buffer;
                 json.printTo( buffer );
