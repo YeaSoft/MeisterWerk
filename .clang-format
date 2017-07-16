@@ -11,7 +11,7 @@ AllowShortCaseLabelsOnASingleLine: false
 AllowShortFunctionsOnASingleLine: false
 AllowShortIfStatementsOnASingleLine: false
 AllowShortLoopsOnASingleLine: false
-ColumnLimit: 100
+ColumnLimit: 120
 KeepEmptyLinesAtTheStartOfBlocks: false
 NamespaceIndentation: All
 PointerAlignment: Right

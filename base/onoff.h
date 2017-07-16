@@ -39,82 +39,91 @@ namespace meisterwerk {
                 return meisterwerk::core::entity::registerEntity( minMicroSecs );
             }
 
-            // ABSTRACT CLASS: This override must be implemented in derived classes
+            // ABSTRACT METHOD: This override must be implemented in derived classes
             virtual bool onSwitch( bool newstate ) = 0;
 
             virtual void onRegister() override {
-                // standard conditionally mandatory commands
-                subscribeme( "getstate" );
-                subscribeme( "setstate" );
-                // convenience shortcuts
-                subscribeme( "on" );
-                subscribeme( "off" );
-                subscribeme( "toggle" );
-            }
-
-            virtual void onReceive( String origin, String topic, String msg ) override {
-                DynamicJsonBuffer jsonBuffer( 300 );
-                JsonObject &      root = jsonBuffer.parseObject( msg );
-                if ( !root.success() ) {
-                    DBG( "Invalid JSON received!" );
-                    return;
-                }
-                if ( topic == entName + "/on" ) {
-                    setState( true, root["duration"].as<unsigned long>() );
-                } else if ( topic == entName + "/off" ) {
-                    setState( false, root["duration"].as<unsigned long>() );
-                } else if ( topic == entName + "/toggle" ) {
-                    setState( !state, root["duration"].as<unsigned long>() );
-                } else if ( topic == entName + "/getstate" ) {
-                    getState();
-                } else if ( topic == entName + "/setstate" ) {
-                    setState( root["state"].as<bool>(), root["duration"].as<unsigned long>() );
-                }
+                meisterwerk::core::entity::onRegister();
+                // FHEM style commands
+                subscribe( ownTopic( "on" ) );
+                subscribe( ownTopic( "off" ) );
+                subscribe( ownTopic( "toggle" ) );
             }
 
             virtual void onLoop( unsigned long timer ) override {
                 if ( stateTimer > 0 ) {
+                    // timed state change requested
                     if ( stateTimer.isexpired() ) {
                         // perform action
                         if ( state != stateNext ) {
-                            setState( stateNext, 0 );
+                            DynamicJsonBuffer resBuffer( 300 );
+                            JsonObject &      res = resBuffer.createObject();
+                            setState( stateNext, 0, res, true );
                         }
                     }
                 }
             }
 
-            void setState( bool newstate, unsigned long duration ) {
+            virtual bool onReceive( String origin, String topic, JsonObject &request, JsonObject &response ) override {
+                if ( meisterwerk::core::entity::onReceive( origin, topic, request, response ) ) {
+                    return true;
+                }
+                // process my own subscriptions
+                JsonVariant toDuration = request["duration"];
+                if ( isOwnTopic( topic, "on" ) ) {
+                    setState( true, toDuration.as<unsigned long>(), response, true );
+                    return true;
+                } else if ( isOwnTopic( topic, "/off" ) ) {
+                    setState( false, toDuration.as<unsigned long>(), response, true );
+                    return true;
+                } else if ( isOwnTopic( topic, "toggle" ) ) {
+                    setState( !state, toDuration.as<unsigned long>(), response, true );
+                    return true;
+                }
+                return false;
+            }
+
+            virtual void onGetState( JsonObject &request, JsonObject &response ) override {
+                response["type"]     = "onoff";
+                response["state"]    = state;
+                response["duration"] = stateTimer.getduration();
+            }
+
+            virtual bool onSetState( JsonObject &request, JsonObject &response ) override {
+                JsonVariant toState    = request["state"];
+                JsonVariant toDuration = request["duration"];
+                if ( willSetStateB( toState, state ) ) {
+                    return setState( toState.as<bool>(), toDuration.as<unsigned long>(), response );
+                } else if ( willSetStateU( toDuration, stateTimer.getduration() ) ) {
+                    return setState( state, toDuration.as<unsigned long>(), response );
+                }
+                return false;
+            }
+
+            bool setState( bool newstate, unsigned long duration, JsonObject &response, bool publishState = false ) {
+                bool bChanged = false;
                 if ( newstate != state ) {
                     if ( onSwitch( newstate ) ) {
-                        stateTimer = duration;
-                        stateNext  = duration ? !newstate : newstate;
-                        state      = newstate;
-                        publish( entName + "/state", getStateJSON() );
+                        stateTimer           = duration;
+                        stateNext            = duration ? !newstate : newstate;
+                        state                = newstate;
+                        response["state"]    = newstate;
+                        response["duration"] = duration;
+                        bChanged             = true;
                     } else {
                         DBG( entName + ": Hardware failure while switching state" );
                     }
                 } else if ( duration != stateTimer ) {
                     // do not change the state, but the duration for this state
-                    stateTimer = duration;
-                    stateNext  = !state;
-                    publish( entName + "/state", getStateJSON() );
+                    stateTimer           = duration;
+                    stateNext            = !state;
+                    response["duration"] = duration;
+                    bChanged             = true;
                 }
-            }
-
-            void getState() {
-                publish( entName + "/state", getStateJSON() );
-            }
-
-            // internal
-            private:
-            String getStateJSON() {
-                char              szBuffer[256];
-                DynamicJsonBuffer jsonBuffer( 200 );
-                JsonObject &      root = jsonBuffer.createObject();
-                root["state"]          = state;
-                root["duration"]       = stateTimer.getduration();
-                root.printTo( szBuffer );
-                return szBuffer;
+                if ( bChanged ) {
+                    publish( ownTopic( "state" ), response );
+                }
+                return bChanged;
             }
         };
     } // namespace base

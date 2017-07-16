@@ -10,9 +10,6 @@
 
 #pragma once
 
-// external libraries
-#include <ArduinoJson.h>
-
 // dependencies
 #include "../core/entity.h"
 #include "../util/stopwatch.h"
@@ -21,29 +18,33 @@ namespace meisterwerk {
     namespace base {
         class button : public meisterwerk::core::entity {
             protected:
-            // state
             bool                         fromState;
             meisterwerk::util::stopwatch lastChange;
 
+            public:
             button( String name ) : meisterwerk::core::entity( name ) {
                 fromState = false;
             }
 
-            virtual void onRegister() override {
-                // standard conditionally mandatory commands
-                subscribeme( "getstate" );
-            }
-
-            virtual void onReceive( String origin, String topic, String msg ) override {
-                if ( topic == entName + "/getstate" ) {
-                    publish( entName + "/state", getStateJSON() );
-                }
-            }
-
             virtual void onChange( bool toState, unsigned long duration ) {
-                // fire a message
-                publish( entName + ( toState ? "/press" : "/release" ),
-                         "{\"duration\":" + String( duration ) + "}" );
+                String x = toState ? "press" : "release";
+                String s = "\"state\":\"" + x + "\"";
+                String d = "\"duration\":" + String( duration );
+                // notify status change - generic
+                publish( ownTopic( "state" ), "{" + s + "," + d + "}" );
+                // notify status change - FHEM style
+                publish( ownTopic( x ), "{" + d + "}" );
+            }
+
+            virtual void onGetState( JsonObject &request, JsonObject &response ) override {
+                response["type"]     = "button";
+                response["state"]    = fromState ? "press" : "release";
+                response["duration"] = lastChange.getduration();
+            }
+
+            virtual bool onSetState( JsonObject &request, JsonObject &response ) override {
+                // button has no settable state
+                return false;
             }
 
             // internal
@@ -54,16 +55,6 @@ namespace meisterwerk {
                     onChange( toState, lastChange.getleap() );
                     fromState = toState;
                 }
-            }
-
-            String getStateJSON() const {
-                char              szBuffer[256];
-                DynamicJsonBuffer jsonBuffer( 200 );
-                JsonObject &      root = jsonBuffer.createObject();
-                root["state"]          = fromState ? "press" : "release";
-                root["duration"]       = lastChange.getduration();
-                root.printTo( szBuffer );
-                return szBuffer;
             }
         };
     } // namespace base

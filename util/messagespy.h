@@ -14,34 +14,47 @@ namespace meisterwerk {
     namespace util {
 
         class messagespy : public meisterwerk::core::entity {
-            private:
 #ifdef _DEBUG
-            String tmpSubscribedTopic;
-#endif
+            private:
+            String filter;
 
             public:
-#ifdef _DEBUG
-            messagespy( String name = "spy", String subscription = "*" )
-                : meisterwerk::core::entity( name ) {
-                tmpSubscribedTopic = subscription;
+            messagespy( String name = "spy", String filter = "*" ) : meisterwerk::core::entity( name ), filter{filter} {
             }
 
             void onRegister() override {
-                subscribe( tmpSubscribedTopic );
-                tmpSubscribedTopic = "";
+                meisterwerk::core::entity::onRegister();
+                // subscribe messages to display
+                subscribe( filter );
             }
 
-            virtual void onReceive( String origin, String topic, String msg ) override {
-                Serial.println( "messagespy(" + entName + "): origin='" + origin + "' topic='" +
-                                topic + "' body='" + msg + "'" );
+            virtual void onGetState( JsonObject &request, JsonObject &response ) override {
+                response["type"]   = "messagespy";
+                response["filter"] = filter;
             }
+
+            virtual bool onSetState( JsonObject &request, JsonObject &response ) override {
+                JsonVariant toFilter = request["filter"];
+                if ( willSetStateS( toFilter, filter ) ) {
+                    filter             = toFilter.as<String>();
+                    response["filter"] = filter;
+                    return true;
+                }
+                return false;
+            }
+
+            virtual void processMessage( String origin, String topic, String msg ) override {
+                Serial.println( "messagespy(" + entName + "): origin='" + origin + "' topic='" + topic + "' body='" +
+                                msg + "'" );
+                meisterwerk::core::entity::processMessage( origin, topic, msg );
+            }
+
 #else
-            messagespy( String name = "", String subscription = "" )
-                : meisterwerk::core::entity( "" ) {
+            // fake entity. Will neither register nor do anything
+            messagespy( String name = "", String subscription = "" ) : meisterwerk::core::entity( "" ) {
             }
 
             bool registerEntity( unsigned long minMicroSecs = 0, unsigned int priority = 3 ) {
-                // never register but fake success
                 return true;
             }
 #endif

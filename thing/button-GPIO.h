@@ -20,9 +20,8 @@ namespace meisterwerk {
             button_GPIO( String name, uint8_t pin ) : meisterwerk::base::button( name ), pin{pin} {
             }
 
-            bool registerEntity(
-                unsigned long minMicroSecs = 50000,
-                unsigned int  priority     = meisterwerk::core::scheduler::PRIORITY_NORMAL ) {
+            bool registerEntity( unsigned long minMicroSecs = 50000,
+                                 unsigned int  priority     = meisterwerk::core::scheduler::PRIORITY_NORMAL ) {
                 // default sample rate: 50ms
                 return meisterwerk::base::button::registerEntity( minMicroSecs, priority );
             }
@@ -36,6 +35,12 @@ namespace meisterwerk {
 
             virtual void onLoop( unsigned long ticker ) override {
                 change( digitalRead( pin ) == LOW );
+            }
+
+            virtual void onGetState( JsonObject &request, JsonObject &response ) override {
+                meisterwerk::base::button::onGetState( request, response );
+                response["type"] = response["type"].as<String>() + String( "/button-GPIO" );
+                reposnse["pin"]  = pin;
             }
         };
     }
