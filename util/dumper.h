@@ -29,26 +29,24 @@ namespace meisterwerk {
                 : meisterwerk::core::entity( name ), autodump{autodump}, debugButton{debugButton} {
             }
 
-            bool registerEntity(
-                unsigned long minMicroSecs = 250000,
-                unsigned int  priority     = meisterwerk::core::scheduler::PRIORITY_NORMAL ) {
+            bool registerEntity( unsigned long minMicroSecs = 250000,
+                                 unsigned int  priority     = meisterwerk::core::scheduler::PRIORITY_NORMAL ) {
                 // default precision for autodump rate is 250ms
                 return meisterwerk::core::entity::registerEntity( minMicroSecs, priority );
             }
 
             void onRegister() override {
-                dumpSystemInfo();
-                // mandatory
-                subscribeme( "getconfig" );
-                subscribeme( "setconfig" );
+                meisterwerk::core::entity::onRegister();
                 // explicit commands
-                subscribeall( "dump" );
-                subscribeall( "sysinfo" );
-                subscribeall( "taskinfo" );
+                subscribe( allTopic( "dump" ) );
+                subscribe( allTopic( "sysinfo" ) );
+                subscribe( allTopic( "taskinfo" ) );
                 // events from debug Button
                 subscribe( debugButton + "/short" );
                 subscribe( debugButton + "/long" );
                 subscribe( debugButton + "/extralong" );
+                // dump system info on start
+                dumpSystemInfo();
             }
 
             virtual void onLoop( unsigned long ticker ) override {
@@ -57,24 +55,37 @@ namespace meisterwerk {
                 }
             }
 
-            virtual void onReceive( String origin, String topic, String msg ) override {
+            virtual bool onReceive( String origin, String topic, JsonObject &request, JsonObject &response ) override {
+                if ( meisterwerk::core::entity::onReceive( origin, topic, request, response ) ) {
+                    return true;
+                }
+                // process my own subscriptions
                 if ( topic == debugButton + "/short" ) {
                     dumpRuntimeInfo();
+                    return true;
                 } else if ( topic == debugButton + "/long" ) {
                     dumpSystemInfo();
+                    return true;
                 } else if ( topic == debugButton + "/extralong" ) {
                     dumpTaskInfo();
-                } else if ( topic == entName + "/getconfig" ) {
-                    publish( entName + "/config", "{\"autodump\":" + String( autodump ) + "}" );
-                } else if ( topic == entName + "/setconfig" ) {
-                    DynamicJsonBuffer jsonBuffer( 300 );
-                    JsonObject &      root = jsonBuffer.parseObject( msg );
-                    if ( !root.success() ) {
-                        DBG( "Invalid JSON received!" );
-                        return;
-                    }
-                    autodump = root["autodump"].as<unsigned long>();
+                    return true;
                 }
+                return false;
+            }
+
+            virtual void onGetState( JsonObject &request, JsonObject &response ) override {
+                response["type"]     = "dumper";
+                response["autodump"] = autodump.getlength();
+            }
+
+            virtual bool onSetState( JsonObject &request, JsonObject &response ) override {
+                JsonVariant toAutodump = request["autodump"];
+                if ( willSetStateU( toAutodump, autodump ) ) {
+                    autodump             = toAutodump.as<unsigned long>();
+                    response["autodump"] = autodump.getlength();
+                    return true;
+                }
+                return false;
             }
 
             void dumpSystemInfo() {
@@ -106,10 +117,9 @@ namespace meisterwerk {
                 unsigned long slit = meisterwerk::core::baseapp::_app->sched.allTime.getms();
                 String        pre  = "dumper(" + entName + ") Runtime Information - ";
 
-                DBG( pre + "Memory(Free Heap=" + ESP.getFreeHeap() + " bytes), Queue(cur=" + qln +
-                     " / max=" + qps + "), Scheduler(msg=" + smdp + " / tasks=" + stkc +
-                     " / msg_time=" + smqt + " ms / task_time=" + stkt + " ms / life_time=" + slit +
-                     " ms)" );
+                DBG( pre + "Memory(Free Heap=" + ESP.getFreeHeap() + " bytes), Queue(cur=" + qln + " / max=" + qps +
+                     "), Scheduler(msg=" + smdp + " / tasks=" + stkc + " / msg_time=" + smqt +
+                     " ms / task_time=" + stkt + " ms / life_time=" + slit + " ms)" );
             }
 
             void dumpTaskInfo() {
@@ -118,12 +128,12 @@ namespace meisterwerk {
                 }
             }
 #else
+            // fake entity. Will neither register nor do anything
             dumper( String name = "", int _iMinDumpSecs = 0, String _debugButton = "" )
                 : meisterwerk::core::entity( "" ) {
             }
 
             bool registerEntity( unsigned long minMicroSecs = 0, unsigned int priority = 3 ) {
-                // never register but fake success
                 return true;
             }
 #endif

@@ -21,7 +21,7 @@ namespace meisterwerk {
             scheduler sched;
 
             // mthods
-            baseapp( String name ) : entity( name ) {
+            baseapp( String name = "app" ) : entity( name ) {
                 _app = this;
             }
 
@@ -32,6 +32,13 @@ namespace meisterwerk {
             // because of the number of parameters.
             virtual void onLoop() {
                 sched.loop();
+            }
+
+            virtual void onGetState( JsonObject &request, JsonObject &response ) override {
+            }
+
+            virtual bool onSetState( JsonObject &request, JsonObject &response ) override {
+                return false;
             }
         };
 

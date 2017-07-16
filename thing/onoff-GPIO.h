@@ -30,6 +30,12 @@ namespace meisterwerk {
                 digitalWrite( pin, newstate ? LOW : HIGH );
                 return true;
             }
+
+            virtual void onGetState( JsonObject &request, JsonObject &response ) override {
+                meisterwerk::base::onoff::onGetState( request, response );
+                response["type"] = response["type"].as<String>() + String( "/onoff-GPIO" );
+                response["pin"]  = pin;
+            }
         };
     }
 }

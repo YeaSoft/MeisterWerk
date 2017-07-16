@@ -93,8 +93,7 @@ namespace meisterwerk {
             protected:
             void processMsgQueue() {
                 DBG_ONLY( msgTime.snap() );
-                for ( message *pMsg = message::que.pop(); pMsg != nullptr;
-                      pMsg          = message::que.pop() ) {
+                for ( message *pMsg = message::que.pop(); pMsg != nullptr; pMsg = message::que.pop() ) {
                     switch ( pMsg->type ) {
                     case message::MSG_DIRECT:
                         directMsg( pMsg );
@@ -119,8 +118,7 @@ namespace meisterwerk {
 
             void processTask( T_PTASK pTask ) {
                 unsigned long ticker = micros();
-                unsigned long tDelta =
-                    meisterwerk::util::timebudget::delta( pTask->lastCall, ticker );
+                unsigned long tDelta = meisterwerk::util::timebudget::delta( pTask->lastCall, ticker );
                 if ( ( pTask->minMicros > 0 ) && ( tDelta >= pTask->minMicros ) ) {
                     DBG_ONLY( tskTime.snap() );
                     DBG_ONLY( pTask->tskTime.snap() );
@@ -138,8 +136,7 @@ namespace meisterwerk {
             void directMsg( message *pMsg ) {
                 if ( String( pMsg->topic ) == "register" ) {
                     if ( pMsg->pBufLen != sizeof( msgregister ) ) {
-                        DBG( "Direct message: invalid reg message buffer size!" +
-                             String( pMsg->topic ) );
+                        DBG( "Direct message: invalid reg message buffer size!" + String( pMsg->topic ) );
                     } else {
                         msgregister *pReg = (msgregister *)pMsg->pBuf;
                         registerEntity( pReg->pEnt, pReg->minMicroSecs, pReg->priority );
@@ -147,8 +144,7 @@ namespace meisterwerk {
                     }
                 } else if ( String( pMsg->topic ) == "update" ) {
                     if ( pMsg->pBufLen != sizeof( msgregister ) ) {
-                        DBG( "Direct message: invalid updateEntity message buffer size!" +
-                             String( pMsg->topic ) );
+                        DBG( "Direct message: invalid updateEntity message buffer size!" + String( pMsg->topic ) );
                     } else {
                         msgregister *pReg = (msgregister *)pMsg->pBuf;
                         updateEntity( pReg->pEnt, pReg->minMicroSecs, pReg->priority );
@@ -166,15 +162,8 @@ namespace meisterwerk {
                             if ( ( pTask->pEnt->entName == sub.subscriber ) &&
                                  ( String( pMsg->originator ) != sub.subscriber ) ) {
                                 DBG_ONLY( pTask->msgTime.snap() );
-
-                                if ( pMsg->pBufLen == 0 ) {
-                                    pTask->pEnt->onReceive( pMsg->originator, pMsg->topic, "" );
-
-                                } else {
-                                    pTask->pEnt->onReceive( pMsg->originator, pMsg->topic,
-                                                            (char *)pMsg->pBuf );
-                                }
-
+                                pTask->pEnt->processMessage( pMsg->originator, pMsg->topic,
+                                                             pMsg->pBuf && pMsg->pBufLen ? (char *)pMsg->pBuf : "{}" );
                                 DBG_ONLY( pTask->msgTime.shot() );
                             }
                         }
@@ -195,15 +184,14 @@ namespace meisterwerk {
                     T_SUBSCRIPTION sub = ( *iter );
                     // if ( msgmatches( sub.topic, pMsg->topic ) ) {  // Wild-card unsubscribe not
                     // supported.
-                    if ( ( sub.topic == String( pMsg->topic ) ) &&
-                         ( sub.subscriber == String( pMsg->originator ) ) ) {
+                    if ( ( sub.topic == String( pMsg->topic ) ) && ( sub.subscriber == String( pMsg->originator ) ) ) {
                         subscriptionList.erase( iter );
                         return;
                     }
                     ++iter;
                 }
-                DBG( "Entity " + String( pMsg->originator ) + " tried to unscribe topic " +
-                     String( pMsg->topic ) + " which had not been subscribed!" );
+                DBG( "Entity " + String( pMsg->originator ) + " tried to unscribe topic " + String( pMsg->topic ) +
+                     " which had not been subscribed!" );
                 return;
             }
 
@@ -211,8 +199,7 @@ namespace meisterwerk {
                                  unsigned int priority = PRIORITY_NORMAL ) {
                 for ( auto pTask : taskList ) {
                     if ( pTask->pEnt->entName == pEnt->entName ) {
-                        DBG( "ERROR: cannot register another task with existing entity-name: " +
-                             pEnt->entName );
+                        DBG( "ERROR: cannot register another task with existing entity-name: " + pEnt->entName );
                         return false;
                     }
                 }
@@ -236,8 +223,7 @@ namespace meisterwerk {
                     }
                 }
                 if ( !found ) {
-                    DBG( "ERROR: cannot updateEntity for not existing entity-name: " +
-                         pEnt->entName );
+                    DBG( "ERROR: cannot updateEntity for not existing entity-name: " + pEnt->entName );
                     return false;
                 }
                 pTask->minMicros = minMicroSecs;
@@ -265,7 +251,7 @@ namespace meisterwerk {
                 if ( l1 < l2 )
                     l = l2;
                 else
-                    l = l1;
+                    l  = l1;
                 int p1 = 0, p2 = 0;
                 for ( int i = 0; i < l; l++ ) {
                     if ( ( p1 > l1 ) || ( p2 > l2 ) )
@@ -350,8 +336,8 @@ namespace meisterwerk {
                 DBG( pre + F( "Dispatched Messages: " ) + msgTime.getcount() );
                 DBG( pre + F( "Dispatched Tasks: " ) + tskTime.getcount() );
                 DBG( pre + F( "Message Time: " ) + msgTime.getms() + ms );
-                DBG( pre + F( "Task Time: " ) + tskTime.getms() + ms + " (" +
-                     tskTime.getPercent( allTime.getms() ) + "%)" );
+                DBG( pre + F( "Task Time: " ) + tskTime.getms() + ms + " (" + tskTime.getPercent( allTime.getms() ) +
+                     "%)" );
                 DBG( pre + F( "Total Time: " ) + allTime.getms() + ms );
                 DBG( "" );
                 DBG( pre + F( "Individual Task Statistics:" ) );

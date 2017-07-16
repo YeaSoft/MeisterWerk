@@ -34,36 +34,36 @@ namespace meisterwerk {
             STATE         lastState;
             unsigned long lastDuration;
 
-            pushbutton( String name, unsigned int _minLongMs = 0, unsigned int _minExtraLongMs = 0 )
-                : button( name ) {
+            pushbutton( String name, unsigned int _minLongMs = 0, unsigned int _minExtraLongMs = 0 ) : button( name ) {
                 lastState      = NONE;
                 lastDuration   = 0;
                 minLongMs      = _minLongMs;
                 minExtraLongMs = _minExtraLongMs;
             }
 
-            virtual void onRegister() override {
-                button::onRegister();
-                // standard conditionally mandatory commands
-                subscribeme( "getconfig" );
-                subscribeme( "setconfig" );
+            virtual void onGetState( JsonObject &request, JsonObject &response ) override {
+                response["type"]      = "button/pushbutton";
+                response["state"]     = getStateString( lastState );
+                response["duration"]  = lastDuration;
+                response["long"]      = minLongMs;
+                response["extraLong"] = minExtraLongMs;
             }
 
-            virtual void onReceive( String origin, String topic, String msg ) override {
-                if ( topic == entName + "/getstate" ) {
-                    publish( entName + "/state", getStateJSON() );
-                } else if ( topic == entName + "/getconfig" ) {
-                    publish( entName + "/config", getConfigJSON() );
-                } else if ( topic == entName + "/setconfig" ) {
-                    DynamicJsonBuffer jsonBuffer( 300 );
-                    JsonObject &      root = jsonBuffer.parseObject( msg );
-                    if ( !root.success() ) {
-                        DBG( "Invalid JSON received!" );
-                        return;
-                    }
-                    minLongMs      = root["long"].as<unsigned long>();
-                    minExtraLongMs = root["extraLong"].as<unsigned long>();
+            virtual bool onSetState( JsonObject &request, JsonObject &response ) override {
+                bool        bChanged    = false;
+                JsonVariant toLong      = request["long"];
+                JsonVariant toExtraLong = request["extraLong"];
+                if ( willSetStateU( toLong, minLongMs ) ) {
+                    bChanged         = true;
+                    minLongMs        = toLong.as<unsigned long>();
+                    response["long"] = minLongMs;
                 }
+                if ( willSetStateU( toExtraLong, minExtraLongMs ) ) {
+                    bChanged              = true;
+                    minExtraLongMs        = toExtraLong.as<unsigned long>();
+                    response["extraLong"] = minExtraLongMs;
+                }
+                return bChanged;
             }
 
             virtual void onChange( bool toState, unsigned long duration ) override {
@@ -98,28 +98,13 @@ namespace meisterwerk {
             void setState( STATE state, unsigned int duration ) {
                 lastState    = state;
                 lastDuration = duration;
-                publish( entName + "/" + getStateString( state ),
-                         "{\"duration\":" + String( duration ) + "}" );
-            }
-
-            String getStateJSON() const {
-                char              szBuffer[256];
-                DynamicJsonBuffer jsonBuffer( 200 );
-                JsonObject &      root = jsonBuffer.createObject();
-                root["state"]          = getStateString( lastState );
-                root["duration"]       = lastDuration;
-                root.printTo( szBuffer );
-                return szBuffer;
-            }
-
-            String getConfigJSON() const {
-                char              szBuffer[256];
-                DynamicJsonBuffer jsonBuffer( 200 );
-                JsonObject &      root = jsonBuffer.createObject();
-                root["long"]           = minLongMs;
-                root["extraLong"]      = minExtraLongMs;
-                root.printTo( szBuffer );
-                return szBuffer;
+                String x     = getStateString( state );
+                String s     = "\"state\":\"" + x + "\"";
+                String d     = "\"duration\":" + String( duration );
+                // notify status change - generic
+                publish( ownTopic( "state" ), "{" + s + "," + d + "}" );
+                // notify status change - FHEM style
+                publish( ownTopic( x ), "{" + d + "}" );
             }
         };
     } // namespace base
