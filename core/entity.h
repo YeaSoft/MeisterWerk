@@ -55,13 +55,13 @@ namespace meisterwerk {
                 return false;
             }
 
-            bool updateRegisterEntity( unsigned long minMicroSecs = 0, unsigned int priority = 3 ) {
+            bool updateEntity( unsigned long minMicroSecs = 0, unsigned int priority = 3 ) {
                 msgregister reg( this, minMicroSecs, priority );
-                if ( message::send( message::MSG_DIRECT, entName, "updregister", &reg,
+                if ( message::send( message::MSG_DIRECT, entName, "update", &reg,
                                     sizeof( reg ) ) ) {
                     return true;
                 }
-                DBG( "entity::registerEntity, sendMessage failed for register " + entName );
+                DBG( "entity::registerEntity, sendMessage failed for update " + entName );
                 return false;
             }
 
