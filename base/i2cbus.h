@@ -225,8 +225,8 @@ namespace meisterwerk {
                     return 0;
                 }
                 if ( bEnum ) {
-                    DBG( "For now, mulitple I2C-bus enums are suppressed." );
-                    return 0;
+                    DBG( "For now, mulitple I2C-bus enums are allowed." ); // suppressed." );
+                    // return 0;
                 }
                 DBG( "Scanning I2C-Bus, SDA=" + String( sdaport ) + ", SCL=" + String( sclport ) );
                 nDevices = 0;
