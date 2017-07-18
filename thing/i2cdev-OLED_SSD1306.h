@@ -10,9 +10,6 @@
 // hardware dependencies
 #include <ESP8266WiFi.h>
 
-// The LCD libraries are some serious mess, totally different implementations with
-// different APIs have same name etc. use #576.
-//#include <LiquidCrystal_I2C.h>
 #include <Adafruit_SSD1306.h>
 #include <SPI.h>
 #include <Wire.h>

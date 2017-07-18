@@ -10,13 +10,7 @@
 // hardware dependencies
 #include <ESP8266WiFi.h>
 
-// The LCD libraries are some serious mess, totally different implementations with
-// different APIs have same name etc. use #576.
-//#include <LiquidCrystal_I2C.h>
-#define USE_SW_SERIAL 1
 #include <SoftwareSerial.h>
-
-//#include <Adafruit_GPS.h>
 
 // external libraries
 #include <ArduinoJson.h>
