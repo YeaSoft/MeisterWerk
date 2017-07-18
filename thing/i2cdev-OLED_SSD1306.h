@@ -78,8 +78,6 @@ namespace meisterwerk {
                 poled->begin( SSD1306_SWITCHCAPVCC,
                               address ); // initialize with the I2C addr 0x3D (for the 128x64)
                                          // poled->clear();
-                poled->display();
-                delay( 2000 );
                 poled->clearDisplay();
                 poled->setTextSize( 1 );
                 poled->setTextColor( WHITE );
