@@ -61,6 +61,15 @@ namespace meisterwerk {
                 }
                 return false;
             }
+            
+            bool filter( long *plvalue ) {
+                float tval=(float)*plvalue;
+                bool ret=filter(&tval);
+                if (ret) {
+                    *plvalue=(long)tval;
+                }
+                return ret;
+            }
         };
     } // namespace util
 } // namespace meisterwerk
