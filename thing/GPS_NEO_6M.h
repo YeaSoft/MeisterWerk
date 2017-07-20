@@ -35,8 +35,8 @@ namespace meisterwerk {
             uint8_t adr;
             uint8_t instAddress;
             bool    usingInterrupt = false;
-            bool bPublishTime           = false;
-            bool bPublishGps            = false;
+            bool    bPublishTime   = false;
+            bool    bPublishGps    = false;
 
             GPS_NEO_6M( String name ) : meisterwerk::core::entity( name ) {
             }
@@ -59,8 +59,8 @@ namespace meisterwerk {
                 resetDefaults();
                 subscribe( entName + "/gps/get" );
                 subscribe( entName + "/time/get" );
-                //subscribe( entName + "/gps/set" );
-                //subscribe( entName + "/time/set" );
+                // subscribe( entName + "/gps/set" );
+                // subscribe( entName + "/time/set" );
                 isOn = true;
             }
 
@@ -75,8 +75,8 @@ namespace meisterwerk {
 
             void resetCmd() {
                 for ( int i = 0; i < NMEA_MAX_CMDS; i++ )
-                    cmd[i]  = "";
-                icmd        = 0;
+                    cmd[i] = "";
+                icmd = 0;
             }
 
             void resetDefaults() {
@@ -100,15 +100,15 @@ namespace meisterwerk {
 
             String parseTimeToIsoJsonElement() {
                 String timestr = "";
-                String msg="";
+                String msg     = "";
                 if ( gpstime != "" && gpsdate != "" ) {
                     timestr = "20" + gpsdate.substring( 4, 6 ) + "-" + gpsdate.substring( 2, 4 ) +
                               "-" + gpsdate.substring( 0, 2 ) + "T" + gpstime.substring( 0, 2 ) +
                               ":" + gpstime.substring( 2, 4 ) + ":" + gpstime.substring( 4, 6 ) +
                               "Z";
 
-                    if (gpstime.substring(4,6)=="00") {
-                        bPublishTime=true;
+                    if ( gpstime.substring( 4, 6 ) == "00" ) {
+                        bPublishTime = true;
                     }
                     // time_t t;
                     // t=util::msgtime::ISO2time_t(timestr);
@@ -116,12 +116,12 @@ namespace meisterwerk {
                     // DBG(timestr+"->"+back);
                 }
                 if ( valid == "A" ) {
-                    msg =
-                        "\"time\":\"" + timestr + "\",\"timesource\":\"GPS\",\"timeprecision\":1000000";
+                    msg = "\"time\":\"" + timestr +
+                          "\",\"timesource\":\"GPS\",\"timeprecision\":1000000";
                 } else {
                     if ( timestr != "" ) {
-                        msg =
-                            "\"time\":\"" + timestr + "\",\"timesource\":\"GPS-RTC\",\"timeprecision\":0";
+                        msg = "\"time\":\"" + timestr +
+                              "\",\"timesource\":\"GPS-RTC\",\"timeprecision\":0";
                     } else {
                         msg = "\"time\":\"" + String( millis() ) + "\"";
                     }
@@ -129,38 +129,41 @@ namespace meisterwerk {
                 return msg;
             }
 
-            bool sigdelta(double a, double b, double eps) {
-                double dx=a-b;
-                if (dx<0.0) dx=dx * (-1.0);
-                if (dx>eps) return true;
-                else return false;
+            bool sigdelta( double a, double b, double eps ) {
+                double dx = a - b;
+                if ( dx < 0.0 )
+                    dx = dx * ( -1.0 );
+                if ( dx > eps )
+                    return true;
+                else
+                    return false;
             }
-            bool detectGpsChange(double flon, double flat,int nosat,int fix, double alt) {
-                static int anosat=-1;
-                static int afix=-1;
-                static double aflon=(-1000.0);
-                static double aflat=(-1000.0);
-                static double aalt=(-1000.0);
-                bool ret=false;
-                if (nosat!=anosat) {
-                    anosat=nosat;
-                    ret=true;
+            bool detectGpsChange( double flon, double flat, int nosat, int fix, double alt ) {
+                static int    anosat = -1;
+                static int    afix   = -1;
+                static double aflon  = ( -1000.0 );
+                static double aflat  = ( -1000.0 );
+                static double aalt   = ( -1000.0 );
+                bool          ret    = false;
+                if ( nosat != anosat ) {
+                    anosat = nosat;
+                    ret    = true;
                 }
-                if (fix!=afix) {
-                    afix=fix;
-                    ret=true;
+                if ( fix != afix ) {
+                    afix = fix;
+                    ret  = true;
                 }
-                if (sigdelta(flon,aflon,0.0001)) {
-                    aflon=flon;
-                    ret=true;
+                if ( sigdelta( flon, aflon, 0.0001 ) ) {
+                    aflon = flon;
+                    ret   = true;
                 }
-                if (sigdelta(flat,aflat,0.0001)) {
-                    aflat=flat;
-                    ret=true;
+                if ( sigdelta( flat, aflat, 0.0001 ) ) {
+                    aflat = flat;
+                    ret   = true;
                 }
-                if (sigdelta(alt,aalt,5.0)) {
-                    aalt=alt;
-                    ret=true;
+                if ( sigdelta( alt, aalt, 5.0 ) ) {
+                    aalt = alt;
+                    ret  = true;
                 }
 
                 return ret;
@@ -185,17 +188,23 @@ namespace meisterwerk {
                     gpsmsg += ",\"altitude\":" + alt;
                     flon       = atof( lon.c_str() );
                     double deg = (double)( (int)( flon / 100 ) );
-                    double min = flon - 100 * (int)deg;
+                    double min = flon - 100.0 * deg;
                     flon       = deg + min / 60.0;
                     flat       = atof( lat.c_str() );
                     deg        = (double)( (int)( flat / 100 ) );
-                    min        = flat - 100 * (int)deg;
+                    min        = flat - 100.0 * deg;
                     flat       = deg + min / 60.0;
-                    gpsmsg += ",\"lat\":" + String( flat );
+                    char bufp[32];
+                    dtostrf( flat, 10, 6, bufp );
+                    gpsmsg += ",\"lat\":" + String( bufp );
                     gpsmsg += ",\"lath\":\"" + lath + "\"";
-                    gpsmsg += ",\"lon\":" + String( flon );
+                    // DBG( lon + "," + String( bufp ) );
+                    dtostrf( flon, 10, 6, bufp );
+                    gpsmsg += ",\"lon\":" + String( bufp );
                     gpsmsg += ",\"lonh\":\"" + lonh + "\"";
-                    if (detectGpsChange(flon,flat,nosat,fix,atof(alt.c_str()))) bPublishGps=true;
+                    // DBG( lat + "," + String( bufp ) );
+                    if ( detectGpsChange( flon, flat, nosat, fix, atof( alt.c_str() ) ) )
+                        bPublishGps = true;
                 }
                 return gpsmsg;
             }
@@ -264,7 +273,7 @@ namespace meisterwerk {
 
             virtual void onReceive( String origin, String topic, String msg ) override {
                 meisterwerk::core::entity::onReceive( origin, topic, msg );
-                DBG("GpsReceive:"+topic+","+msg);
+                DBG( "GpsReceive:" + topic + "," + msg );
                 if ( topic == entName + "/time/get" ) {
                     bPublishTime = true;
                 }
