@@ -10,29 +10,36 @@
 
 // hardware dependencies
 #include <ESP8266WiFi.h>
-#include <Wire.h>
 
 // dependencies
 #include "../core/entity.h"
-#include "../util/hextools.h"
+#include "../util/msgtime.h"
 
 namespace meisterwerk {
     namespace base {
+        enum TimeSourceType { NONE            = 0, RTC, GPS_RTC, DCF77, GPS, NTP };
+        static const String TimeSourceNames[] = {"None", "RTC", "GPS-RTC", "DCF-77", "GPS", "NTP"};
+        typedef struct {
+            TimeSourceType type;
+            String         name;
+            unsigned long  lastActive;
+        } T_TIMESOURCE;
 
         class mastertime : public meisterwerk::core::entity {
             public:
-            enum TimeSourceType { NONE = 0, RTC = 1, GPS_RTC = 2, GPS = 5, NTP = 10 };
-            enum TimeSourceType bestClock;
-            unsigned long       timeStampBestClock;
+            TimeSourceType bestClock;
+            unsigned long  timeStampBestClock;
 
             bool bSetup;
 
             mastertime( String name ) : meisterwerk::core::entity( name ) {
-                bSetup = false;
+                bSetup    = false;
+                bestClock = TimeSourceType::NONE;
             }
 
             bool registerEntity() {
-                return meisterwerk::core::entity::registerEntity( 50000 );
+                return meisterwerk::core::entity::registerEntity(
+                    10000, core::scheduler::PRIORITY_TIMECRITICAL );
             }
 
             virtual void onRegister() override {
@@ -53,7 +60,23 @@ namespace meisterwerk {
                         DBG( "Ntp: Invalid JSON received: " + msg );
                         return;
                     }
-                    String state = root["time"];
+                    String         isoTime    = root["time"];
+                    String         timeSource = root["timesource"];
+                    time_t         t          = util::msgtime::ISO2time_t( isoTime );
+                    TimeSourceType cur        = TimeSourceType::NONE;
+                    for ( int i = 0; i < sizeof( TimeSourceNames ) / sizeof( String * ); i++ ) {
+                        if ( TimeSourceNames[i] == timeSource )
+                            cur = (TimeSourceType)i;
+                    }
+                    if ( cur > bestClock ) {
+                        bestClock = cur;
+                        setTime( t );
+                        DBG( "System-time set by clock of type: " + timeSource );
+                        publish( "mastertime/time/set", msg );
+                    }
+                    // XXX: register clock types
+                    // XXX: periodic update by best clock
+                    // XXX: check timeouts for registered clocks.
                 }
             }
         };

@@ -146,18 +146,20 @@ namespace meisterwerk {
                 static double aalt   = ( -1000.0 );
                 bool          ret    = false;
                 if ( nosat != anosat ) {
-                    anosat = nosat;
-                    ret    = true;
+                    if ( nosat < 4 || abs( nosat - anosat ) > 1 ) {
+                        anosat = nosat;
+                        ret    = true;
+                    }
                 }
                 if ( fix != afix ) {
                     afix = fix;
                     ret  = true;
                 }
-                if ( sigdelta( flon, aflon, 0.0001 ) ) {
+                if ( sigdelta( flon, aflon, 0.001 ) ) {
                     aflon = flon;
                     ret   = true;
                 }
-                if ( sigdelta( flat, aflat, 0.0001 ) ) {
+                if ( sigdelta( flat, aflat, 0.001 ) ) {
                     aflat = flat;
                     ret   = true;
                 }
