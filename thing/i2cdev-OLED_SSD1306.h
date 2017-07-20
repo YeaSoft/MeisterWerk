@@ -11,7 +11,7 @@
 #include <ESP8266WiFi.h>
 
 //#define SSD1306_128_64
-#define SSD1306_128_32
+//#define SSD1306_128_32
 //#define SSD1306_96_16
 
 #include <Adafruit_SSD1306.h>
