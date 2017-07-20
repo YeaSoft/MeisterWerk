@@ -49,9 +49,9 @@ namespace meisterwerk {
 
             unsigned int localPort = 2390; // local port to listen for UDP packets
 
-            Ntp( String name, String ntpServer )
-                : meisterwerk::core::entity( name ), ntpTicker( 60000L ), ntpServer{ntpServer} {
-                ntpstate = Udpstate::IDLE;
+            Ntp( String name ) : meisterwerk::core::entity( name ), ntpTicker( 60000L ) {
+                ntpstate  = Udpstate::IDLE;
+                ntpServer = "";
             }
             ~Ntp() {
                 if ( isOn ) {
@@ -66,7 +66,9 @@ namespace meisterwerk {
                 DBG( "init ntp." );
                 subscribe( "net/network" );
                 subscribe( entName + "/time/get" );
+                subscribe( "net/services/timeserver" );
                 publish( "net/network/get" );
+                publish( "net/services/timeserver/get" );
                 isOn = true;
             }
 
@@ -145,7 +147,8 @@ namespace meisterwerk {
                         case Udpstate::IDLE:
                             if ( bGetTime || ntpTicker.beat() > 0 ) {
                                 bGetTime = false;
-                                getNtpTime();
+                                if ( ntpServer != "" )
+                                    getNtpTime();
                             }
                             break;
                         case Udpstate::PACKETSENT:
@@ -177,6 +180,19 @@ namespace meisterwerk {
                         bGetTime = true;
                     }
                 }
+                if ( topic == "net/services/timeserver" ) {
+                    DynamicJsonBuffer jsonBuffer( 200 );
+                    JsonObject &      root = jsonBuffer.parseObject( msg );
+                    if ( !root.success() ) {
+                        DBG( "Ntp: Invalid JSON received: " + msg );
+                        return;
+                    }
+                    ntpServer = root["server"].as<char *>();
+                    DBG( "NTP: received server address: " + ntpServer );
+                    if ( netUp && ntpServer != "" ) {
+                        getNtpTime();
+                    }
+                }
                 if ( topic == "net/network" ) {
                     DynamicJsonBuffer jsonBuffer( 200 );
                     JsonObject &      root = jsonBuffer.parseObject( msg );
@@ -188,8 +204,9 @@ namespace meisterwerk {
                     if ( state == "connected" ) {
                         netUp = true;
                         udp.begin( localPort );
-
-                        getNtpTime();
+                        if ( ntpServer != "" ) {
+                            getNtpTime();
+                        }
                     } else
                         netUp = false;
                 }

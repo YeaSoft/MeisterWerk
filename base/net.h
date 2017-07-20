@@ -11,6 +11,7 @@
 // hardware dependencies
 #include <ESP8266WiFi.h>
 #include <FS.h>
+#include <map>
 
 // dependencies
 #include "../core/entity.h"
@@ -28,7 +29,7 @@ namespace meisterwerk {
 
             bool                  bSetup;
             Netstate              state;
-            Netstate                oldstate;
+            Netstate              oldstate;
             Netmode               mode;
             long                  contime;
             long                  conto = 15000;
@@ -39,6 +40,7 @@ namespace meisterwerk {
             util::metronome       tick1sec;
             util::metronome       tick10sec;
             util::sensorprocessor rssival;
+            std::map<String, String> netservices;
 
             net( String name )
                 : meisterwerk::core::entity( name ), tick1sec( 1000L ), tick10sec( 10000L ),
@@ -52,29 +54,31 @@ namespace meisterwerk {
 
             void publishNetwork() {
                 String json;
-                if (mode==Netmode::AP) {
-                    json="{\"mode\":\"ap\",";
-                } else if (mode==Netmode::STATION) {
-                    json="{\"mode\":\"station\",";
+                if ( mode == Netmode::AP ) {
+                    json = "{\"mode\":\"ap\",";
+                } else if ( mode == Netmode::STATION ) {
+                    json = "{\"mode\":\"station\",";
                 } else {
-                    json="{\"mode\":\"undefined\",";
+                    json = "{\"mode\":\"undefined\",";
                 }
                 switch ( state ) {
                 case Netstate::NOTCONFIGURED:
-                    json+="\"state\":\"notconfigured\"}";
+                    json += "\"state\":\"notconfigured\"}";
                     break;
                 case Netstate::CONNECTINGAP:
-                    json+="\"state\":\"connectingap\",\"SSID\":\""+SSID+"\"}";                
+                    json += "\"state\":\"connectingap\",\"SSID\":\"" + SSID + "\"}";
                     break;
                 case Netstate::CONNECTED:
-                    json+="\"state\":\"connected\",\"SSID\":\""+SSID+"\",\"hostname\":\"" + lhostname +
-                                     "\",\"ip\":\"" + ipaddress + "\"}";           
+                    json += "\"state\":\"connected\",\"SSID\":\"" + SSID + "\",\"hostname\":\"" +
+                            lhostname + "\",\"ip\":\"" + ipaddress + "\"}";
                     break;
                 default:
-                    json+="\"state\":\"undefined\"}";
+                    json += "\"state\":\"undefined\"}";
                     break;
                 }
                 publish( "net/network", json );
+                if ( state == Netstate::CONNECTED )
+                    publishServices();
             }
 
             bool readNetConfig() {
@@ -96,11 +100,22 @@ namespace meisterwerk {
                         DBG( "Invalid JSON received, check SPIFFS file net.json!" );
                         return false;
                     } else {
-                        SSID      = root["SSID"].as<char *>();
-                        password  = root["password"].as<char *>();
-                        lhostname = root["hostname"].as<char *>();
-                        return true;
+                        SSID             = root["SSID"].as<char *>();
+                        password         = root["password"].as<char *>();
+                        lhostname        = root["hostname"].as<char *>();
+                        JsonArray &servs = root["services"];
+                        for ( int i = 0; i < servs.size(); i++ ) {
+                            JsonObject &srv = servs[i];
+                            for ( auto obj : srv ) {
+                                netservices[obj.key] = obj.value.as<char *>();
+                            }
+                        }
                     }
+
+                    for ( auto s : netservices ) {
+                        DBG( "***" + s.first + "->" + s.second );
+                    }
+                    return true;
                 }
             }
 
@@ -115,10 +130,10 @@ namespace meisterwerk {
             }
 
             virtual void onRegister() override {
-                bSetup = true;
+                bSetup   = true;
                 oldstate = Netstate::NOTDEFINED;
-                state  = Netstate::NOTCONFIGURED;
-                mode   = Netmode::AP;
+                state    = Netstate::NOTCONFIGURED;
+                mode     = Netmode::AP;
                 if ( readNetConfig() ) {
                     connectAP();
                 }
@@ -168,6 +183,11 @@ namespace meisterwerk {
                 publish( "net/networks", netlist );
             }
 
+            void publishServices() {
+                for ( auto s : netservices ) {
+                    publish( "net/services/" + s.first, "{\"server\":\"" + s.second + "\"}" );
+                }
+            }
             virtual void onLoop( unsigned long ticker ) override {
                 switch ( state ) {
                 case Netstate::NOTCONFIGURED:
@@ -202,19 +222,24 @@ namespace meisterwerk {
                 default:
                     break;
                 }
-                if (state!=oldstate) {
-                    oldstate=state;
+                if ( state != oldstate ) {
+                    oldstate = state;
                     publishNetwork();
                 }
             }
 
             virtual void onReceive( String origin, String topic, String msg ) override {
-                if (topic=="net/network/get") {
+                if ( topic == "net/network/get" ) {
                     publishNetwork();
-                } else if (topic=="net/networks/get") {
+                } else if ( topic == "net/networks/get" ) {
                     publishNetworks();
-                } else if (topic=="net/network/set") {
-                    DBG("network/set not yet implemented!");
+                } else if ( topic == "net/network/set" ) {
+                    DBG( "network/set not yet implemented!" );
+                }
+                for ( auto s : netservices ) {
+                    if ( topic == "net/services/" + s.first + "/get" ) {
+                        publish( "net/services/" + s.first, "{\"server\":\"" + s.second + "\"}" );
+                    }
                 }
             }
         };
