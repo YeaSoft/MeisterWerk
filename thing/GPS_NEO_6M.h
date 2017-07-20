@@ -75,8 +75,8 @@ namespace meisterwerk {
 
             void resetCmd() {
                 for ( int i = 0; i < NMEA_MAX_CMDS; i++ )
-                    cmd[i] = "";
-                icmd = 0;
+                    cmd[i]  = "";
+                icmd        = 0;
             }
 
             void resetDefaults() {
@@ -262,8 +262,8 @@ namespace meisterwerk {
                             } else {
                                 cmd[icmd] += c;
                                 if ( cmd[icmd].length() > 24 ) {
+                                    DBG( "Illegal format received: " + cmd[icmd] );
                                     resetCmd();
-                                    DBG( "Illegal format received." );
                                 }
                             }
                         }
