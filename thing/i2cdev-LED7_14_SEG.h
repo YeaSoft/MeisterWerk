@@ -23,25 +23,34 @@ namespace meisterwerk {
     namespace thing {
         class i2cdev_LED7_14_SEG : public meisterwerk::base::i2cdev {
             public:
-            Adafruit_AlphaNum4 *pled;
+            Adafruit_7segment * pled7;
+            Adafruit_AlphaNum4 *pled14;
             bool                pollDisplay = false;
             uint8_t             address;
+            uint8_t             segments;
+            util::metronome     scroller;
+            String              disptext;
+            int                 ptext;
             // meisterwerk::util::sensorprocessor tempProcessor, pressProcessor;
             String json;
 
-            i2cdev_LED7_14_SEG( String name, uint8_t address )
-                : meisterwerk::base::i2cdev( name, "LED7_14_SEG", address ), address{address} {
+            i2cdev_LED7_14_SEG( String name, uint8_t address, uint8_t segments )
+                : meisterwerk::base::i2cdev( name, "LED7_14_SEG", address ),
+                  scroller( 250 ), address{address}, segments{segments} {
             }
             ~i2cdev_LED7_14_SEG() {
                 if ( pollDisplay ) {
                     pollDisplay = false;
-                    delete pled;
+                    if ( segments == 7 )
+                        delete pled7;
+                    else if ( segments == 14 )
+                        delete pled14;
                 }
             }
 
             bool registerEntity() {
                 // 5sec sensor checks
-                bool ret = meisterwerk::core::entity::registerEntity( 5000000 );
+                bool ret = meisterwerk::core::entity::registerEntity( 25000 );
                 return ret;
             }
 
@@ -49,9 +58,14 @@ namespace meisterwerk {
                 // String sa = meisterwerk::util::hexByte( address );
                 DBG( "Instantiating LED7_14_SEG device at address 0x" +
                      meisterwerk::util::hexByte( address ) );
-                pled = new Adafruit_AlphaNum4();
-                pled->begin( address );
-                DBG( "Instance 7/14-LED on." );
+                if ( segments == 7 ) {
+                    pled7 = new Adafruit_7segment();
+                    pled7->begin( address );
+                } else if ( segments == 14 ) {
+                    pled14 = new Adafruit_AlphaNum4();
+                    pled14->begin( address );
+                }
+                DBG( "Instance " + String( segments ) + "-LED on." );
                 pollDisplay = true;
                 subscribe( entName + "/config" );
                 subscribe( "textdisplay/enum" );
@@ -59,9 +73,27 @@ namespace meisterwerk {
                 publish( entName + "/textdisplay" );
             }
 
+            void print( String text ) {
+                String t;
+                t = text;
+                while ( t.length() < 4 )
+                    t += " ";
+                for ( int i = 0; i < 4; i++ ) {
+                    pled14->writeDigitAscii( i, t[i] );
+                }
+                pled14->writeDisplay();
+            }
+
             virtual void onLoop( unsigned long ticker ) override {
                 if ( pollDisplay ) {
-                    // Do things.
+                    if ( disptext.length() > 4 ) {
+                        int d = scroller.beat();
+                        if ( d > 0 ) {
+                            ptext        = ( ptext + d ) % disptext.length();
+                            String dtext = disptext.substring( ptext, ptext + 4 );
+                            print( dtext );
+                        }
+                    }
                 }
             }
 
@@ -73,19 +105,17 @@ namespace meisterwerk {
                 } else if ( topic == "textdisplay/enum" ) {
                     publish( entName + "/textdisplay" );
                 } else if ( topic == entName + "/display" ) {
-                    pled->clear();
-                    if ( address == 0x70 ) {
-                        pled->writeDigitAscii( 0, 'a' );
-                        pled->writeDigitAscii( 1, 'b' );
-                        pled->writeDigitAscii( 2, 'c' );
-                        pled->writeDigitAscii( 3, 'd' );
-                        pled->writeDisplay();
-                    } else {
-                        pled->writeDigitAscii( 0, 'e' );
-                        pled->writeDigitAscii( 1, 'f' );
-                        pled->writeDigitAscii( 2, 'g' );
-                        pled->writeDigitAscii( 3, 'h' );
-                        pled->writeDisplay();
+                    DynamicJsonBuffer jsonBuffer( 200 );
+                    JsonObject &      root = jsonBuffer.parseObject( msg );
+                    if ( !root.success() ) {
+                        DBG( "Invalid JSON received!" );
+                        return;
+                    }
+                    disptext = root["text"].as<char *>();
+                    while ( disptext.length() < 4 )
+                        disptext += " ";
+                    if ( disptext.length() <= 4 ) {
+                        print( disptext );
                     }
                 }
             }
