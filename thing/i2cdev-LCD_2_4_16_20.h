@@ -32,15 +32,13 @@ namespace meisterwerk {
             bool                   pollDisplay = false;
             // meisterwerk::util::sensorprocessor tempProcessor, pressProcessor;
             String  json;
-            String  dispSize;
             uint8_t adr;
             uint8_t instAddress;
+            int     displayX, displayY;
 
-            i2cdev_LCD_2_4_16_20( String name, uint8_t address,
-                                  String dispSize ) // "2x16" or "4x20"
+            i2cdev_LCD_2_4_16_20( String name, uint8_t address, int y, int x )
                 : meisterwerk::base::i2cdev( name, "LCD_2_4_16_20", address ),
-                  instAddress{address}, dispSize{dispSize} {
-                DBG( "Constr. OLED" );
+                  instAddress{address}, displayY{y}, displayX{x} {
             }
             ~i2cdev_LCD_2_4_16_20() {
                 if ( pollDisplay ) {
@@ -62,64 +60,64 @@ namespace meisterwerk {
                 if ( pollDisplay ) {
                     DBG( "Tried to re-instanciate object: {" + i2ctype + "," + entName +
                          "} at address 0x" + meisterwerk::util::hexByte( address ) +
-                         "Display: " + dispSize );
+                         "Display: " + String( displayY ) + "x" + String( displayX ) );
                     return;
                 }
-                // String sa = meisterwerk::util::hexByte( address );
                 DBG( "Instantiating LCD_2_4_16_20 device {" + i2ctype + "," + entName +
-                     "} at address 0x" + meisterwerk::util::hexByte( address ) + ", " + dispSize );
+                     "} at address 0x" + meisterwerk::util::hexByte( address ) + ", " +
+                     String( displayY ) + "x" + String( displayX ) );
                 adr = address;
-                if ( dispSize == "2x16" ) {
-                    // plcd = new LiquidCrystal_I2C( address, 16, 2 ); // 0: default address;
+                if ( displayY == 2 && displayX == 16 ) {
                     plcd = new LiquidCrystal_PCF8574( address ); // 0: default address;
                     plcd->begin( 16, 2 );
-                } else if ( dispSize == "4x20" ) {
-                    // plcd = new LiquidCrystal_I2C( address, 20, 4 ); // 0: default address;
+                } else if ( displayY == 4 && displayX == 20 ) {
                     plcd = new LiquidCrystal_PCF8574( address ); // 0: default address;
                     plcd->begin( 20, 4 );
                 } else {
                     DBG( "Uknown display size, cannot instantiate LCD entity: ERROR" );
                     return;
                 }
-                // plcd->init();
-                // plcd->backlight();
                 plcd->setBacklight( 255 );
                 plcd->home();
                 plcd->clear();
-                plcd->print( entName + ", " + dispSize + ", 0x" +
-                             meisterwerk::util::hexByte( address ) );
-                DBG( "Instance LCD on." );
                 pollDisplay = true;
-                subscribe( entName + "/config" );
-                subscribe( "textdisplay/enum" );
-                subscribe( entName + "/display" );
-                publish( entName + "/textdisplay" );
+                subscribe( entName + "/display/set" );
+                subscribe( entName + "/display/get" );
+                publish( entName + "/display" );
             }
 
             int          l = 0;
             virtual void onLoop( unsigned long ticker ) override {
                 if ( pollDisplay ) {
-                    // plcd->print( String( l ) );
                     l++;
                 }
             }
 
             virtual void onReceive( String origin, String topic, String msg ) override {
                 meisterwerk::base::i2cdev::onReceive( origin, topic, msg );
-                DBG( "Display: " + topic );
-                if ( topic == entName + "/config" ) {
-                    config( msg );
-                } else if ( topic == "textdisplay/enum" ) {
-                    publish( entName + "/textdisplay" );
-                } else if ( topic == entName + "/display" ) {
-                    DBG( "Now there should be something!" );
-                    // plcd->print( "Hello, " + entName + ", size: " + dispSize + ", 0x" +
-                    //             meisterwerk::util::hexByte( adr ) );
+                if ( topic == "*/display/get" || topic == entName + "/display/get" ) {
+                    publish( entName + "/display",
+                             "{\"type\":\"textdisplay\",\"x\":" + String( displayX ) +
+                                 ",\"y\":" + String( displayY ) + "}" );
                 }
-            }
-
-            void config( String msg ) {
-                // XXX: do things
+                if ( topic == entName + "/display/set" ) {
+                    DynamicJsonBuffer jsonBuffer( 200 );
+                    JsonObject &      root = jsonBuffer.parseObject( msg );
+                    if ( !root.success() ) {
+                        DBG( "LCD display, set, on Receive: Invalid JSON received!" );
+                        return;
+                    }
+                    int x = 0, y = 0;
+                    x           = root["x"];
+                    y           = root["y"];
+                    String text = root["text"];
+                    int    cl   = root["clear"];
+                    if ( cl != 0 )
+                        plcd->clear();
+                    plcd->setCursor( x, y );
+                    plcd->print( text );
+                    DBG( "LCD: " + text );
+                }
             }
         }; // namespace thing
     }      // namespace thing

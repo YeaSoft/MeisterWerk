@@ -15,17 +15,17 @@ namespace meisterwerk {
             int           noVals = 0;
             int           smoothIntervall;
             int           pollTimeSec;
-            float         sum = 0.0;
-            float         eps;
+            double        sum = 0.0;
+            double        eps;
             bool          first   = true;
-            float         meanVal = 0;
-            float         lastVal = -99999.0;
+            double        meanVal = 0;
+            double        lastVal = -99999.0;
             unsigned long last;
 
             // average of smoothIntervall measurements
             // update sensor value, if newvalue differs by at least eps, or if pollTimeSec has
             // elapsed.
-            sensorprocessor( int smoothIntervall = 5, int pollTimeSec = 60, float eps = 0.1 )
+            sensorprocessor( int smoothIntervall = 5, int pollTimeSec = 60, double eps = 0.1 )
                 : smoothIntervall{smoothIntervall}, pollTimeSec{pollTimeSec}, eps{eps} {
                 last = millis();
             }
@@ -34,12 +34,12 @@ namespace meisterwerk {
             // returns true, if sensor-value is a valid update
             // an update is valid, if the new value differs by at least eps from last last value,
             // or, if pollTimeSec secs have elapsed.
-            bool filter( float *pvalue ) {
+            bool filter( double *pvalue ) {
                 meanVal = ( meanVal * noVals + ( *pvalue ) ) / ( noVals + 1 );
                 if ( noVals < smoothIntervall ) {
                     ++noVals;
                 }
-                float delta = lastVal - meanVal;
+                double delta = lastVal - meanVal;
                 if ( delta < 0.0 ) {
                     delta = ( -1.0 ) * delta;
                 }
@@ -61,12 +61,12 @@ namespace meisterwerk {
                 }
                 return false;
             }
-            
+
             bool filter( long *plvalue ) {
-                float tval=(float)*plvalue;
-                bool ret=filter(&tval);
-                if (ret) {
-                    *plvalue=(long)tval;
+                double tval = (double)*plvalue;
+                bool   ret  = filter( &tval );
+                if ( ret ) {
+                    *plvalue = (long)tval;
                 }
                 return ret;
             }

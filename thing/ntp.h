@@ -173,7 +173,7 @@ namespace meisterwerk {
             virtual void onReceive( String origin, String topic, String msg ) override {
                 // meisterwerk::core::entity::onReceive( origin, topic, msg );
                 DBG( "Ntp:" + topic + "," + msg );
-                if ( topic == entName + "/time/get" ) {
+                if ( topic == entName + "/time/get" || topic == "*/time/get" ) {
                     if ( !netUp ) {
                         DBG( "NTP: Cannot get time, net down." );
                     } else {

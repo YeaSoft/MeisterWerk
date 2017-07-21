@@ -57,8 +57,8 @@ namespace meisterwerk {
                 pser->begin( 9600 );
                 resetCmd();
                 resetDefaults();
-                subscribe( entName + "/gps/get" );
-                subscribe( entName + "/time/get" );
+                subscribe( entName + "gps/get" );
+                subscribe( entName + "time/get" );
                 // subscribe( entName + "/gps/set" );
                 // subscribe( entName + "/time/set" );
                 isOn = true;
@@ -98,9 +98,10 @@ namespace meisterwerk {
                      ", fix:" + String( fix ) + ", numSat: " + String( nosat ) );
             }
 
-            String parseTimeToIsoJsonElement() {
-                String timestr = "";
-                String msg     = "";
+            String parseTimeToIsoJsonElement( int fix ) {
+                static int afix    = -1;
+                String     timestr = "";
+                String     msg     = "";
                 if ( gpstime != "" && gpsdate != "" ) {
                     timestr = "20" + gpsdate.substring( 4, 6 ) + "-" + gpsdate.substring( 2, 4 ) +
                               "-" + gpsdate.substring( 0, 2 ) + "T" + gpstime.substring( 0, 2 ) +
@@ -110,6 +111,11 @@ namespace meisterwerk {
                     if ( gpstime.substring( 4, 6 ) == "00" ) {
                         bPublishTime = true;
                     }
+                    if ( fix != afix ) {
+                        afix         = fix;
+                        bPublishTime = true;
+                    }
+
                     // time_t t;
                     // t=util::msgtime::ISO2time_t(timestr);
                     // String back=util::msgtime::time_t2ISO(t);
@@ -212,7 +218,7 @@ namespace meisterwerk {
             }
 
             void publishCmd() {
-                String timestr = parseTimeToIsoJsonElement();
+                String timestr = parseTimeToIsoJsonElement( fix );
                 String gpsmsg  = parseGpsDataToJsonElement();
 
                 if ( bPublishGps ) {
@@ -276,7 +282,7 @@ namespace meisterwerk {
             virtual void onReceive( String origin, String topic, String msg ) override {
                 meisterwerk::core::entity::onReceive( origin, topic, msg );
                 DBG( "GpsReceive:" + topic + "," + msg );
-                if ( topic == entName + "/time/get" ) {
+                if ( topic == entName + "/time/get" || topic == "*/time/get" ) {
                     bPublishTime = true;
                 }
                 if ( topic == entName + "/gps/get" ) {

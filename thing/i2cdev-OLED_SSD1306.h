@@ -35,14 +35,13 @@ namespace meisterwerk {
             bool              pollDisplay = false;
             // meisterwerk::util::sensorprocessor tempProcessor, pressProcessor;
             String  json;
-            String  dispSize;
             uint8_t adr;
             uint8_t instAddress;
+            int     displayX, displayY;
 
-            i2cdev_OLED_SSD1306( String name, uint8_t address,
-                                 String dispSize ) // "128x64"..
+            i2cdev_OLED_SSD1306( String name, uint8_t address, int displayY, int displayX )
                 : meisterwerk::base::i2cdev( name, "SSD1306", address ),
-                  instAddress{address}, dispSize{dispSize} {
+                  instAddress{address}, displayY{displayY}, displayX{displayX} {
             }
             ~i2cdev_OLED_SSD1306() {
                 if ( pollDisplay ) {
@@ -66,15 +65,15 @@ namespace meisterwerk {
                 if ( pollDisplay ) {
                     DBG( "Tried to re-instanciate object: {" + i2ctype + "," + entName +
                          "} at address 0x" + meisterwerk::util::hexByte( address ) +
-                         "Display: " + dispSize );
+                         "Display: " + String( displayY ) + "x" + String( displayX ) );
                     return;
                 }
                 // String sa = meisterwerk::util::hexByte( address );
                 DBG( "Instantiating OLED_SSD1306 device {" + i2ctype + "," + entName +
-                     "} at address 0x" + meisterwerk::util::hexByte( address ) + ", " + dispSize );
+                     "} at address 0x" + meisterwerk::util::hexByte( address ) + ", " +
+                     String( displayY ) + "x" + String( displayX ) );
                 adr = address;
                 // #define OLED_RESET 4
-                DBG( "init oled." );
                 poled = new Adafruit_SSD1306();
                 poled->begin( SSD1306_SWITCHCAPVCC,
                               address ); // initialize with the I2C addr 0x3D (for the 128x64)
@@ -83,17 +82,12 @@ namespace meisterwerk {
                 poled->setTextSize( 1 );
                 poled->setTextColor( WHITE );
                 poled->setCursor( 0, 0 );
-                poled->println( "Hello, world!" );
-                poled->println( "Hello, world!" );
                 poled->display();
-                // poled->clearDisplay();
 
-                DBG( "Instance OLED on." );
                 pollDisplay = true;
-                subscribe( entName + "/config" );
-                subscribe( "textdisplay/enum" );
-                subscribe( entName + "/display" );
-                publish( entName + "/textdisplay" );
+                subscribe( entName + "/display/set" );
+                subscribe( entName + "/display/get" );
+                publish( entName + "/display" );
             }
 
             int          l = 0;
@@ -106,20 +100,32 @@ namespace meisterwerk {
 
             virtual void onReceive( String origin, String topic, String msg ) override {
                 meisterwerk::base::i2cdev::onReceive( origin, topic, msg );
-                DBG( "Display: " + topic );
-                if ( topic == entName + "/config" ) {
-                    config( msg );
-                } else if ( topic == "textdisplay/enum" ) {
-                    publish( entName + "/textdisplay" );
-                } else if ( topic == entName + "/display" ) {
-                    DBG( "Now there should be something!" );
-                    poled->println( "OLED online." );
+                if ( topic == "*/display/get" || topic == entName + "/display/get" ) {
+                    publish( entName + "/display",
+                             "{\"type\":\"pixeldisplay\",\"x\":" + String( displayX ) +
+                                 ",\"y\":" + String( displayY ) + "}" );
+                }
+                if ( topic == entName + "/display/set" ) {
+                    DynamicJsonBuffer jsonBuffer( 200 );
+                    JsonObject &      root = jsonBuffer.parseObject( msg );
+                    if ( !root.success() ) {
+                        DBG( "LCD display, set, on Receive: Invalid JSON received!" );
+                        return;
+                    }
+                    int x = 0, y = 0;
+                    x           = root["x"];
+                    y           = root["y"];
+                    String text = root["text"];
+                    int    f    = 2;
+                    f           = root["textsize"];
+                    int cl      = root["clear"];
+                    if ( cl != 0 )
+                        poled->clearDisplay();
+                    poled->setTextSize( f );
+                    poled->setCursor( x, y );
+                    poled->print( text );
                     poled->display();
                 }
-            }
-
-            void config( String msg ) {
-                // XXX: do things
             }
         }; // namespace thing
     }      // namespace thing

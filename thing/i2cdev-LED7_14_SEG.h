@@ -29,8 +29,9 @@ namespace meisterwerk {
             uint8_t             address;
             uint8_t             segments;
             util::metronome     scroller;
-            String              disptext;
             int                 ptext;
+            int                 displayX = 4;
+            int                 displayY = 1;
             // meisterwerk::util::sensorprocessor tempProcessor, pressProcessor;
             String json;
 
@@ -57,7 +58,7 @@ namespace meisterwerk {
             virtual void onInstantiate( String i2ctype, uint8_t address ) override {
                 // String sa = meisterwerk::util::hexByte( address );
                 DBG( "Instantiating LED7_14_SEG device at address 0x" +
-                     meisterwerk::util::hexByte( address ) );
+                     meisterwerk::util::hexByte( address ) + ", segments: " + String( segments ) );
                 if ( segments == 7 ) {
                     pled7 = new Adafruit_7segment();
                     pled7->begin( address );
@@ -65,27 +66,37 @@ namespace meisterwerk {
                     pled14 = new Adafruit_AlphaNum4();
                     pled14->begin( address );
                 }
-                DBG( "Instance " + String( segments ) + "-LED on." );
                 pollDisplay = true;
-                subscribe( entName + "/config" );
-                subscribe( "textdisplay/enum" );
-                subscribe( entName + "/display" );
-                publish( entName + "/textdisplay" );
+                subscribe( entName + "/display/set" );
+                subscribe( entName + "/display/get" );
+                publish( entName + "/display" );
             }
 
             void print( String text ) {
                 String t;
                 t = text;
-                while ( t.length() < 4 )
-                    t += " ";
-                for ( int i = 0; i < 4; i++ ) {
-                    pled14->writeDigitAscii( i, t[i] );
+                if ( segments == 7 ) {
+                    while ( t.length() < 4 )
+                        t += " ";
+                    pled7->writeDigitNum( 0, t[0] );
+                    pled7->writeDigitNum( 1, t[1] );
+                    pled7->writeDigitNum( 3, t[2] );
+                    pled7->writeDigitNum( 4, t[3] );
+                    pled7->writeDisplay();
                 }
-                pled14->writeDisplay();
+                if ( segments == 14 ) {
+                    while ( t.length() < 4 )
+                        t += " ";
+                    for ( int i = 0; i < 4; i++ ) {
+                        pled14->writeDigitAscii( i, t[i] );
+                    }
+                    pled14->writeDisplay();
+                }
             }
 
             virtual void onLoop( unsigned long ticker ) override {
                 if ( pollDisplay ) {
+                    /*
                     if ( disptext.length() > 4 ) {
                         int d = scroller.beat();
                         if ( d > 0 ) {
@@ -94,34 +105,27 @@ namespace meisterwerk {
                             print( dtext );
                         }
                     }
+                    */
                 }
             }
 
             virtual void onReceive( String origin, String topic, String msg ) override {
                 meisterwerk::base::i2cdev::onReceive( origin, topic, msg );
-                DBG( "Display: " + topic );
-                if ( topic == entName + "/config" ) {
-                    config( msg );
-                } else if ( topic == "textdisplay/enum" ) {
-                    publish( entName + "/textdisplay" );
-                } else if ( topic == entName + "/display" ) {
+                if ( topic == "*/display/get" || topic == entName + "/display/get" ) {
+                    publish( entName + "/display",
+                             "{\"type\":\"textdisplay\",\"x\":" + String( displayX ) + ",\"y\":" +
+                                 String( displayY ) + ",\"segments\":" + String( segments ) + "}" );
+                }
+                if ( topic == entName + "/display/set" ) {
                     DynamicJsonBuffer jsonBuffer( 200 );
                     JsonObject &      root = jsonBuffer.parseObject( msg );
                     if ( !root.success() ) {
-                        DBG( "Invalid JSON received!" );
+                        DBG( "LED display, set, on Receive: Invalid JSON received!" );
                         return;
                     }
-                    disptext = root["text"].as<char *>();
-                    while ( disptext.length() < 4 )
-                        disptext += " ";
-                    if ( disptext.length() <= 4 ) {
-                        print( disptext );
-                    }
+                    String text = root["text"];
+                    print( text );
                 }
-            }
-
-            void config( String msg ) {
-                // XXX: do things
             }
         }; // namespace thing
     }      // namespace thing

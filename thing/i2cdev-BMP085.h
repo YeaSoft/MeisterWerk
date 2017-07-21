@@ -28,14 +28,22 @@ namespace meisterwerk {
             bool                               pollSensor = false;
             meisterwerk::util::sensorprocessor tempProcessor, pressProcessor;
             String                             json;
+            bool                               tempvalid;
+            double                             templast;
+            String                             temptime;
+            bool                               pressvalid;
+            double                             presslast;
+            String                             presstime;
 
-            i2cdev_BMP085( String name )
-                : meisterwerk::base::i2cdev( name, "BMP085" ), tempProcessor( 5, 900, 0.1 ),
-                  pressProcessor( 10, 900, 0.05 ) {
+            i2cdev_BMP085( String name, uint8_t address )
+                : meisterwerk::base::i2cdev( name, "BMP085", address ),
+                  tempProcessor( 5, 900, 0.1 ), pressProcessor( 10, 900, 0.05 ) {
                 // send temperature updates, if temperature changes for 0.1C over an average of 5
                 // measurements, but at least every 15min (900sec)
                 // send pressure update, if pressure changes for 0.05mbar over an average of 10
                 // measurements, but at least every 15min
+                tempvalid  = false;
+                pressvalid = false;
             }
             ~i2cdev_BMP085() {
                 if ( pollSensor ) {
@@ -44,11 +52,9 @@ namespace meisterwerk {
                 }
             }
 
-            bool registerEntity(
-                unsigned long minMicroSecs = 5000000;
-                unsigned int  priority     = meisterwerk::core::scheduler::PRIORITY_NORMAL ) {
+            bool registerEntity() {
                 // default sample rate: 5s
-                return meisterwerk::core::entity::registerEntity( minMicroSecs, priority );
+                return meisterwerk::core::entity::registerEntity( 5000000L );
             }
 
             virtual void onInstantiate( String i2ctype, uint8_t address ) override {
@@ -65,35 +71,53 @@ namespace meisterwerk {
                 }
             }
 
+            void publishTemp() {
+                if ( tempvalid ) {
+                    json = "{\"time\":\"" + temptime + "\",\"temperature\":" + String( templast ) +
+                           "}";
+                    DBG( "jsonstate i2c bmp085:" + json );
+                    publish( entName + "/temperature", json );
+                } else {
+                    DBG( "No valid temp measurement for pub" );
+                }
+            }
+            void publishPressure() {
+                if ( pressvalid ) {
+                    json =
+                        "{\"time\":\"" + presstime + "\",\"pressure\":" + String( presslast ) + "}";
+                    DBG( "jsonstate i2c bmp085:" + json );
+                    publish( entName + "/pressure", json );
+                } else {
+                    DBG( "No valid pressure measurement for pub" );
+                }
+            }
             virtual void onLoop( unsigned long ticker ) override {
                 if ( pollSensor ) {
-                    float temperature = pbmp->readTemperature();
+                    double temperature = pbmp->readTemperature();
                     if ( tempProcessor.filter( &temperature ) ) {
-                        json = "{\"temperature\":" + String( temperature ) + "}";
-                        DBG( "jsonstate i2c bmp085:" + json );
-                        publish( entName + "/temperature", json );
+                        templast  = temperature;
+                        tempvalid = true;
+                        temptime  = util::msgtime::time_t2ISO( now() );
+                        publishTemp();
                     }
-                    float pressure = pbmp->readPressure() / 100.0;
+                    double pressure = pbmp->readPressure() / 100.0;
                     if ( pressProcessor.filter( &pressure ) ) {
-                        json = "{\"pressure\":" + String( pressure ) + "}";
-                        DBG( "jsonstate i2c bmp085:" + json );
-                        publish( entName + "/pressure", json );
+                        presslast  = pressure;
+                        pressvalid = true;
+                        presstime  = util::msgtime::time_t2ISO( now() );
+                        publishPressure();
                     }
                 }
             }
 
             virtual void onReceive( String origin, String topic, String msg ) override {
                 meisterwerk::base::i2cdev::onReceive( origin, topic, msg );
-                if ( topic == entName + "/temperature/get" ) {
-                    config( msg );
+                if ( topic == entName + "/temperature/get" || topic == "*/temperature/get" ) {
+                    publishTemp();
                 }
-                if ( topic == entName + "/pressure/get" ) {
-                    config( msg );
+                if ( topic == entName + "/pressure/get" || topic == "*/pressure/get" ) {
+                    publishPressure();
                 }
-            }
-
-            void config( String msg ) {
-                // XXX: do things
             }
         };
     } // namespace thing

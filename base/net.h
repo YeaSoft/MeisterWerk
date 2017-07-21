@@ -112,9 +112,9 @@ namespace meisterwerk {
                         }
                     }
 
-                    for ( auto s : netservices ) {
-                        DBG( "***" + s.first + "->" + s.second );
-                    }
+                    // for ( auto s : netservices ) {
+                    //    DBG( "***" + s.first + "->" + s.second );
+                    //}
                     return true;
                 }
             }

@@ -45,6 +45,7 @@ namespace meisterwerk {
             virtual void onRegister() override {
                 bSetup = true;
                 subscribe( "*/time" );
+                publish( "*/time/get" );
             }
 
             virtual void onLoop( unsigned long ticker ) override {

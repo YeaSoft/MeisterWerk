@@ -162,7 +162,7 @@ namespace meisterwerk {
                 Wire.begin( sdaport, sclport ); // SDA, SCL;
                 bSetup = true;
                 bEnum  = false;
-                subscribe( "i2cbus/enum" );
+                subscribe( "i2cbus/devices/get" );
             }
 
             int identify( uint8_t address ) {
@@ -220,7 +220,7 @@ namespace meisterwerk {
 
                 if ( !bSetup ) {
                     DBG( "i2cbus not initialized!" );
-                    publish( "i2cbus/offline", "" );
+                    publish( "i2cbus/devices", "{}" );
                     bInternalError = true;
                     return 0;
                 }
@@ -250,12 +250,12 @@ namespace meisterwerk {
                 }
                 if ( nDevices == 0 ) {
                     DBG( "No I2C devices found" );
-                    publish( "i2cbus/offline", "" );
+                    publish( "i2cbus/devices", "{}" );
                 } else {
                     String json = "{\"devs\":" + String( nDevices ) + ",\"portlist\":[" + portlist +
                                   "],\"i2cdevs\":[" + devlist + "]}";
                     DBG( "jsonstate i2c:" + json );
-                    publish( "i2cbus/online", json );
+                    publish( "i2cbus/devices", json );
                 }
                 bEnum = true;
                 return nDevices;
@@ -270,7 +270,7 @@ namespace meisterwerk {
             }
 
             virtual void onReceive( String origin, String topic, String msg ) override {
-                if ( topic == "i2cbus/enum" ) {
+                if ( topic == "i2cbus/devices/get" ) {
                     i2cScan();
                 }
             }
