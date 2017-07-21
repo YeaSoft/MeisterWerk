@@ -38,6 +38,7 @@ namespace meisterwerk {
             uint8_t adr;
             uint8_t instAddress;
             int     displayX, displayY;
+            bool    bRedraw = false;
 
             i2cdev_OLED_SSD1306( String name, uint8_t address, int displayY, int displayX )
                 : meisterwerk::base::i2cdev( name, "SSD1306", address ),
@@ -52,7 +53,7 @@ namespace meisterwerk {
 
             bool registerEntity() {
                 // 5sec sensor checks
-                bool ret = meisterwerk::core::entity::registerEntity( 5000000 );
+                bool ret = meisterwerk::core::entity::registerEntity( 100000 );
                 return ret;
             }
 
@@ -90,12 +91,9 @@ namespace meisterwerk {
                 publish( entName + "/display" );
             }
 
-            int          l = 0;
             virtual void onLoop( unsigned long ticker ) override {
-                if ( pollDisplay ) {
-                    // plcd->print( String( l ) );
-                    l++;
-                }
+                if ( bRedraw )
+                    poled->display();
             }
 
             virtual void onReceive( String origin, String topic, String msg ) override {
@@ -124,7 +122,7 @@ namespace meisterwerk {
                     poled->setTextSize( f );
                     poled->setCursor( x, y );
                     poled->print( text );
-                    poled->display();
+                    bRedraw = true;
                 }
             }
         }; // namespace thing
