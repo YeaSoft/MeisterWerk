@@ -116,7 +116,6 @@ namespace meisterwerk {
                         plcd->clear();
                     plcd->setCursor( x, y );
                     plcd->print( text );
-                    DBG( "LCD: " + text );
                 }
             }
         }; // namespace thing

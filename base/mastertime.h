@@ -10,6 +10,7 @@
 
 // hardware dependencies
 #include <ESP8266WiFi.h>
+#include <map>
 
 // dependencies
 #include "../core/entity.h"
@@ -17,29 +18,43 @@
 
 namespace meisterwerk {
     namespace base {
-        enum TimeSourceType { NONE            = 0, RTC, GPS_RTC, DCF77, GPS, NTP };
-        static const String TimeSourceNames[] = {"None", "RTC", "GPS-RTC", "DCF-77", "GPS", "NTP"};
+        enum TimeType { NONE = 0, RTC, GPS_RTC, HP_RTC, NTP, DCF77, GPS };
+        std::map<String, TimeType> TimeName2Type = {
+            {"None", TimeType::NONE},     {"RTC", TimeType::RTC}, {"GPS-RTC", TimeType::GPS_RTC},
+            {"HP-RTC", TimeType::HP_RTC}, {"NTP", TimeType::NTP}, {"DCF-77", TimeType::DCF77},
+            {"GPS", TimeType::GPS}};
         typedef struct {
-            TimeSourceType type;
-            String         name;
-            unsigned long  lastActive;
+            TimeType      type;
+            String        typeName;
+            unsigned long lastActive;
         } T_TIMESOURCE;
 
         class mastertime : public meisterwerk::core::entity {
             public:
-            TimeSourceType bestClock;
-            unsigned long  timeStampBestClock;
+            TimeType      bestClock;
+            TimeType      oldBestClock;
+            unsigned long timeStampBestClock;
+            unsigned long clockRefreshTimeout =
+                3600; // Don't wait for a clock that's dead for one hour of more
+            unsigned long clockRefreshIntervall = 900; // Send clock updates after each 15min.
 
+            std::map<String, T_TIMESOURCE *> clocks;
             bool bSetup;
 
             mastertime( String name ) : meisterwerk::core::entity( name ) {
-                bSetup    = false;
-                bestClock = TimeSourceType::NONE;
+                bSetup       = false;
+                bestClock    = TimeType::NONE;
+                oldBestClock = TimeType::NONE;
+            }
+            ~mastertime() {
+                for ( auto p : clocks ) {
+                    free( p.second );
+                }
             }
 
             bool registerEntity() {
                 return meisterwerk::core::entity::registerEntity(
-                    10000, core::scheduler::PRIORITY_TIMECRITICAL );
+                    50000, core::scheduler::PRIORITY_TIMECRITICAL );
             }
 
             virtual void onRegister() override {
@@ -52,32 +67,54 @@ namespace meisterwerk {
             }
 
             virtual void onReceive( String origin, String topic, String msg ) override {
-                int    p  = topic.indexOf( "/" );
+                int    p = topic.indexOf( "/" );
+                time_t tlast;
                 String t1 = topic.substring( p + 1 );
                 if ( t1 == "time" ) {
+                    DBG( "Mastertime: " + msg );
                     DynamicJsonBuffer jsonBuffer( 200 );
                     JsonObject &      root = jsonBuffer.parseObject( msg );
                     if ( !root.success() ) {
                         DBG( "Ntp: Invalid JSON received: " + msg );
                         return;
                     }
-                    String         isoTime    = root["time"];
-                    String         timeSource = root["timesource"];
-                    time_t         t          = util::msgtime::ISO2time_t( isoTime );
-                    TimeSourceType cur        = TimeSourceType::NONE;
-                    for ( int i = 0; i < sizeof( TimeSourceNames ) / sizeof( String * ); i++ ) {
-                        if ( TimeSourceNames[i] == timeSource )
-                            cur = (TimeSourceType)i;
+                    String isoTime = root["time"];
+                    DBG( "Mastertime: " + isoTime );
+                    String   timeSource = root["timesource"];
+                    time_t   t          = util::msgtime::ISO2time_t( isoTime );
+                    TimeType cur        = TimeType::NONE;
+                    if ( TimeName2Type.find( timeSource ) == TimeName2Type.end() ) {
+                        DBG( "MasterTime: Invalid TimeSource type received!" );
+                    } else {
+                        cur = TimeName2Type[timeSource];
                     }
-                    if ( cur > bestClock ) {
-                        bestClock = cur;
-                        setTime( t );
-                        DBG( "System-time set by clock of type: " + timeSource );
-                        publish( "mastertime/time/set", msg );
+                    String clockname = origin + "-" + timeSource;
+                    if ( clocks.find( clockname ) == clocks.end() ) {
+                        DBG( "New clockType " + timeSource + " at: " + origin );
+                        clocks[clockname] = (T_TIMESOURCE *)malloc( sizeof( T_TIMESOURCE ) );
+                        memset( clocks[clockname], 0, sizeof( T_TIMESOURCE ) );
                     }
-                    // XXX: register clock types
-                    // XXX: periodic update by best clock
-                    // XXX: check timeouts for registered clocks.
+                    clocks[clockname]->typeName   = timeSource;
+                    tlast                         = clocks[clockname]->lastActive;
+                    clocks[clockname]->lastActive = t;
+                    clocks[clockname]->type       = cur;
+
+                    bestClock = TimeType::NONE;
+                    for ( auto p : clocks ) {
+                        if ( now() - p.second->lastActive < clockRefreshTimeout ||
+                             p.second->type == cur ) {
+                            if ( p.second->type > bestClock )
+                                bestClock = p.second->type;
+                        }
+                    }
+                    if ( bestClock == cur ) {
+                        if ( bestClock != oldBestClock || now() - tlast > clockRefreshIntervall ) {
+                            oldBestClock = bestClock;
+                            setTime( t );
+                            DBG( "System-time set by clock of type: " + timeSource );
+                            publish( "mastertime/time/set", msg );
+                        }
+                    }
                 }
             }
         };

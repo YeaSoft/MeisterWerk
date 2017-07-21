@@ -75,7 +75,7 @@ namespace meisterwerk {
                 if ( tempvalid ) {
                     json = "{\"time\":\"" + temptime + "\",\"temperature\":" + String( templast ) +
                            "}";
-                    DBG( "jsonstate i2c bmp085:" + json );
+                    // DBG( "jsonstate i2c bmp085:" + json );
                     publish( entName + "/temperature", json );
                 } else {
                     DBG( "No valid temp measurement for pub" );
@@ -85,7 +85,7 @@ namespace meisterwerk {
                 if ( pressvalid ) {
                     json =
                         "{\"time\":\"" + presstime + "\",\"pressure\":" + String( presslast ) + "}";
-                    DBG( "jsonstate i2c bmp085:" + json );
+                    // DBG( "jsonstate i2c bmp085:" + json );
                     publish( entName + "/pressure", json );
                 } else {
                     DBG( "No valid pressure measurement for pub" );

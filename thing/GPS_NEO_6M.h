@@ -50,7 +50,8 @@ namespace meisterwerk {
 
             bool registerEntity() {
                 // 5sec sensor checks
-                bool ret = meisterwerk::core::entity::registerEntity( 50000 );
+                bool ret = meisterwerk::core::entity::registerEntity(
+                    50000, core::scheduler::PRIORITY_TIMECRITICAL );
                 DBG( "init gps." );
 
                 pser = new SoftwareSerial( D6, D7, false, 256 ); // RX, TX, inverseLogic, bufferSize
@@ -107,7 +108,7 @@ namespace meisterwerk {
                               "-" + gpsdate.substring( 0, 2 ) + "T" + gpstime.substring( 0, 2 ) +
                               ":" + gpstime.substring( 2, 4 ) + ":" + gpstime.substring( 4, 6 ) +
                               "Z";
-
+                    DBG( timestr );
                     if ( gpstime.substring( 4, 6 ) == "00" ) {
                         bPublishTime = true;
                     }
@@ -226,6 +227,7 @@ namespace meisterwerk {
                     bPublishGps = false;
                 }
                 if ( bPublishTime ) {
+                    DBG( timestr );
                     publish( entName + "/time", "{" + timestr + "}" );
                     bPublishTime = false;
                 }

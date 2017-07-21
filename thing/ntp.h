@@ -36,7 +36,7 @@ namespace meisterwerk {
             bool            bGetTime = false;
             util::metronome ntpTicker;
             unsigned long   packettimestamp;
-            unsigned long   ntpTimeout = 250; // ms timeout for send/receive NTP packets.
+            unsigned long   ntpTimeout = 3e00; // ms timeout for send/receive NTP packets.
             String          ntpServer;
             bool            ipNtpInit = false;
             IPAddress       timeServerIP; // time.nist.gov NTP server address
@@ -49,7 +49,7 @@ namespace meisterwerk {
 
             unsigned int localPort = 2390; // local port to listen for UDP packets
 
-            Ntp( String name ) : meisterwerk::core::entity( name ), ntpTicker( 60000L ) {
+            Ntp( String name ) : meisterwerk::core::entity( name ), ntpTicker( 300000L ) {
                 ntpstate  = Udpstate::IDLE;
                 ntpServer = "";
             }
@@ -62,7 +62,7 @@ namespace meisterwerk {
             bool registerEntity() {
                 // 5sec sensor checks
                 bool ret = meisterwerk::core::entity::registerEntity(
-                    10000, core::scheduler::PRIORITY_TIMECRITICAL );
+                    50000, core::scheduler::PRIORITY_TIMECRITICAL );
                 DBG( "init ntp." );
                 subscribe( "net/network" );
                 subscribe( entName + "/time/get" );
