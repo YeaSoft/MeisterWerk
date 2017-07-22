@@ -10,9 +10,9 @@ namespace meisterwerk {
     namespace util {
         static TimeChangeRule CEST = {"CEST", Last, Sun,
                                       Mar,    2,    120}; // Central European Summer Time
-        static TimeChangeRule CET = {"CET ", Last, Sun,
+        static TimeChangeRule CET  = {"CET ", Last, Sun,
                                      Oct,    3,    60}; // Central European Standard Time
-        static Timezone CE( CEST, CET );
+        static Timezone       CE( CEST, CET );
 
         class msgtime {
             public:
@@ -22,7 +22,7 @@ namespace meisterwerk {
             }
 
             static time_t ISO2time_t( String iso ) { // ISO: 2017-07-18T17:32:50Z
-                time_t t;
+                time_t    t;
                 if ( iso.length() != 20 ) {
                     DBG( "Invalid ISO time legnth: " + iso );
                     return 0;
@@ -31,7 +31,7 @@ namespace meisterwerk {
                     DBG( "Unsupported time zone: " + iso );
                     return 0;
                 }
-                TimeElements tt;
+                TimeElementstt;
                 tt.Year   = atoi( iso.substring( 0, 4 ).c_str() ) - 1970;
                 tt.Month  = atoi( iso.substring( 5, 7 ).c_str() );
                 tt.Day    = atoi( iso.substring( 8, 10 ).c_str() );

@@ -39,7 +39,7 @@ namespace meisterwerk {
             unsigned long clockRefreshIntervall = 900; // Send clock updates after each 15min.
 
             std::map<String, T_TIMESOURCE *> clocks;
-            bool bSetup;
+            bool                             bSetup;
 
             mastertime( String name ) : meisterwerk::core::entity( name ) {
                 bSetup       = false;

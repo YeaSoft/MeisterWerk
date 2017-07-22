@@ -76,8 +76,8 @@ namespace meisterwerk {
 
             void resetCmd() {
                 for ( int i = 0; i < NMEA_MAX_CMDS; i++ )
-                    cmd[i]  = "";
-                icmd        = 0;
+                    cmd[i] = "";
+                icmd = 0;
             }
 
             void resetDefaults() {
@@ -108,7 +108,7 @@ namespace meisterwerk {
                               "-" + gpsdate.substring( 0, 2 ) + "T" + gpstime.substring( 0, 2 ) +
                               ":" + gpstime.substring( 2, 4 ) + ":" + gpstime.substring( 4, 6 ) +
                               "Z";
-                    DBG( timestr );
+                    // DBG( timestr );
                     if ( gpstime.substring( 4, 6 ) == "00" ) {
                         bPublishTime = true;
                     }

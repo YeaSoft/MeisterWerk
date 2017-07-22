@@ -12,7 +12,7 @@
 #define MW_MSG_MAX_TOPIC_LENGTH 32
 #endif
 #ifndef MW_MSG_MAX_MSGBUFFER_LENGTH
-#define MW_MSG_MAX_MSGBUFFER_LENGTH 512
+#define MW_MSG_MAX_MSGBUFFER_LENGTH 768
 #endif
 
 // configuration of the message Queue
