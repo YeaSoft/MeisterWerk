@@ -140,7 +140,8 @@ namespace meisterwerk {
                     } else {
                         msgregister *pReg = (msgregister *)pMsg->pBuf;
                         registerEntity( pReg->pEnt, pReg->minMicroSecs, pReg->priority );
-                        DBG( "Registered entity: " + String( pReg->pEnt->entName ) );
+                        DBG( "Registered entity: " + String( pReg->pEnt->entName ) +
+                             ", Slice: " + String( pReg->minMicroSecs ) );
                     }
                 } else if ( String( pMsg->topic ) == "update" ) {
                     if ( pMsg->pBufLen != sizeof( msgregister ) ) {

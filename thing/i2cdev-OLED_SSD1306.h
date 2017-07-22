@@ -10,10 +10,13 @@
 // hardware dependencies
 #include <ESP8266WiFi.h>
 
-// The LCD libraries are some serious mess, totally different implementations with
-// different APIs have same name etc. use #576.
-//#include <LiquidCrystal_I2C.h>
-#include <LiquidCrystal_PCF8574.h>
+//#define SSD1306_128_64
+//#define SSD1306_128_32
+//#define SSD1306_96_16
+
+#include <Adafruit_SSD1306.h>
+#include <SPI.h>
+#include <Wire.h>
 
 // external libraries
 #include <ArduinoJson.h>
@@ -25,36 +28,39 @@
 
 namespace meisterwerk {
     namespace thing {
-        class i2cdev_LCD_2_4_16_20 : public meisterwerk::base::i2cdev {
+        class i2cdev_OLED_SSD1306 : public meisterwerk::base::i2cdev {
             public:
             // LiquidCrystal_I2C *plcd;
-            LiquidCrystal_PCF8574 *plcd;
-            bool                   pollDisplay = false;
+            Adafruit_SSD1306 *poled;
+            bool              pollDisplay = false;
             // meisterwerk::util::sensorprocessor tempProcessor, pressProcessor;
             String  json;
             uint8_t adr;
             uint8_t instAddress;
             int     displayX, displayY;
+            bool    bRedraw = false;
 
-            i2cdev_LCD_2_4_16_20( String name, uint8_t address, int y, int x )
-                : meisterwerk::base::i2cdev( name, "LCD_2_4_16_20", address ),
-                  instAddress{address}, displayY{y}, displayX{x} {
+            i2cdev_OLED_SSD1306( String name, uint8_t address, int displayY, int displayX )
+                : meisterwerk::base::i2cdev( name, "SSD1306", address ),
+                  instAddress{address}, displayY{displayY}, displayX{displayX} {
             }
-            ~i2cdev_LCD_2_4_16_20() {
+            ~i2cdev_OLED_SSD1306() {
                 if ( pollDisplay ) {
                     pollDisplay = false;
-                    delete plcd;
+                    delete poled;
                 }
             }
 
             bool registerEntity() {
                 // 5sec sensor checks
-                bool ret = meisterwerk::core::entity::registerEntity( 5000000 );
+                bool ret = meisterwerk::core::entity::registerEntity( 100000 );
                 return ret;
             }
 
             virtual void onInstantiate( String i2ctype, uint8_t address ) override {
                 if ( address != instAddress ) {
+                    DBG( "Ignoring instantiate for " + meisterwerk::util::hexByte( address ) +
+                         " I'm " + meisterwerk::util::hexByte( instAddress ) );
                     return; // not me.
                 }
                 if ( pollDisplay ) {
@@ -63,41 +69,38 @@ namespace meisterwerk {
                          "Display: " + String( displayY ) + "x" + String( displayX ) );
                     return;
                 }
-                DBG( "Instantiating LCD_2_4_16_20 device {" + i2ctype + "," + entName +
+                // String sa = meisterwerk::util::hexByte( address );
+                DBG( "Instantiating OLED_SSD1306 device {" + i2ctype + "," + entName +
                      "} at address 0x" + meisterwerk::util::hexByte( address ) + ", " +
                      String( displayY ) + "x" + String( displayX ) );
                 adr = address;
-                if ( displayY == 2 && displayX == 16 ) {
-                    plcd = new LiquidCrystal_PCF8574( address ); // 0: default address;
-                    plcd->begin( 16, 2 );
-                } else if ( displayY == 4 && displayX == 20 ) {
-                    plcd = new LiquidCrystal_PCF8574( address ); // 0: default address;
-                    plcd->begin( 20, 4 );
-                } else {
-                    DBG( "Uknown display size, cannot instantiate LCD entity: ERROR" );
-                    return;
-                }
-                plcd->setBacklight( 255 );
-                plcd->home();
-                plcd->clear();
+                // #define OLED_RESET 4
+                poled = new Adafruit_SSD1306();
+                poled->begin( SSD1306_SWITCHCAPVCC,
+                              address ); // initialize with the I2C addr 0x3D (for the 128x64)
+                                         // poled->clear();
+                poled->clearDisplay();
+                poled->setTextSize( 1 );
+                poled->setTextColor( WHITE );
+                poled->setCursor( 0, 0 );
+                poled->display();
+
                 pollDisplay = true;
                 subscribe( entName + "/display/set" );
                 subscribe( entName + "/display/get" );
                 publish( entName + "/display" );
             }
 
-            int          l = 0;
             virtual void onLoop( unsigned long ticker ) override {
-                if ( pollDisplay ) {
-                    l++;
-                }
+                if ( bRedraw )
+                    poled->display();
             }
 
             virtual void onReceive( String origin, String topic, String msg ) override {
                 meisterwerk::base::i2cdev::onReceive( origin, topic, msg );
                 if ( topic == "*/display/get" || topic == entName + "/display/get" ) {
                     publish( entName + "/display",
-                             "{\"type\":\"textdisplay\",\"x\":" + String( displayX ) +
+                             "{\"type\":\"pixeldisplay\",\"x\":" + String( displayX ) +
                                  ",\"y\":" + String( displayY ) + "}" );
                 }
                 if ( topic == entName + "/display/set" ) {
@@ -111,11 +114,15 @@ namespace meisterwerk {
                     x           = root["x"];
                     y           = root["y"];
                     String text = root["text"];
-                    int    cl   = root["clear"];
+                    int    f    = 2;
+                    f           = root["textsize"];
+                    int cl      = root["clear"];
                     if ( cl != 0 )
-                        plcd->clear();
-                    plcd->setCursor( x, y );
-                    plcd->print( text );
+                        poled->clearDisplay();
+                    poled->setTextSize( f );
+                    poled->setCursor( x, y );
+                    poled->print( text );
+                    bRedraw = true;
                 }
             }
         }; // namespace thing

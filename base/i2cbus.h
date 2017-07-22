@@ -90,7 +90,8 @@ typedef struct t_i2c_properties {
 const T_I2C_PROPERTIES i2cProps[] = {
     {OLED, SSD1306, "SSD1306", "OLED-display (128x64)", false, {0x3C, 0x3D, 0, 0}},
     // http://www.solomon-systech.com/en/product/display-ic/oled-driver-controller/ssd1306/
-    {LED, LED7_14_SEG, "LED7_14_SEG", "4x 7/14 Segment LED Display", false, {0x70}},
+    {LED, LED7_14_SEG, "LED7_14_SEG", "4x 7/14 Segment LED Display", false, {0x70, 0x71}},
+    // I2C backback for LCD: 0x71: bridge on A0.
     {LCD, LCD_2_4_16_20, "LCD_2_4_16_20", "2x16 or 4x20 LCD Display", false, {0x25, 0x26, 0x27}},
     // I2C backpack for LCD: 0x26: solder bridge on A0, 0x25: on A1.
     // https://learn.adafruit.com/adafruit-led-backpack/0-54-alphanumeric
@@ -161,7 +162,7 @@ namespace meisterwerk {
                 Wire.begin( sdaport, sclport ); // SDA, SCL;
                 bSetup = true;
                 bEnum  = false;
-                subscribe( "i2cbus/enum" );
+                subscribe( "i2cbus/devices/get" );
             }
 
             int identify( uint8_t address ) {
@@ -219,13 +220,13 @@ namespace meisterwerk {
 
                 if ( !bSetup ) {
                     DBG( "i2cbus not initialized!" );
-                    publish( "i2cbus/offline", "" );
+                    publish( "i2cbus/devices", "{}" );
                     bInternalError = true;
                     return 0;
                 }
                 if ( bEnum ) {
-                    DBG( "For now, mulitple I2C-bus enums are suppressed." );
-                    return 0;
+                    DBG( "For now, mulitple I2C-bus enums are allowed." ); // suppressed." );
+                    // return 0;
                 }
                 DBG( "Scanning I2C-Bus, SDA=" + String( sdaport ) + ", SCL=" + String( sclport ) );
                 nDevices = 0;
@@ -249,12 +250,12 @@ namespace meisterwerk {
                 }
                 if ( nDevices == 0 ) {
                     DBG( "No I2C devices found" );
-                    publish( "i2cbus/offline", "" );
+                    publish( "i2cbus/devices", "{}" );
                 } else {
                     String json = "{\"devs\":" + String( nDevices ) + ",\"portlist\":[" + portlist +
                                   "],\"i2cdevs\":[" + devlist + "]}";
                     DBG( "jsonstate i2c:" + json );
-                    publish( "i2cbus/online", json );
+                    publish( "i2cbus/devices", json );
                 }
                 bEnum = true;
                 return nDevices;
@@ -269,7 +270,7 @@ namespace meisterwerk {
             }
 
             virtual void onReceive( String origin, String topic, String msg ) override {
-                if ( topic == "i2cbus/enum" ) {
+                if ( topic == "i2cbus/devices/get" ) {
                     i2cScan();
                 }
             }

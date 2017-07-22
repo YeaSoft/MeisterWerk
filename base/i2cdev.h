@@ -27,8 +27,9 @@ namespace meisterwerk {
             bool   isInstantiated = false;
 
             public:
-            i2cdev( String name, String i2cType )
-                : meisterwerk::core::entity( name ), i2ctype{i2cType} {
+            uint8_t address;
+            i2cdev( String name, String i2cType, uint8_t address )
+                : meisterwerk::core::entity( name ), i2ctype{i2cType}, address{address} {
                 DBG( "Constr:" + i2ctype );
             }
 
@@ -38,12 +39,12 @@ namespace meisterwerk {
 
             virtual void onRegister() override {
                 // DBG( "i2cdev pub/sub in setup" );
-                subscribe( "i2cbus/online" );
-                publish( "i2cbus/enum", "" );
+                subscribe( "i2cbus/devices" );
+                publish( "i2cbus/devices/get", "" );
             }
 
             virtual void onReceive( String origin, String topic, String msg ) override {
-                if ( topic == "i2cbus/online" ) {
+                if ( topic == "i2cbus/devices" ) {
                     if ( !isInstantiated )
                         i2cSetup( msg );
                 }
@@ -66,11 +67,11 @@ namespace meisterwerk {
                 JsonArray &devs  = root["i2cdevs"];
                 JsonArray &ports = root["portlist"];
                 for ( int i = 0; i < devs.size(); i++ ) {
-                    String  dev     = devs[i];
-                    uint8_t address = (uint8_t)ports[i];
+                    String  dev  = devs[i];
+                    uint8_t addr = (uint8_t)ports[i];
                     // DBG( dev + "<->" + i2ctype );
-                    if ( dev == i2ctype ) {
-                        onInstantiate( i2ctype, address );
+                    if ( dev == i2ctype && addr == address ) {
+                        onInstantiate( i2ctype, addr );
                         isInstantiated = true;
                     }
                 }
