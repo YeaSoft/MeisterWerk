@@ -31,6 +31,11 @@ namespace meisterwerk {
                 return beatLength;
             }
 
+            void setlength( unsigned long length ) {
+                beatLength = length;
+                timerStart = millis();
+            }
+
             unsigned long beat() {
                 unsigned int now   = millis();
                 unsigned int delta = timebudget::delta( timerStart, now );
