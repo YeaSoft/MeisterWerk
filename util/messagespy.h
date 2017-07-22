@@ -44,7 +44,10 @@ namespace meisterwerk {
             }
 
             virtual void processMessage( String origin, String topic, String msg ) override {
-                Serial.println( "messagespy(" + entName + "): origin='" + origin + "' topic='" + topic + "' body='" +
+                String tmillis = String( millis() );
+                while ( tmillis.length() < 10 )
+                    tmillis = "0" + tmillis;
+                Serial.println( tmillis + ":" + entName + ": origin='" + origin + "' topic='" + topic + "' body='" +
                                 msg + "'" );
                 meisterwerk::core::entity::processMessage( origin, topic, msg );
             }
