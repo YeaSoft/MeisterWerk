@@ -206,7 +206,13 @@ namespace meisterwerk {
                     }
                     String isoTime = root["time"];
                     DBG( "RTC received time: " + isoTime );
-                    setTime( isoTime );
+                    String timeSource = root["timesource"];
+                    if ( timeSource != "RTC" ) {
+                        // Don't set time to a value you've sent yourself...
+                        // XXX: do a hierachical compare of types. (once there is more than 1
+                        // setable clock)
+                        setTime( isoTime );
+                    }
                 }
                 if ( topic == entName + "/temperature/get" || topic == "*/temperature/get" ) {
                     publishTemp();
