@@ -44,12 +44,12 @@ namespace meisterwerk {
             }
 
             virtual void processMessage( String origin, String topic, String msg ) override {
-                String tmillis = String( millis() );
-                while ( tmillis.length() < 10 )
-                    tmillis = "0" + tmillis;
+                char szBuffer[16];
+
+                sprintf( szBuffer, "%010d:", millis() );
                 msg.replace( "\n", "␤" );
-                Serial.println( tmillis + ":" + entName + ": origin='" + origin + "' topic='" + topic + "' body='" +
-                                msg + "'" );
+                Serial.println( szBuffer + entName + ": origin='" + origin + "' topic='" + topic + "' body='" + msg +
+                                "'" );
                 meisterwerk::core::entity::processMessage( origin, topic, msg );
             }
 
