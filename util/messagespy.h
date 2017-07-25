@@ -44,9 +44,9 @@ namespace meisterwerk {
             }
 
             virtual void processMessage( String origin, String topic, String msg ) override {
-                char szBuffer[16];
+                char szBuffer[24];
 
-                sprintf( szBuffer, "%010d:", millis() );
+                sprintf( szBuffer, "%010ld:", millis() );
                 msg.replace( "\n", "␤" );
                 Serial.println( szBuffer + entName + ": origin='" + origin + "' topic='" + topic + "' body='" + msg +
                                 "'" );
