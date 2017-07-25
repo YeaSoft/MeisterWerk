@@ -146,6 +146,7 @@ namespace meisterwerk {
             bool         bInternalError;
             uint8_t      sdaport, sclport;
             unsigned int nDevices;
+            String       i2cjson;
 
             i2cbus( String name, uint8_t sdaport, uint8_t sclport )
                 : meisterwerk::core::entity( name ), sdaport{sdaport}, sclport{sclport} {
@@ -194,6 +195,8 @@ namespace meisterwerk {
                 return last;
             }
 
+            int  hwErrs       = 0;
+            bool bHWErrDetect = false;
             bool check( uint8_t address ) {
                 bool bDevFound = false;
                 // The i2c_scanner uses the return value of
@@ -207,7 +210,10 @@ namespace meisterwerk {
                     // DBG( "I2C device found at address 0x" + meisterwerk::util::hexByte( address )
                     // );
                 } else if ( error == 4 ) {
-                    DBG( "Unknow error at address " + meisterwerk::util::hexByte( address ) );
+                    ++hwErrs;
+                    if ( !bHWErrDetect ) {
+                        bHWErrDetect = true;
+                    }
                 }
                 return bDevFound;
             }
@@ -223,9 +229,13 @@ namespace meisterwerk {
                     return 0;
                 }
                 if ( bEnum ) {
-                    // DBG( "For now, mulitple I2C-bus enums are allowed." ); // suppressed." );
-                    // return 0;
+                    publish( "i2cbus/devices", i2cjson );
+                    return 0;
                 }
+
+                hwErrs       = 0;
+                bHWErrDetect = false;
+
                 DBG( "Scanning I2C-Bus, SDA=" + String( sdaport ) + ", SCL=" + String( sclport ) );
                 nDevices       = 0;
                 niDevs         = 0;
@@ -244,13 +254,17 @@ namespace meisterwerk {
                         }
                     }
                 }
+                if ( hwErrs > 0 ) {
+                    DBG( "I2C-bus hardware problem: " + String( hwErrs ) +
+                         " errors during scan. Try power power-cycling device." );
+                }
                 if ( niDevs == 0 ) {
                     DBG( "No I2C devices found" );
                     publish( "i2cbus/devices", "{}" );
                 } else {
-                    String json = "{\"devices\":[" + devlist + "]}";
-                    DBG( "jsonstate i2c:" + json );
-                    publish( "i2cbus/devices", json );
+                    i2cjson = "{\"devices\":[" + devlist + "]}";
+                    DBG( "jsonstate i2c:" + i2cjson );
+                    publish( "i2cbus/devices", i2cjson );
                 }
                 bEnum = true;
                 return nDevices;
