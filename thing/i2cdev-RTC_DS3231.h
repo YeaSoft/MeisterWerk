@@ -25,7 +25,8 @@ namespace meisterwerk {
     namespace thing {
         class i2cdev_RTC_DS3231 : public meisterwerk::base::i2cdev {
             public:
-            RTC_DS3231 *                       prtc;
+            RTC_DS3231 *                       prtc3;
+            RTC_DS1307 *                       prtc1;
             bool                               pollSensor = false;
             meisterwerk::util::sensorprocessor tempProcessor;
             String                             json;
@@ -33,6 +34,7 @@ namespace meisterwerk {
             double                             templast;
             String                             temptime;
             util::metronome                    rtcTicker;
+            String                             model;
 
             bool bRtcTimeValid = false;
 
@@ -40,9 +42,9 @@ namespace meisterwerk {
             bool bTimeValid              = false;
             bool bGetTime                = false;
 
-            i2cdev_RTC_DS3231( String name, uint8_t address )
+            i2cdev_RTC_DS3231( String name, String model, uint8_t address )
                 : meisterwerk::base::i2cdev( name, "DS1307_3231", address ),
-                  tempProcessor( 5, 900, 0.1 ), rtcTicker( 30000 ) {
+                  tempProcessor( 5, 900, 0.1 ), rtcTicker( 30000 ), model{model} {
                 // send temperature updates, if temperature changes for 0.1C over an average of 5
                 // measurements, but at least every 15min (900sec)
                 tempvalid = false;
@@ -50,7 +52,11 @@ namespace meisterwerk {
             ~i2cdev_RTC_DS3231() {
                 if ( pollSensor ) {
                     pollSensor = false;
-                    delete prtc;
+                    if ( model == "DS3231" ) {
+                        delete prtc3;
+                    } else if ( model == "DS1307" ) {
+                        delete prtc1;
+                    }
                 }
             }
 
@@ -63,23 +69,37 @@ namespace meisterwerk {
                 // String sa = meisterwerk::util::hexByte( address );
                 DBG( "Instantiating RTC_DS3231 device at address 0x" +
                      meisterwerk::util::hexByte( address ) );
-                prtc = new RTC_DS3231();
-                if ( prtc->begin() ) {
-                    if ( prtc->lostPower() ) {
-                        DBG( "RTC lost power, RTC time invalid." );
-                    } else {
-                        bRtcTimeValid = true;
-                        bGetTime      = true;
-                        DBG( "RTC-time: " + readTime() );
+                if ( model == "DS3231" ) {
+                    prtc3 = new RTC_DS3231();
+                    if ( prtc3->begin() ) {
+                        if ( prtc3->lostPower() ) {
+                            DBG( "RTC lost power, RTC time invalid." );
+                        } else {
+                            bRtcTimeValid = true;
+                            bGetTime      = true;
+                            DBG( "RTC-time: " + readTime() );
+                        }
+                        pollSensor = true;
                     }
-                    pollSensor = true;
-                    // subscribe( entName + "/temperature/get" ); // not yet implemented.
-                    subscribe( entName + "/time/get" );
-                    subscribe( "mastertime/time/set" );
-
+                } else if ( model == "DS1307" ) {
+                    prtc1 = new RTC_DS1307();
+                    if ( prtc1->begin() ) {
+                        if ( !prtc1->isrunning() ) {
+                            DBG( "RTC lost power, RTC time invalid." );
+                        } else {
+                            bRtcTimeValid = true;
+                            bGetTime      = true;
+                            DBG( "RTC-time: " + readTime() );
+                        }
+                        pollSensor = true;
+                    }
                 } else {
-                    DBG( "RTC DS3231 hardware not found!" );
+                    DBG( "RTC DS3231/1307 hardware not found!" );
+                    return;
                 }
+                // subscribe( entName + "/temperature/get" ); // not yet implemented.
+                subscribe( entName + "/time/get" );
+                subscribe( "mastertime/time/set" );
             }
 
             void publishTemp() {
@@ -94,9 +114,17 @@ namespace meisterwerk {
 
             void publishTime( String isoTime ) {
                 if ( bRtcTimeValid ) {
-                    json = "{\"time\":\"" + isoTime +
-                           "\",\"timesource\":\"HP-RTC\",\"timeprecision\":10000}";
-                    publish( entName + "/time", json );
+                    if ( model == "DS3231" ) {
+                        json = "{\"time\":\"" + isoTime +
+                               "\",\"timesource\":\"HP-RTC\",\"timeprecision\":10000}";
+                        publish( entName + "/time", json );
+                    } else if ( model == "DS1307" ) {
+                        json = "{\"time\":\"" + isoTime +
+                               "\",\"timesource\":\"RTC\",\"timeprecision\":10000}";
+                        publish( entName + "/time", json );
+                    } else {
+                        DBG( "Can't publish unknown model: " + model );
+                    }
                 } else {
                     DBG( "No valid time measurement for pub" );
                 }
@@ -127,28 +155,42 @@ namespace meisterwerk {
 
             void setTime( String isoTime ) {
                 TimeElements tt;
+                DateTime     nowUtc;
                 time_t       t = util::msgtime::ISO2time_t( isoTime );
                 breakTime( t, tt );
 
                 // following line sets the RTC to the date & time this sketch was compiled
                 // January 21, 2014 at 3am you would call:
                 // rtc.adjust(DateTime(2014, 1, 21, 3, 0, 0));
-                prtc->adjust(
-                    DateTime( tt.Year + 1970, tt.Month, tt.Day, tt.Hour, tt.Minute, tt.Second ) );
-
+                if ( model == "DS3231" ) {
+                    prtc3->adjust( DateTime( tt.Year + 1970, tt.Month, tt.Day, tt.Hour, tt.Minute,
+                                             tt.Second ) );
+                    nowUtc = prtc3->now();
+                } else if ( model == "DS1307" ) {
+                    prtc1->adjust( DateTime( tt.Year + 1970, tt.Month, tt.Day, tt.Hour, tt.Minute,
+                                             tt.Second ) );
+                    nowUtc = prtc1->now();
+                } else {
+                    DBG( "Cannot set time for model: " + model );
+                }
                 DBG( "Setting RTC clock to: " + isoTime );
-
-                DateTime nowUtc = prtc->now();
-                time_t   utct   = nowUtc.unixtime();
-                String   iso2   = util::msgtime::time_t2ISO( utct );
+                time_t utct = nowUtc.unixtime();
+                String iso2 = util::msgtime::time_t2ISO( utct );
                 DBG( "Verification: RTC clock is: " + iso2 );
                 bRtcTimeValid = true;
             }
 
             String readTime() {
-                DateTime nowUtc  = prtc->now();
-                time_t   utct    = nowUtc.unixtime();
-                String   isoTime = util::msgtime::time_t2ISO( utct );
+                DateTime nowUtc;
+                if ( model == "DS3231" ) {
+                    nowUtc = prtc3->now();
+                } else if ( model == "DS1307" ) {
+                    nowUtc = prtc1->now();
+                } else {
+                    DBG( "Cannot get time for model: " + model );
+                }
+                time_t utct    = nowUtc.unixtime();
+                String isoTime = util::msgtime::time_t2ISO( utct );
                 return isoTime;
             }
 
