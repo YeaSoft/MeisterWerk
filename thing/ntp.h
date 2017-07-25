@@ -29,14 +29,18 @@ namespace meisterwerk {
     namespace thing {
         class Ntp : public meisterwerk::core::entity {
             public:
-            enum Udpstate { IDLE, PACKETSENT };
+            enum Udpstate { IDLE, PACKETSENT, RETRY };
             Udpstate        ntpstate;
             bool            isOn     = false;
             bool            netUp    = false;
             bool            bGetTime = false;
             util::metronome ntpTicker;
             unsigned long   packettimestamp;
-            unsigned long   ntpTimeout = 3e00; // ms timeout for send/receive NTP packets.
+            unsigned long   ntpTimeout = 300; // ms timeout for send/receive NTP packets.
+            int             maxRetries = 3;
+            int             retryPause = 3000; // ms between retries
+            unsigned long   retryTime  = 0;
+            int             retryCnt;
             String          ntpServer;
             bool            ipNtpInit = false;
             IPAddress       timeServerIP; // time.nist.gov NTP server address
@@ -147,8 +151,17 @@ namespace meisterwerk {
                         case Udpstate::IDLE:
                             if ( bGetTime || ntpTicker.beat() > 0 ) {
                                 bGetTime = false;
-                                if ( ntpServer != "" )
+                                if ( ntpServer != "" ) {
+                                    retryCnt = 0;
                                     getNtpTime();
+                                }
+                            }
+                            break;
+                        case Udpstate::RETRY:
+                            if ( util::timebudget::delta( packettimestamp, millis() ) >
+                                 retryPause ) {
+                                DBG( "Retrying NTPPacket..." );
+                                getNtpTime();
                             }
                             break;
                         case Udpstate::PACKETSENT:
@@ -157,8 +170,17 @@ namespace meisterwerk {
                             } else {
                                 if ( util::timebudget::delta( packettimestamp, millis() ) >
                                      ntpTimeout ) {
-                                    DBG( "NTP timeout receiving from server: " + ntpServer );
-                                    ntpstate = Udpstate::IDLE;
+                                    if ( retryCnt < maxRetries ) {
+                                        DBG( "NTP timeout receiving from server: " + ntpServer +
+                                             ", retrying..." );
+                                        ++retryCnt;
+                                        retryTime = millis();
+                                        ntpstate + Udpstate::RETRY;
+                                    } else {
+                                        ntpstate = Udpstate::IDLE;
+                                        DBG( "NTP timeout receiving from server: " + ntpServer +
+                                             ", retry count exceeded, temporary failure." );
+                                    }
                                 }
                             }
                             break;
