@@ -32,12 +32,12 @@ namespace meisterwerk {
             }
 
             virtual void onReceive( String origin, String topic, String msg ) override {
-                String tmillis = String( millis() );
-                while ( tmillis.length() < 10 )
-                    tmillis = "0" + tmillis;
+                char szBuffer[24];
+
+                sprintf( szBuffer, "%010ld:", millis() );
                 msg.replace( "\n", "␤" );
-                Serial.println( tmillis + ":" + entName + ": origin='" + origin + "' topic='" +
-                                topic + "' body='" + msg + "'" );
+                Serial.println( szBuffer + entName + ": origin='" + origin + "' topic='" + topic +
+                                "' body='" + msg + "'" );
             }
 #else
             messagespy( String name = "", String subscription = "" )

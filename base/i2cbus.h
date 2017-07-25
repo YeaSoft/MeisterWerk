@@ -213,10 +213,8 @@ namespace meisterwerk {
             }
 
             unsigned int i2cScan() {
-                byte   address;
-                String portlist = "";
-                String devlist  = "";
-                int    niDevs, i2cid;
+                byte address;
+                int  niDevs, i2cid;
 
                 if ( !bSetup ) {
                     DBG( "i2cbus not initialized!" );
@@ -225,35 +223,32 @@ namespace meisterwerk {
                     return 0;
                 }
                 if ( bEnum ) {
-                    DBG( "For now, mulitple I2C-bus enums are allowed." ); // suppressed." );
+                    // DBG( "For now, mulitple I2C-bus enums are allowed." ); // suppressed." );
                     // return 0;
                 }
                 DBG( "Scanning I2C-Bus, SDA=" + String( sdaport ) + ", SCL=" + String( sclport ) );
-                nDevices = 0;
-                niDevs   = 0;
+                nDevices       = 0;
+                niDevs         = 0;
+                String devlist = "";
                 for ( uint8_t address = 1; address < 127; address++ ) {
                     if ( check( address ) ) {
-                        nDevices++;
-                        if ( nDevices > 1 ) {
-                            portlist += ",";
-                        }
-                        portlist += String( address );
-                        i2cid = identify( address );
+                        String port = String( address );
+                        i2cid       = identify( address );
                         if ( i2cid != -1 ) {
+                            String dev = i2cProps[i2cid].name;
                             niDevs++;
                             if ( niDevs > 1 ) {
                                 devlist += ",";
                             }
-                            devlist += "\"" + i2cProps[i2cid].name + "\"";
+                            devlist += "{\"" + dev + "\": \"" + port + "\"}";
                         }
                     }
                 }
-                if ( nDevices == 0 ) {
+                if ( niDevs == 0 ) {
                     DBG( "No I2C devices found" );
                     publish( "i2cbus/devices", "{}" );
                 } else {
-                    String json = "{\"devs\":" + String( nDevices ) + ",\"portlist\":[" + portlist +
-                                  "],\"i2cdevs\":[" + devlist + "]}";
+                    String json = "{\"devices\":[" + devlist + "]}";
                     DBG( "jsonstate i2c:" + json );
                     publish( "i2cbus/devices", json );
                 }

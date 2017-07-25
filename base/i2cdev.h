@@ -64,15 +64,15 @@ namespace meisterwerk {
                     DBG( "Invalid JSON received!" );
                     return;
                 }
-                JsonArray &devs  = root["i2cdevs"];
-                JsonArray &ports = root["portlist"];
+                JsonArray &devs = root["devices"];
                 for ( int i = 0; i < devs.size(); i++ ) {
-                    String  dev  = devs[i];
-                    uint8_t addr = (uint8_t)ports[i];
-                    // DBG( dev + "<->" + i2ctype );
-                    if ( dev == i2ctype && addr == address ) {
-                        onInstantiate( i2ctype, addr );
-                        isInstantiated = true;
+                    JsonObject &dev = devs[i];
+                    for ( auto obj : dev ) {
+                        // DBG( String( obj.key ) + "<->" + i2ctype );
+                        if ( i2ctype == obj.key && address == obj.value ) {
+                            onInstantiate( i2ctype, address );
+                            isInstantiated = true;
+                        }
                     }
                 }
             }

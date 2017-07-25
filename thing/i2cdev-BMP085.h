@@ -96,6 +96,8 @@ namespace meisterwerk {
             }
             virtual void onLoop( unsigned long ticker ) override {
                 if ( pollSensor ) {
+                    if ( timeStatus() != timeNotSet )
+                        bTimeValid = true;
                     if ( bOptionWaitForValidTime && !bTimeValid )
                         return;
                     double temperature = pbmp->readTemperature();
