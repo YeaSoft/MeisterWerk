@@ -34,6 +34,8 @@ namespace meisterwerk {
             bool                               pressvalid;
             double                             presslast;
             String                             presstime;
+            bool                               bOptionWaitForValidTime = true;
+            bool                               bTimeValid              = false;
 
             i2cdev_BMP085( String name, uint8_t address )
                 : meisterwerk::base::i2cdev( name, "BMP085", address ),
@@ -68,6 +70,7 @@ namespace meisterwerk {
                     pollSensor = true;
                     subscribe( entName + "/temperature/get" );
                     subscribe( entName + "/pressure/get" );
+                    subscribe( "mastertime/time/set" );
                 }
             }
 
@@ -93,6 +96,8 @@ namespace meisterwerk {
             }
             virtual void onLoop( unsigned long ticker ) override {
                 if ( pollSensor ) {
+                    if ( bOptionWaitForValidTime && !bTimeValid )
+                        return;
                     double temperature = pbmp->readTemperature();
                     if ( tempProcessor.filter( &temperature ) ) {
                         templast  = temperature;
@@ -112,6 +117,8 @@ namespace meisterwerk {
 
             virtual void onReceive( String origin, String topic, String msg ) override {
                 meisterwerk::base::i2cdev::onReceive( origin, topic, msg );
+                if ( topic == "mastertime/time/set" )
+                    bTimeValid = true;
                 if ( topic == entName + "/temperature/get" || topic == "*/temperature/get" ) {
                     publishTemp();
                 }

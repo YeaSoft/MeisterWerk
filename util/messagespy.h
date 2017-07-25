@@ -35,6 +35,7 @@ namespace meisterwerk {
                 String tmillis = String( millis() );
                 while ( tmillis.length() < 10 )
                     tmillis = "0" + tmillis;
+                msg.replace( "\n", "␤" );
                 Serial.println( tmillis + ":" + entName + ": origin='" + origin + "' topic='" +
                                 topic + "' body='" + msg + "'" );
             }
