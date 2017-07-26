@@ -33,13 +33,14 @@ namespace meisterwerk {
             virtual void onLoop() {
                 sched.loop();
             }
+            /*
+                        virtual void onGetState( JsonObject &request, JsonObject &response ) override {
+                        }
 
-            virtual void onGetState( JsonObject &request, JsonObject &response ) override {
-            }
-
-            virtual bool onSetState( JsonObject &request, JsonObject &response ) override {
-                return false;
-            }
+                        virtual bool onSetState( JsonObject &request, JsonObject &response ) override {
+                            return false;
+                        }
+            */
         };
 
         // initialization of static member
