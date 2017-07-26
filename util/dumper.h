@@ -38,9 +38,9 @@ namespace meisterwerk {
             void onRegister() override {
                 meisterwerk::core::entity::onRegister();
                 // explicit commands
-                subscribe( allTopic( "dump" ) );
-                subscribe( allTopic( "sysinfo" ) );
-                subscribe( allTopic( "taskinfo" ) );
+                subscribe( "*/dump" );
+                subscribe( "*/sysinfo" );
+                subscribe( "*/taskinfo" );
                 // events from debug Button
                 subscribe( debugButton + "/short" );
                 subscribe( debugButton + "/long" );
@@ -55,40 +55,17 @@ namespace meisterwerk {
                 }
             }
 
-            virtual bool onReceive( String origin, String topic, JsonObject &data ) override {
-                if ( meisterwerk::core::entity::onReceive( origin, topic, data ) ) {
-                    return true;
-                }
+            virtual void onReceive( const char *origin, const char *topic, const char *msg ) override {
+                String t( topic );
                 // process my own subscriptions
-                if ( topic == debugButton + "/short" ) {
+                if ( t == debugButton + "/short" ) {
                     dumpRuntimeInfo();
-                    return true;
-                } else if ( topic == debugButton + "/long" ) {
+                } else if ( t == debugButton + "/long" ) {
                     dumpSystemInfo();
-                    return true;
-                } else if ( topic == debugButton + "/extralong" ) {
+                } else if ( t == debugButton + "/extralong" ) {
                     dumpTaskInfo();
-                    return true;
                 }
-                return false;
             }
-
-            /*
-            virtual void onGetState( JsonObject &request, JsonObject &response ) override {
-                response["type"]     = "dumper";
-                response["autodump"] = autodump.getlength();
-            }
-
-            virtual bool onSetState( JsonObject &request, JsonObject &response ) override {
-                JsonVariant toAutodump = request["autodump"];
-                if ( willSetStateU( toAutodump, autodump ) ) {
-                    autodump             = toAutodump.as<unsigned long>();
-                    response["autodump"] = autodump.getlength();
-                    return true;
-                }
-                return false;
-            }
-            */
 
             void dumpSystemInfo() {
                 String                     pre   = "dumper(" + entName + ") ";
