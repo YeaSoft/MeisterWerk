@@ -34,11 +34,14 @@ namespace meisterwerk {
             String  dispSize;
             uint8_t adr;
             uint8_t instAddress;
+            uint8_t rxPin;
+            uint8_t txPin;
             bool    usingInterrupt = false;
             bool    bPublishTime   = false;
             bool    bPublishGps    = false;
 
-            GPS_NEO_6M( String name ) : meisterwerk::core::entity( name ) {
+            GPS_NEO_6M( String name, uint8_t rxPin, uint8_t txPin )
+                : meisterwerk::core::entity( name ), rxPin{rxPin}, txPin{txPin} {
             }
             ~GPS_NEO_6M() {
                 if ( isOn ) {
@@ -52,9 +55,10 @@ namespace meisterwerk {
                 // 5sec sensor checks
                 bool ret = meisterwerk::core::entity::registerEntity(
                     50000, core::scheduler::PRIORITY_TIMECRITICAL );
-                DBG( "init gps." );
+                DBG( "Init gps: RX=" + String( rxPin ) + ", TX=" + String( txPin ) );
 
-                pser = new SoftwareSerial( D6, D7, false, 256 ); // RX, TX, inverseLogic, bufferSize
+                pser = new SoftwareSerial( rxPin, txPin, false,
+                                           256 ); // RX, TX, inverseLogic, bufferSize
                 pser->begin( 9600 );
                 resetCmd();
                 resetDefaults();
