@@ -7,6 +7,9 @@
 
 #pragma once
 
+// external libraries
+#include <ArduinoJson.h>
+
 // dependencies
 #include "../util/debug.h"
 #include "message.h"
@@ -26,10 +29,8 @@ namespace meisterwerk {
                                         // messaging only entities)
 
             // methods
-            msgregister( entity *_pEnt, unsigned long _minMicroSecs, unsigned int _priority ) {
-                pEnt         = _pEnt;
-                priority     = _priority;
-                minMicroSecs = _minMicroSecs;
+            msgregister( entity *pEnt, unsigned long minMicroSecs, unsigned int priority )
+                : pEnt{pEnt}, minMicroSecs{minMicroSecs}, priority{priority} {
             }
         };
 
@@ -47,49 +48,37 @@ namespace meisterwerk {
 
             bool registerEntity( unsigned long minMicroSecs = 0, unsigned int priority = 3 ) {
                 msgregister reg( this, minMicroSecs, priority );
-                if ( message::send( message::MSG_DIRECT, entName, "register", &reg,
-                                    sizeof( reg ) ) ) {
+                if ( message::send( message::MSG_DIRECT, entName, "register", &reg, sizeof( reg ) ) ) {
                     return true;
                 }
                 DBG( "entity::registerEntity, sendMessage failed for register " + entName );
                 return false;
             }
 
-            bool updateRegisterEntity( unsigned long minMicroSecs = 0, unsigned int priority = 3 ) {
+            bool updateEntity( unsigned long minMicroSecs = 0, unsigned int priority = 3 ) {
                 msgregister reg( this, minMicroSecs, priority );
-                if ( message::send( message::MSG_DIRECT, entName, "updregister", &reg,
-                                    sizeof( reg ) ) ) {
+                if ( message::send( message::MSG_DIRECT, entName, "update", &reg, sizeof( reg ) ) ) {
                     return true;
                 }
-                DBG( "entity::registerEntity, sendMessage failed for register " + entName );
+                DBG( "entity::updateEntity, sendMessage failed for update " + entName );
                 return false;
             }
 
-            bool publish( String topic ) {
-                if ( message::send( message::MSG_PUBLISH, entName, topic, "{}" ) ) {
-                    return true;
-                }
-                DBG( "entity::publish, sendMessage failed for publish " + entName );
-                return false;
+            bool publish( String topic, JsonObject &json ) const {
+                String buffer;
+                json.printTo( buffer );
+                return publish( topic, buffer );
             }
 
-            bool publish( String topic, String msg ) {
+            // Please keep in mind that you MUST attach the string representation
+            // of a json object as msg.
+            bool publish( String topic, String msg = "{}" ) const {
                 if ( message::send( message::MSG_PUBLISH, entName, topic, msg ) ) {
                     return true;
                 }
                 DBG( "entity::publish, sendMessage failed for publish " + entName );
                 return false;
             }
-
-            /* Prepared but not supported in the current scheduler
-            bool publish( String topic, const void *pBuf, unsigned long len ) {
-                if ( message::send( message::MSG_PUBLISHRAW, entName, topic, pBuf, len ) ) {
-                    return true;
-                }
-                DBG( "entity::publish, sendMessage failed for publish " + entName );
-                return false;
-            }
-            */
 
             bool subscribe( String topic ) const {
                 if ( message::send( message::MSG_SUBSCRIBE, entName, topic, nullptr, 0 ) ) {
@@ -107,30 +96,32 @@ namespace meisterwerk {
                 return false;
             }
 
-            bool subscribeme( String subtopic ) const {
-                return subscribe( entName + "/" + subtopic );
+            String allTopic( String subtopic ) const {
+                return "*/" + subtopic;
             }
 
-            bool unsubscribeme( String subtopic ) const {
-                return unsubscribe( entName + "/" + subtopic );
+            bool isAllTopic( String topic, String subtopic ) const {
+                return topic == "*/" + subtopic;
             }
 
-            bool subscribeall( String subtopic ) const {
-                return subscribe( "*/" + subtopic );
+            String ownTopic( String subtopic ) const {
+                return entName + "/" + subtopic;
             }
 
-            bool unsubscribeall( String subtopic ) const {
-                return unsubscribe( "*/" + subtopic );
-            }
-
-            const char *getname() const {
-                return entName.c_str();
+            bool isOwnTopic( String topic, String subtopic ) const {
+                return topic == entName + "/" + subtopic;
             }
 
             // callbacks
             public:
+            // When ou override this callback, do not forget to invoke the
+            // base class implkementation that provides the mandatory
+            // subscription to getstate and setstate
             virtual void onRegister() {
                 // implementation not mandatory
+                // mandatory subscriptions
+                subscribe( ownTopic( "getstate" ) );
+                subscribe( ownTopic( "setstate" ) );
             }
 
             // there is no clash between baseapp:onLoop and entity;:onLoop
@@ -140,18 +131,58 @@ namespace meisterwerk {
                 DBG( "entity:onLook, missing override for entity " + entName );
             }
 
-            virtual void onReceive( String origin, String topic, String msg ) {
-                // should be implemented if it is called - issue warning
-                DBG( "entity:onReceive(string), missing override for entity " + entName );
+            // Override this only if you have to implement your own message
+            // handlers. BEWARE: Do not forget to invoke the base class
+            // implementation that provides the mandatory handling of
+            // getstate and setstate! Example:
+            //
+            // ...
+            // if ( meisterwerk::core::entity::onReceive (...) ) {
+            //     return true;
+            // }
+            // ...
+            virtual bool onReceive( String origin, String topic, JsonObject &request, JsonObject &response ) {
+                if ( isOwnTopic( topic, "getstate" ) ) {
+                    onGetState( request, response );
+                    publish( ownTopic( "state" ), response );
+                    return true;
+                } else if ( isOwnTopic( topic, "setstate" ) ) {
+                    if ( onSetState( request, response ) ) {
+                        publish( ownTopic( "state" ), response );
+                    }
+                    return true;
+                }
+                return false;
             }
 
-            /* Prepared but not supported in the current scheduler
-            virtual void onReceive( String origin, String topic, const void *pBuf, unsigned int len
-            ) {
-                // should be implemented if it is called - issue warning
-                DBG( "entity:onReceive(binary), missing override for entity " + entName );
+            // ABSTRACT METHODS - Must be implemented in derived classes
+            virtual void onGetState( JsonObject &request, JsonObject &response ) = 0;
+            virtual bool onSetState( JsonObject &request, JsonObject &response ) = 0;
+
+            // utilities
+            static bool willSetStateB( JsonVariant &test, bool value ) {
+                return test.success() && value != test.as<bool>();
             }
-            */
+            static bool willSetStateU( JsonVariant &test, unsigned long value ) {
+                return test.success() && value != test.as<unsigned long>();
+            }
+
+            static bool willSetStateS( JsonVariant &test, String value ) {
+                return test.success() && value != test.as<String>();
+            }
+
+            // The following function is invoked ONLY by the schduler!
+            virtual void processMessage( String origin, String topic, String msg ) {
+                DynamicJsonBuffer reqBuffer( 300 );
+                DynamicJsonBuffer resBuffer( 300 );
+                JsonObject &      req         = reqBuffer.parseObject( msg );
+                JsonObject &      res         = resBuffer.createObject();
+                const char *      correlation = req["correlation"];
+                if ( correlation ) {
+                    res["correlation"] = correlation;
+                }
+                onReceive( origin, topic, req, res );
+            }
         };
     } // namespace core
 } // namespace meisterwerk

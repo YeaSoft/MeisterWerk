@@ -27,6 +27,10 @@ namespace meisterwerk {
                 return beatLength;
             }
 
+            unsigned long getlength() const {
+                return beatLength;
+            }
+
             unsigned long beat() {
                 unsigned int now   = millis();
                 unsigned int delta = timebudget::delta( timerStart, now );
