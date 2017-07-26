@@ -27,20 +27,21 @@ namespace meisterwerk {
             enum Netstate { NOTDEFINED, NOTCONFIGURED, CONNECTINGAP, CONNECTED };
             enum Netmode { AP, STATION };
 
-            bool                  bSetup;
-            Netstate              state;
-            Netstate              oldstate;
-            Netmode               mode;
-            long                  contime;
-            long                  conto = 15000;
-            String                SSID;
-            String                password;
-            String                lhostname;
-            String                ipaddress;
-            util::metronome       tick1sec;
-            util::metronome       tick10sec;
-            util::sensorprocessor rssival;
+            bool                     bSetup;
+            Netstate                 state;
+            Netstate                 oldstate;
+            Netmode                  mode;
+            long                     contime;
+            long                     conto = 15000;
+            String                   SSID;
+            String                   password;
+            String                   lhostname;
+            String                   ipaddress;
+            util::metronome          tick1sec;
+            util::metronome          tick10sec;
+            util::sensorprocessor    rssival;
             std::map<String, String> netservices;
+            String                   macAddress;
 
             net( String name )
                 : meisterwerk::core::entity( name ), tick1sec( 1000L ), tick10sec( 10000L ),
@@ -61,6 +62,7 @@ namespace meisterwerk {
                 } else {
                     json = "{\"mode\":\"undefined\",";
                 }
+                json += "\"mac\":\"" + macAddress +\",";
                 switch ( state ) {
                 case Netstate::NOTCONFIGURED:
                     json += "\"state\":\"notconfigured\"}";
@@ -123,6 +125,8 @@ namespace meisterwerk {
                 DBG( "Connecting to: " + SSID );
                 WiFi.mode( WIFI_STA );
                 WiFi.begin( SSID.c_str(), password.c_str() );
+                macAddress = WiFi.macAddress();
+
                 if ( lhostname != "" )
                     WiFi.hostname( lhostname.c_str() );
                 state   = Netstate::CONNECTINGAP;
