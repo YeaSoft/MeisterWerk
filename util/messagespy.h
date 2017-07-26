@@ -28,29 +28,15 @@ namespace meisterwerk {
                 subscribe( filter );
             }
 
-            virtual void onGetState( JsonObject &request, JsonObject &response ) override {
-                response["type"]   = "messagespy";
-                response["filter"] = filter;
-            }
-
-            virtual bool onSetState( JsonObject &request, JsonObject &response ) override {
-                JsonVariant toFilter = request["filter"];
-                if ( willSetStateS( toFilter, filter ) ) {
-                    filter             = toFilter.as<String>();
-                    response["filter"] = filter;
-                    return true;
-                }
-                return false;
-            }
-
-            virtual void processMessage( String origin, String topic, String msg ) override {
-                char szBuffer[24];
+            virtual void onReceive( const char *origin, const char *topic, const char *msg ) override {
+                char   szBuffer[24];
+                String s1( origin );
+                String s2( topic );
+                String s3( msg );
 
                 sprintf( szBuffer, "%010ld:", millis() );
-                msg.replace( "\n", "␤" );
-                Serial.println( szBuffer + entName + ": origin='" + origin + "' topic='" + topic + "' body='" + msg +
-                                "'" );
-                meisterwerk::core::entity::processMessage( origin, topic, msg );
+                s3.replace( "\n", "␤" );
+                Serial.println( szBuffer + entName + ": origin='" + s1 + "' topic='" + s2 + "' body='" + s3 + "'" );
             }
 
 #else
