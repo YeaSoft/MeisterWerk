@@ -70,7 +70,7 @@ namespace meisterwerk {
                 return publish( topic, buffer );
             }
 
-            // Please keep in mind that you MUST attach the string representation
+            // Please keep in mind that you MUST ALWAYS attach the string representation
             // of a json object as msg.
             bool publish( String topic, String msg = "{}" ) const {
                 if ( message::send( message::MSG_PUBLISH, entName, topic, msg ) ) {
@@ -114,14 +114,14 @@ namespace meisterwerk {
 
             // callbacks
             public:
-            // When ou override this callback, do not forget to invoke the
+            // When you override this callback, do not forget to invoke the
             // base class implkementation that provides the mandatory
             // subscription to getstate and setstate
             virtual void onRegister() {
                 // implementation not mandatory
                 // mandatory subscriptions
-                subscribe( ownTopic( "getstate" ) );
-                subscribe( ownTopic( "setstate" ) );
+                // subscribe( ownTopic( "getstate" ) );
+                // subscribe( ownTopic( "setstate" ) );
             }
 
             // there is no clash between baseapp:onLoop and entity;:onLoop
@@ -141,7 +141,8 @@ namespace meisterwerk {
             //     return true;
             // }
             // ...
-            virtual bool onReceive( String origin, String topic, JsonObject &request, JsonObject &response ) {
+            virtual bool onReceive( String origin, String topic, JsonObject &data ) {
+                /*
                 if ( isOwnTopic( topic, "getstate" ) ) {
                     onGetState( request, response );
                     publish( ownTopic( "state" ), response );
@@ -152,12 +153,9 @@ namespace meisterwerk {
                     }
                     return true;
                 }
+                */
                 return false;
             }
-
-            // ABSTRACT METHODS - Must be implemented in derived classes
-            virtual void onGetState( JsonObject &request, JsonObject &response ) = 0;
-            virtual bool onSetState( JsonObject &request, JsonObject &response ) = 0;
 
             // utilities
             static bool willSetStateB( JsonVariant &test, bool value ) {
@@ -171,17 +169,11 @@ namespace meisterwerk {
                 return test.success() && value != test.as<String>();
             }
 
-            // The following function is invoked ONLY by the schduler!
-            virtual void processMessage( String origin, String topic, String msg ) {
-                DynamicJsonBuffer reqBuffer( 300 );
-                DynamicJsonBuffer resBuffer( 300 );
-                JsonObject &      req         = reqBuffer.parseObject( msg );
-                JsonObject &      res         = resBuffer.createObject();
-                const char *      correlation = req["correlation"];
-                if ( correlation ) {
-                    res["correlation"] = correlation;
-                }
-                onReceive( origin, topic, req, res );
+            // The following function is invoked ONLY by the scheduler!
+            virtual void processMessage( const char *origin, const char *topic, const char *msg ) {
+                DynamicJsonBuffer dataBuffer( 300 );
+                JsonObject &      data = dataBuffer.parseObject( msg );
+                onReceive( origin, topic, data );
             }
         };
     } // namespace core

@@ -55,8 +55,8 @@ namespace meisterwerk {
                 }
             }
 
-            virtual bool onReceive( String origin, String topic, JsonObject &request, JsonObject &response ) override {
-                if ( meisterwerk::core::entity::onReceive( origin, topic, request, response ) ) {
+            virtual bool onReceive( String origin, String topic, JsonObject &data ) override {
+                if ( meisterwerk::core::entity::onReceive( origin, topic, data ) ) {
                     return true;
                 }
                 // process my own subscriptions
@@ -73,6 +73,7 @@ namespace meisterwerk {
                 return false;
             }
 
+            /*
             virtual void onGetState( JsonObject &request, JsonObject &response ) override {
                 response["type"]     = "dumper";
                 response["autodump"] = autodump.getlength();
@@ -87,6 +88,7 @@ namespace meisterwerk {
                 }
                 return false;
             }
+            */
 
             void dumpSystemInfo() {
                 String                     pre   = "dumper(" + entName + ") ";

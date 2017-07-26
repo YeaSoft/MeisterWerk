@@ -164,7 +164,8 @@ namespace meisterwerk {
                                  ( String( pMsg->originator ) != sub.subscriber ) ) {
                                 DBG_ONLY( pTask->msgTime.snap() );
                                 pTask->pEnt->processMessage( pMsg->originator, pMsg->topic,
-                                                             pMsg->pBuf && pMsg->pBufLen ? (char *)pMsg->pBuf : "{}" );
+                                                             pMsg->pBuf && pMsg->pBufLen ? (const char *)pMsg->pBuf
+                                                                                         : "{}" );
                                 DBG_ONLY( pTask->msgTime.shot() );
                             }
                         }
