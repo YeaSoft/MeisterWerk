@@ -61,6 +61,10 @@ namespace meisterwerk {
             virtual void onLoop( unsigned long ticker ) override {
                 if ( isOn ) {
                     if ( netUp && mqttServer != "" ) {
+                        if ( mqttConnected ) {
+                            mqttClient.loop();
+                        }
+
                         if ( bCheckConnection || mqttTicker.beat() > 0 ) {
                             bCheckConnection = false;
                             if ( !mqttClient.connected() ) {
@@ -78,9 +82,6 @@ namespace meisterwerk {
                                     mqttConnected = false;
                                 }
                             }
-                            if ( mqttConnected ) {
-                                mqttClient.loop();
-                            }
                         }
                     }
                 }
@@ -89,6 +90,9 @@ namespace meisterwerk {
             void onMqttReceive( char *ctopic, unsigned char *payload, unsigned int length ) {
                 String msg = "";
                 String topic;
+                char   buf[24];
+                sprintf( buf, "%010ld", millis() );
+                DBG( String( buf ) + "MQR:" + String( ctopic ) );
                 if ( strlen( ctopic ) > 3 )
                     topic = (char *)( &ctopic[3] ); // strip mw/
                 for ( int i = 0; i < length; i++ ) {

@@ -29,15 +29,18 @@ namespace meisterwerk {
             uint8_t             address;
             uint8_t             segments;
             util::metronome     scroller;
+            util::metronome     blinker;
             int                 ptext;
-            int                 displayX = 4;
-            int                 displayY = 1;
+            int                 displayX   = 4;
+            int                 displayY   = 1;
+            int                 blinkMode  = 0;
+            int                 blinkState = 0;
             // meisterwerk::util::sensorprocessor tempProcessor, pressProcessor;
             String json;
 
             i2cdev_LED7_14_SEG( String name, uint8_t address, uint8_t segments )
-                : meisterwerk::base::i2cdev( name, "LED7_14_SEG", address ),
-                  scroller( 250 ), address{address}, segments{segments} {
+                : meisterwerk::base::i2cdev( name, "LED7_14_SEG", address ), scroller( 250 ),
+                  blinker( 500 ), address{address}, segments{segments} {
             }
             ~i2cdev_LED7_14_SEG() {
                 if ( pollDisplay ) {
@@ -78,10 +81,10 @@ namespace meisterwerk {
                 if ( segments == 7 ) {
                     while ( t.length() < 4 )
                         t += " ";
-                    pled7->writeDigitNum( 0, t[0] );
-                    pled7->writeDigitNum( 1, t[1] );
-                    pled7->writeDigitNum( 3, t[2] );
-                    pled7->writeDigitNum( 4, t[3] );
+                    pled7->writeDigitNum( 0, t[0] - '0' );
+                    pled7->writeDigitNum( 1, t[1] - '0' );
+                    pled7->writeDigitNum( 3, t[2] - '0' );
+                    pled7->writeDigitNum( 4, t[3] - '0' );
                     pled7->writeDisplay();
                 }
                 if ( segments == 14 ) {
@@ -96,6 +99,17 @@ namespace meisterwerk {
 
             virtual void onLoop( unsigned long ticker ) override {
                 if ( pollDisplay ) {
+                    if ( segments == 7 ) {
+                        if ( blinkMode == 1 ) {
+                            int nr = blinker.beat();
+                            if ( nr > 0 ) {
+                                blinkState += nr;
+                                pled7->drawColon( blinkState % 2 );
+                            }
+                        }
+                    }
+                    if ( segments == 14 ) {
+                    }
                     /*
                     if ( disptext.length() > 4 ) {
                         int d = scroller.beat();
@@ -124,6 +138,7 @@ namespace meisterwerk {
                         return;
                     }
                     String text = root["text"];
+                    blinkMode   = root["blink"];
                     print( text );
                 }
             }
