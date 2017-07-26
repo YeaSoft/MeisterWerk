@@ -7,9 +7,6 @@
 
 #pragma once
 
-// external libraries
-#include <ArduinoJson.h>
-
 // dependencies
 #include "../util/debug.h"
 #include "message.h"
