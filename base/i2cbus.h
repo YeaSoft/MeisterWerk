@@ -155,15 +155,15 @@ namespace meisterwerk {
                 bInternalError = false;
             }
 
-            bool registerEntity() {
-                return meisterwerk::core::entity::registerEntity( 50000 );
-            }
-
-            virtual void onRegister() override {
+            bool registerEntity( unsigned long slice = 50000 ) {
+                //}
+                bool ret = meisterwerk::core::entity::registerEntity( slice );
+                // virtual void onRegister() override {
                 Wire.begin( sdaport, sclport ); // SDA, SCL;
                 bSetup = true;
                 bEnum  = false;
                 subscribe( "i2cbus/devices/get" );
+                return ret;
             }
 
             int identify( uint8_t address ) {
@@ -279,7 +279,8 @@ namespace meisterwerk {
                 }
             }
 
-            virtual void onReceive( String origin, String topic, String msg ) override {
+            virtual void onReceive( const char *origin, const char *ctopic, const char *msg ) override {
+                String topic( ctopic );
                 if ( topic == "i2cbus/devices/get" ) {
                     i2cScan();
                 }

@@ -51,14 +51,12 @@ namespace meisterwerk {
                 }
             }
 
-            bool registerEntity() {
+            bool registerEntity( unsigned long slice = 50000 ) {
                 // 5sec sensor checks
-                bool ret = meisterwerk::core::entity::registerEntity(
-                    50000, core::scheduler::PRIORITY_TIMECRITICAL );
+                bool ret = meisterwerk::core::entity::registerEntity( slice, core::scheduler::PRIORITY_TIMECRITICAL );
                 DBG( "Init gps: RX=" + String( rxPin ) + ", TX=" + String( txPin ) );
 
-                pser = new SoftwareSerial( rxPin, txPin, false,
-                                           256 ); // RX, TX, inverseLogic, bufferSize
+                pser = new SoftwareSerial( rxPin, txPin, false, 256 ); // RX, TX, inverseLogic, bufferSize
                 pser->begin( 9600 );
                 resetCmd();
                 resetDefaults();
@@ -67,21 +65,21 @@ namespace meisterwerk {
                 // subscribe( entName + "/gps/set" );
                 // subscribe( entName + "/time/set" );
                 isOn = true;
+                return ret;
             }
 
             int l = 0;
 #define NMEA_MAX_CMDS 32
             String cmd[NMEA_MAX_CMDS];
             int    icmd    = 0;
-            String gpstime = "", gpsdate = "", lat = "", lath = "", lon = "", lonh = "", alt = "",
-                   valid = "";
-            int nosat    = 0;
-            int fix      = 0;
+            String gpstime = "", gpsdate = "", lat = "", lath = "", lon = "", lonh = "", alt = "", valid = "";
+            int    nosat = 0;
+            int    fix   = 0;
 
             void resetCmd() {
                 for ( int i = 0; i < NMEA_MAX_CMDS; i++ )
-                    cmd[i] = "";
-                icmd = 0;
+                    cmd[i]  = "";
+                icmd        = 0;
             }
 
             void resetDefaults() {
@@ -98,9 +96,9 @@ namespace meisterwerk {
                 fix     = 0;
             }
             void printCmd() {
-                DBG( "Time: " + gpstime + " Date: " + gpsdate + ", valid: " + valid +
-                     ", lat: " + lat + lath + ", lon: " + lon + lonh + ", alt: " + alt +
-                     ", fix:" + String( fix ) + ", numSat: " + String( nosat ) );
+                DBG( "Time: " + gpstime + " Date: " + gpsdate + ", valid: " + valid + ", lat: " + lat + lath +
+                     ", lon: " + lon + lonh + ", alt: " + alt + ", fix:" + String( fix ) +
+                     ", numSat: " + String( nosat ) );
             }
 
             String parseTimeToIsoJsonElement( int fix ) {
@@ -108,10 +106,9 @@ namespace meisterwerk {
                 String     timestr = "";
                 String     msg     = "";
                 if ( gpstime != "" && gpsdate != "" ) {
-                    timestr = "20" + gpsdate.substring( 4, 6 ) + "-" + gpsdate.substring( 2, 4 ) +
-                              "-" + gpsdate.substring( 0, 2 ) + "T" + gpstime.substring( 0, 2 ) +
-                              ":" + gpstime.substring( 2, 4 ) + ":" + gpstime.substring( 4, 6 ) +
-                              "Z";
+                    timestr = "20" + gpsdate.substring( 4, 6 ) + "-" + gpsdate.substring( 2, 4 ) + "-" +
+                              gpsdate.substring( 0, 2 ) + "T" + gpstime.substring( 0, 2 ) + ":" +
+                              gpstime.substring( 2, 4 ) + ":" + gpstime.substring( 4, 6 ) + "Z";
                     // DBG( timestr );
                     if ( gpstime.substring( 4, 6 ) == "00" ) {
                         bPublishTime = true;
@@ -127,12 +124,10 @@ namespace meisterwerk {
                     // DBG(timestr+"->"+back);
                 }
                 if ( valid == "A" ) {
-                    msg = "\"time\":\"" + timestr +
-                          "\",\"timesource\":\"GPS\",\"timeprecision\":1000000";
+                    msg = "\"time\":\"" + timestr + "\",\"timesource\":\"GPS\",\"timeprecision\":1000000";
                 } else {
                     if ( timestr != "" ) {
-                        msg = "\"time\":\"" + timestr +
-                              "\",\"timesource\":\"GPS-RTC\",\"timeprecision\":0";
+                        msg = "\"time\":\"" + timestr + "\",\"timesource\":\"GPS-RTC\",\"timeprecision\":0";
                     } else {
                         msg = "\"time\":\"" + String( millis() ) + "\"";
                     }
@@ -285,8 +280,9 @@ namespace meisterwerk {
                 }
             }
 
-            virtual void onReceive( String origin, String topic, String msg ) override {
-                meisterwerk::core::entity::onReceive( origin, topic, msg );
+            virtual void onReceive( const char *origin, const char *ctopic, const char *msg ) override {
+                // meisterwerk::core::entity::onReceive( origin, ctopic, msg );
+                String topic( ctopic );
                 DBG( "GpsReceive:" + topic + "," + msg );
                 if ( topic == entName + "/time/get" || topic == "*/time/get" ) {
                     bPublishTime = true;

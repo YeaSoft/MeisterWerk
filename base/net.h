@@ -27,25 +27,24 @@ namespace meisterwerk {
             enum Netstate { NOTDEFINED, NOTCONFIGURED, CONNECTINGAP, CONNECTED };
             enum Netmode { AP, STATION };
 
-            bool                     bSetup;
-            Netstate                 state;
-            Netstate                 oldstate;
-            Netmode                  mode;
-            long                     contime;
-            long                     conto = 15000;
-            String                   SSID;
-            String                   password;
-            String                   lhostname;
-            String                   ipaddress;
-            util::metronome          tick1sec;
-            util::metronome          tick10sec;
-            util::sensorprocessor    rssival;
+            bool                  bSetup;
+            Netstate              state;
+            Netstate              oldstate;
+            Netmode               mode;
+            long                  contime;
+            long                  conto = 15000;
+            String                SSID;
+            String                password;
+            String                lhostname;
+            String                ipaddress;
+            util::metronome       tick1sec;
+            util::metronome       tick10sec;
+            util::sensorprocessor rssival;
             std::map<String, String> netservices;
-            String                   macAddress;
+            String macAddress;
 
             net( String name )
-                : meisterwerk::core::entity( name ), tick1sec( 1000L ), tick10sec( 10000L ),
-                  rssival( 5, 900, 2.0 ) {
+                : meisterwerk::core::entity( name ), tick1sec( 1000L ), tick10sec( 10000L ), rssival( 5, 900, 2.0 ) {
                 bSetup = false;
             }
 
@@ -62,7 +61,7 @@ namespace meisterwerk {
                 } else {
                     json = "{\"mode\":\"undefined\",";
                 }
-                json += "\"mac\":\"" + macAddress +\",";
+                json += "\"mac\":\"" + macAddress + "\",";
                 switch ( state ) {
                 case Netstate::NOTCONFIGURED:
                     json += "\"state\":\"notconfigured\"}";
@@ -71,8 +70,8 @@ namespace meisterwerk {
                     json += "\"state\":\"connectingap\",\"SSID\":\"" + SSID + "\"}";
                     break;
                 case Netstate::CONNECTED:
-                    json += "\"state\":\"connected\",\"SSID\":\"" + SSID + "\",\"hostname\":\"" +
-                            lhostname + "\",\"ip\":\"" + ipaddress + "\"}";
+                    json += "\"state\":\"connected\",\"SSID\":\"" + SSID + "\",\"hostname\":\"" + lhostname +
+                            "\",\"ip\":\"" + ipaddress + "\"}";
                     break;
                 default:
                     json += "\"state\":\"undefined\"}";
@@ -179,9 +178,8 @@ namespace meisterwerk {
                 for ( int thisNet = 0; thisNet < numSsid; thisNet++ ) {
                     if ( thisNet > 0 )
                         netlist += ",";
-                    netlist += "\"" + WiFi.SSID( thisNet ) +
-                               "\":{\"rssi\":" + String( WiFi.RSSI( thisNet ) ) + ",\"enc\":\"" +
-                               strEncryptionType( WiFi.encryptionType( thisNet ) ) + "\"}";
+                    netlist += "\"" + WiFi.SSID( thisNet ) + "\":{\"rssi\":" + String( WiFi.RSSI( thisNet ) ) +
+                               ",\"enc\":\"" + strEncryptionType( WiFi.encryptionType( thisNet ) ) + "\"}";
                 }
                 netlist += "}";
                 publish( "net/networks", netlist );
@@ -203,8 +201,8 @@ namespace meisterwerk {
                     if ( WiFi.status() == WL_CONNECTED ) {
                         state        = Netstate::CONNECTED;
                         IPAddress ip = WiFi.localIP();
-                        ipaddress    = String( ip[0] ) + '.' + String( ip[1] ) + '.' +
-                                    String( ip[2] ) + '.' + String( ip[3] );
+                        ipaddress =
+                            String( ip[0] ) + '.' + String( ip[1] ) + '.' + String( ip[2] ) + '.' + String( ip[3] );
                     }
                     if ( util::timebudget::delta( contime, millis() ) > conto ) {
                         DBG( "Timeout connecting to: " + SSID );
@@ -232,7 +230,8 @@ namespace meisterwerk {
                 }
             }
 
-            virtual void onReceive( String origin, String topic, String msg ) override {
+            virtual void onReceive( const char *origin, const char *ctopic, const char *msg ) override {
+                String topic( ctopic );
                 if ( topic == "net/network/get" ) {
                     publishNetwork();
                 } else if ( topic == "net/networks/get" ) {

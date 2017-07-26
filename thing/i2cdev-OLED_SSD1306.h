@@ -53,32 +53,30 @@ namespace meisterwerk {
 
             bool registerEntity() {
                 // 5sec sensor checks
-                bool ret = meisterwerk::core::entity::registerEntity( 100000 );
+                bool ret = meisterwerk::base::i2cdev::registerEntity( 100000 );
                 return ret;
             }
 
             virtual void onInstantiate( String i2ctype, uint8_t address ) override {
                 if ( address != instAddress ) {
-                    DBG( "Ignoring instantiate for " + meisterwerk::util::hexByte( address ) +
-                         " I'm " + meisterwerk::util::hexByte( instAddress ) );
+                    DBG( "Ignoring instantiate for " + meisterwerk::util::hexByte( address ) + " I'm " +
+                         meisterwerk::util::hexByte( instAddress ) );
                     return; // not me.
                 }
                 if ( pollDisplay ) {
-                    DBG( "Tried to re-instanciate object: {" + i2ctype + "," + entName +
-                         "} at address 0x" + meisterwerk::util::hexByte( address ) +
-                         "Display: " + String( displayY ) + "x" + String( displayX ) );
+                    DBG( "Tried to re-instanciate object: {" + i2ctype + "," + entName + "} at address 0x" +
+                         meisterwerk::util::hexByte( address ) + "Display: " + String( displayY ) + "x" +
+                         String( displayX ) );
                     return;
                 }
                 // String sa = meisterwerk::util::hexByte( address );
-                DBG( "Instantiating OLED_SSD1306 device {" + i2ctype + "," + entName +
-                     "} at address 0x" + meisterwerk::util::hexByte( address ) + ", " +
-                     String( displayY ) + "x" + String( displayX ) );
+                DBG( "Instantiating OLED_SSD1306 device {" + i2ctype + "," + entName + "} at address 0x" +
+                     meisterwerk::util::hexByte( address ) + ", " + String( displayY ) + "x" + String( displayX ) );
                 adr = address;
                 // #define OLED_RESET 4
                 poled = new Adafruit_SSD1306();
-                poled->begin( SSD1306_SWITCHCAPVCC,
-                              address ); // initialize with the I2C addr 0x3D (for the 128x64)
-                                         // poled->clear();
+                poled->begin( SSD1306_SWITCHCAPVCC, address ); // initialize with the I2C addr 0x3D (for the 128x64)
+                                                               // poled->clear();
                 poled->clearDisplay();
                 poled->setTextSize( 1 );
                 poled->setTextColor( WHITE );
@@ -96,12 +94,13 @@ namespace meisterwerk {
                     poled->display();
             }
 
-            virtual void onReceive( String origin, String topic, String msg ) override {
-                meisterwerk::base::i2cdev::onReceive( origin, topic, msg );
+            virtual void onReceive( const char *origin, const char *ctopic, const char *msg ) override {
+                meisterwerk::base::i2cdev::onReceive( origin, ctopic, msg );
+                String topic( ctopic );
                 if ( topic == "*/display/get" || topic == entName + "/display/get" ) {
                     publish( entName + "/display",
-                             "{\"type\":\"pixeldisplay\",\"x\":" + String( displayX ) +
-                                 ",\"y\":" + String( displayY ) + "}" );
+                             "{\"type\":\"pixeldisplay\",\"x\":" + String( displayX ) + ",\"y\":" + String( displayY ) +
+                                 "}" );
                 }
                 if ( topic == entName + "/display/set" ) {
                     DynamicJsonBuffer jsonBuffer( 200 );

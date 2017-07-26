@@ -35,8 +35,7 @@ namespace meisterwerk {
             IPAddress       mqttserverIP;
 
             mqtt( String name )
-                : meisterwerk::core::entity( name ), mqttClient( wifiClient ),
-                  mqttTicker( 5000L ), clientName{name} {
+                : meisterwerk::core::entity( name ), mqttClient( wifiClient ), mqttTicker( 5000L ), clientName{name} {
                 mqttServer = "";
             }
             ~mqtt() {
@@ -45,9 +44,8 @@ namespace meisterwerk {
                 }
             }
 
-            bool registerEntity() {
-                bool ret = meisterwerk::core::entity::registerEntity(
-                    50000, core::scheduler::PRIORITY_NORMAL );
+            bool registerEntity( unsigned long slice = 50000 ) {
+                bool ret = meisterwerk::core::entity::registerEntity( slice, core::scheduler::PRIORITY_NORMAL );
                 DBG( "Init mqtt" );
                 subscribe( "net/network" );
                 subscribe( "net/services/mqttserver" );
@@ -55,6 +53,7 @@ namespace meisterwerk {
                 publish( "net/network/get" );
                 publish( "net/services/mqttserver/get" );
                 isOn = true;
+                return ret;
             }
 
             bool         bWarned = false;
@@ -101,17 +100,17 @@ namespace meisterwerk {
                 publish( topic, msg );
             }
 
-            virtual void onReceive( String origin, String topic, String msg ) override {
-                // meisterwerk::core::entity::onReceive( origin, topic, msg );
-
+            virtual void onReceive( const char *origin, const char *ctopic, const char *msg ) override {
+                // meisterwerk::core::entity::onReceive( origin, ctopic, msg );
+                String topic( ctopic );
                 if ( mqttConnected )
-                    mqttClient.publish( topic.c_str(), msg.c_str() );
+                    mqttClient.publish( ctopic, msg );
 
                 if ( topic == "net/services/mqttserver" ) {
                     DynamicJsonBuffer jsonBuffer( 200 );
                     JsonObject &      root = jsonBuffer.parseObject( msg );
                     if ( !root.success() ) {
-                        DBG( "mqtt: Invalid JSON received: " + msg );
+                        DBG( "mqtt: Invalid JSON received: " + String( msg ) );
                         return;
                     }
                     mqttServer       = root["server"].as<char *>();
@@ -120,9 +119,7 @@ namespace meisterwerk {
                     mqttClient.setServer( mqttServer.c_str(), 1883 );
                     // give a c++11 lambda as callback for incoming mqtt messages:
                     std::function<void( char *, unsigned char *, unsigned int )> f =
-                        [=]( char *t, unsigned char *m, unsigned int l ) {
-                            this->onMqttReceive( t, m, l );
-                        };
+                        [=]( char *t, unsigned char *m, unsigned int l ) { this->onMqttReceive( t, m, l ); };
                     mqttClient.setCallback( f );
                     // mqttClient.setCallback( onMqttReceive );
                 }
@@ -130,7 +127,7 @@ namespace meisterwerk {
                     DynamicJsonBuffer jsonBuffer( 200 );
                     JsonObject &      root = jsonBuffer.parseObject( msg );
                     if ( !root.success() ) {
-                        DBG( "mqtt: Invalid JSON received: " + msg );
+                        DBG( "mqtt: Invalid JSON received: " + String( msg ) );
                         return;
                     }
                     String state = root["state"];

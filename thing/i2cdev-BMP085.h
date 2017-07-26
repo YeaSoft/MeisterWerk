@@ -38,8 +38,8 @@ namespace meisterwerk {
             bool                               bTimeValid              = false;
 
             i2cdev_BMP085( String name, uint8_t address )
-                : meisterwerk::base::i2cdev( name, "BMP085", address ),
-                  tempProcessor( 5, 900, 0.1 ), pressProcessor( 10, 900, 0.05 ) {
+                : meisterwerk::base::i2cdev( name, "BMP085", address ), tempProcessor( 5, 900, 0.1 ),
+                  pressProcessor( 10, 900, 0.05 ) {
                 // send temperature updates, if temperature changes for 0.1C over an average of 5
                 // measurements, but at least every 15min (900sec)
                 // send pressure update, if pressure changes for 0.05mbar over an average of 10
@@ -56,13 +56,12 @@ namespace meisterwerk {
 
             bool registerEntity() {
                 // default sample rate: 5s
-                return meisterwerk::core::entity::registerEntity( 5000000L );
+                return meisterwerk::base::i2cdev::registerEntity( 5000000L );
             }
 
             virtual void onInstantiate( String i2ctype, uint8_t address ) override {
                 // String sa = meisterwerk::util::hexByte( address );
-                DBG( "Instantiating BMP085 device at address 0x" +
-                     meisterwerk::util::hexByte( address ) );
+                DBG( "Instantiating BMP085 device at address 0x" + meisterwerk::util::hexByte( address ) );
                 pbmp = new Adafruit_BMP085();
                 if ( !pbmp->begin() ) {
                     DBG( "BMP085 initialization failure." );
@@ -76,8 +75,7 @@ namespace meisterwerk {
 
             void publishTemp() {
                 if ( tempvalid ) {
-                    json = "{\"time\":\"" + temptime + "\",\"temperature\":" + String( templast ) +
-                           "}";
+                    json = "{\"time\":\"" + temptime + "\",\"temperature\":" + String( templast ) + "}";
                     // DBG( "jsonstate i2c bmp085:" + json );
                     publish( entName + "/temperature", json );
                 } else {
@@ -86,8 +84,7 @@ namespace meisterwerk {
             }
             void publishPressure() {
                 if ( pressvalid ) {
-                    json =
-                        "{\"time\":\"" + presstime + "\",\"pressure\":" + String( presslast ) + "}";
+                    json = "{\"time\":\"" + presstime + "\",\"pressure\":" + String( presslast ) + "}";
                     // DBG( "jsonstate i2c bmp085:" + json );
                     publish( entName + "/pressure", json );
                 } else {
@@ -117,8 +114,9 @@ namespace meisterwerk {
                 }
             }
 
-            virtual void onReceive( String origin, String topic, String msg ) override {
-                meisterwerk::base::i2cdev::onReceive( origin, topic, msg );
+            virtual void onReceive( const char *origin, const char *ctopic, const char *msg ) override {
+                meisterwerk::base::i2cdev::onReceive( origin, ctopic, msg );
+                String topic( ctopic );
                 if ( topic == "mastertime/time/set" )
                     bTimeValid = true;
                 if ( topic == entName + "/temperature/get" || topic == "*/temperature/get" ) {

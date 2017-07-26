@@ -43,8 +43,8 @@ namespace meisterwerk {
             bool bGetTime                = false;
 
             i2cdev_RTC_DS3231( String name, String model, uint8_t address )
-                : meisterwerk::base::i2cdev( name, "DS1307_3231", address ),
-                  tempProcessor( 5, 900, 0.1 ), rtcTicker( 30000 ), model{model} {
+                : meisterwerk::base::i2cdev( name, "DS1307_3231", address ), tempProcessor( 5, 900, 0.1 ),
+                  rtcTicker( 30000 ), model{model} {
                 // send temperature updates, if temperature changes for 0.1C over an average of 5
                 // measurements, but at least every 15min (900sec)
                 tempvalid = false;
@@ -62,13 +62,12 @@ namespace meisterwerk {
 
             bool registerEntity() {
                 // default sample rate: 5s
-                return meisterwerk::core::entity::registerEntity( 1000000L );
+                return meisterwerk::base::i2cdev::registerEntity( 1000000L );
             }
 
             virtual void onInstantiate( String i2ctype, uint8_t address ) override {
                 // String sa = meisterwerk::util::hexByte( address );
-                DBG( "Instantiating RTC_DS3231 device at address 0x" +
-                     meisterwerk::util::hexByte( address ) );
+                DBG( "Instantiating RTC_DS3231 device at address 0x" + meisterwerk::util::hexByte( address ) );
                 if ( model == "DS3231" ) {
                     prtc3 = new RTC_DS3231();
                     if ( prtc3->begin() ) {
@@ -104,8 +103,7 @@ namespace meisterwerk {
 
             void publishTemp() {
                 if ( tempvalid ) {
-                    json = "{\"time\":\"" + temptime + "\",\"temperature\":" + String( templast ) +
-                           "}";
+                    json = "{\"time\":\"" + temptime + "\",\"temperature\":" + String( templast ) + "}";
                     publish( entName + "/temperature", json );
                 } else {
                     DBG( "No valid temp measurement for pub" );
@@ -115,12 +113,10 @@ namespace meisterwerk {
             void publishTime( String isoTime ) {
                 if ( bRtcTimeValid ) {
                     if ( model == "DS3231" ) {
-                        json = "{\"time\":\"" + isoTime +
-                               "\",\"timesource\":\"HP-RTC\",\"timeprecision\":10000}";
+                        json = "{\"time\":\"" + isoTime + "\",\"timesource\":\"HP-RTC\",\"timeprecision\":10000}";
                         publish( entName + "/time", json );
                     } else if ( model == "DS1307" ) {
-                        json = "{\"time\":\"" + isoTime +
-                               "\",\"timesource\":\"RTC\",\"timeprecision\":10000}";
+                        json = "{\"time\":\"" + isoTime + "\",\"timesource\":\"RTC\",\"timeprecision\":10000}";
                         publish( entName + "/time", json );
                     } else {
                         DBG( "Can't publish unknown model: " + model );
@@ -163,12 +159,10 @@ namespace meisterwerk {
                 // January 21, 2014 at 3am you would call:
                 // rtc.adjust(DateTime(2014, 1, 21, 3, 0, 0));
                 if ( model == "DS3231" ) {
-                    prtc3->adjust( DateTime( tt.Year + 1970, tt.Month, tt.Day, tt.Hour, tt.Minute,
-                                             tt.Second ) );
+                    prtc3->adjust( DateTime( tt.Year + 1970, tt.Month, tt.Day, tt.Hour, tt.Minute, tt.Second ) );
                     nowUtc = prtc3->now();
                 } else if ( model == "DS1307" ) {
-                    prtc1->adjust( DateTime( tt.Year + 1970, tt.Month, tt.Day, tt.Hour, tt.Minute,
-                                             tt.Second ) );
+                    prtc1->adjust( DateTime( tt.Year + 1970, tt.Month, tt.Day, tt.Hour, tt.Minute, tt.Second ) );
                     nowUtc = prtc1->now();
                 } else {
                     DBG( "Cannot set time for model: " + model );
@@ -194,14 +188,15 @@ namespace meisterwerk {
                 return isoTime;
             }
 
-            virtual void onReceive( String origin, String topic, String msg ) override {
-                meisterwerk::base::i2cdev::onReceive( origin, topic, msg );
+            virtual void onReceive( const char *origin, const char *ctopic, const char *msg ) override {
+                meisterwerk::base::i2cdev::onReceive( origin, ctopic, msg );
+                String topic( ctopic );
                 if ( topic == "mastertime/time/set" ) {
                     bTimeValid = true;
                     DynamicJsonBuffer jsonBuffer( 200 );
                     JsonObject &      root = jsonBuffer.parseObject( msg );
                     if ( !root.success() ) {
-                        DBG( "RTC: Invalid JSON received: " + msg );
+                        DBG( "RTC: Invalid JSON received: " + String( msg ) );
                         return;
                     }
                     String isoTime = root["time"];

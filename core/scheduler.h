@@ -209,7 +209,8 @@ namespace meisterwerk {
                     return false;
                 }
                 taskList.push_back( pTask );
-                pEnt->onRegister();
+                pEnt->onRegister(); // XXX: this callback is utterly pointless, it only bloats the API. -> discuss
+                                    // removal.
                 return true;
             }
 

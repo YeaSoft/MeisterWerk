@@ -49,7 +49,7 @@ namespace meisterwerk {
 
             bool registerEntity() {
                 // 5sec sensor checks
-                bool ret = meisterwerk::core::entity::registerEntity( 5000000 );
+                bool ret = meisterwerk::base::i2cdev::registerEntity( 5000000 );
                 return ret;
             }
 
@@ -58,14 +58,13 @@ namespace meisterwerk {
                     return; // not me.
                 }
                 if ( pollDisplay ) {
-                    DBG( "Tried to re-instanciate object: {" + i2ctype + "," + entName +
-                         "} at address 0x" + meisterwerk::util::hexByte( address ) +
-                         "Display: " + String( displayY ) + "x" + String( displayX ) );
+                    DBG( "Tried to re-instanciate object: {" + i2ctype + "," + entName + "} at address 0x" +
+                         meisterwerk::util::hexByte( address ) + "Display: " + String( displayY ) + "x" +
+                         String( displayX ) );
                     return;
                 }
-                DBG( "Instantiating LCD_2_4_16_20 device {" + i2ctype + "," + entName +
-                     "} at address 0x" + meisterwerk::util::hexByte( address ) + ", " +
-                     String( displayY ) + "x" + String( displayX ) );
+                DBG( "Instantiating LCD_2_4_16_20 device {" + i2ctype + "," + entName + "} at address 0x" +
+                     meisterwerk::util::hexByte( address ) + ", " + String( displayY ) + "x" + String( displayX ) );
                 adr = address;
                 if ( displayY == 2 && displayX == 16 ) {
                     plcd = new LiquidCrystal_PCF8574( address ); // 0: default address;
@@ -93,12 +92,13 @@ namespace meisterwerk {
                 }
             }
 
-            virtual void onReceive( String origin, String topic, String msg ) override {
-                meisterwerk::base::i2cdev::onReceive( origin, topic, msg );
+            virtual void onReceive( const char *origin, const char *ctopic, const char *msg ) override {
+                meisterwerk::base::i2cdev::onReceive( origin, ctopic, msg );
+                String topic( ctopic );
                 if ( topic == "*/display/get" || topic == entName + "/display/get" ) {
                     publish( entName + "/display",
-                             "{\"type\":\"textdisplay\",\"x\":" + String( displayX ) +
-                                 ",\"y\":" + String( displayY ) + "}" );
+                             "{\"type\":\"textdisplay\",\"x\":" + String( displayX ) + ",\"y\":" + String( displayY ) +
+                                 "}" );
                 }
                 if ( topic == entName + "/display/set" ) {
                     DynamicJsonBuffer jsonBuffer( 200 );

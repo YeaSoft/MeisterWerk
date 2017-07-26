@@ -54,14 +54,14 @@ namespace meisterwerk {
 
             bool registerEntity() {
                 // 5sec sensor checks
-                bool ret = meisterwerk::core::entity::registerEntity( 25000 );
+                bool ret = meisterwerk::base::i2cdev::registerEntity( 25000 );
                 return ret;
             }
 
             virtual void onInstantiate( String i2ctype, uint8_t address ) override {
                 // String sa = meisterwerk::util::hexByte( address );
-                DBG( "Instantiating LED7_14_SEG device at address 0x" +
-                     meisterwerk::util::hexByte( address ) + ", segments: " + String( segments ) );
+                DBG( "Instantiating LED7_14_SEG device at address 0x" + meisterwerk::util::hexByte( address ) +
+                     ", segments: " + String( segments ) );
                 if ( segments == 7 ) {
                     pled7 = new Adafruit_7segment();
                     pled7->begin( address );
@@ -123,12 +123,13 @@ namespace meisterwerk {
                 }
             }
 
-            virtual void onReceive( String origin, String topic, String msg ) override {
-                meisterwerk::base::i2cdev::onReceive( origin, topic, msg );
+            virtual void onReceive( const char *origin, const char *ctopic, const char *msg ) override {
+                meisterwerk::base::i2cdev::onReceive( origin, ctopic, msg );
+                String topic( ctopic );
                 if ( topic == "*/display/get" || topic == entName + "/display/get" ) {
                     publish( entName + "/display",
-                             "{\"type\":\"textdisplay\",\"x\":" + String( displayX ) + ",\"y\":" +
-                                 String( displayY ) + ",\"segments\":" + String( segments ) + "}" );
+                             "{\"type\":\"textdisplay\",\"x\":" + String( displayX ) + ",\"y\":" + String( displayY ) +
+                                 ",\"segments\":" + String( segments ) + "}" );
                 }
                 if ( topic == entName + "/display/set" ) {
                     DynamicJsonBuffer jsonBuffer( 200 );

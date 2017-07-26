@@ -33,17 +33,19 @@ namespace meisterwerk {
                 DBG( "Constr:" + i2ctype );
             }
 
-            bool registerEntity() {
-                return meisterwerk::core::entity::registerEntity( 50000 );
-            }
-
-            virtual void onRegister() override {
-                // DBG( "i2cdev pub/sub in setup" );
+            bool registerEntity( unsigned long slices ) {
+                bool ret = meisterwerk::core::entity::registerEntity( slices );
                 subscribe( "i2cbus/devices" );
-                publish( "i2cbus/devices/get", "" );
+                publish( "i2cbus/devices/get" );
+                return ret;
+                //}
+
+                // virtual void onRegister() override {
+                // DBG( "i2cdev pub/sub in setup" );
             }
 
-            virtual void onReceive( String origin, String topic, String msg ) override {
+            virtual void onReceive( const char *origin, const char *ctopic, const char *msg ) override {
+                String topic( ctopic );
                 if ( topic == "i2cbus/devices" ) {
                     if ( !isInstantiated )
                         i2cSetup( msg );
@@ -51,13 +53,13 @@ namespace meisterwerk {
             }
 
             virtual void onInstantiate( String i2ctype, uint8_t address ) {
-                DBG( "Your code should override this function and instantiate a " + i2ctype +
-                     " device at address 0x" + meisterwerk::util::hexByte( address ) );
+                DBG( "Your code should override this function and instantiate a " + i2ctype + " device at address 0x" +
+                     meisterwerk::util::hexByte( address ) );
             }
 
-            void i2cSetup( String json ) {
+            void i2cSetup( const char *json ) {
                 bool ok = false;
-                DBG( "Received i2c-info: " + json );
+                DBG( "Received i2c-info: " + String( json ) );
                 DynamicJsonBuffer jsonBuffer( 200 );
                 JsonObject &      root = jsonBuffer.parseObject( json );
                 if ( !root.success() ) {
@@ -68,7 +70,7 @@ namespace meisterwerk {
                 for ( int i = 0; i < devs.size(); i++ ) {
                     JsonObject &dev = devs[i];
                     for ( auto obj : dev ) {
-                        // DBG( String( obj.key ) + "<->" + i2ctype );
+                        DBG( String( obj.key ) + "<->" + i2ctype );
                         if ( i2ctype == obj.key && address == obj.value ) {
                             onInstantiate( i2ctype, address );
                             isInstantiated = true;
