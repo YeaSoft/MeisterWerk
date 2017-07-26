@@ -275,6 +275,7 @@ namespace meisterwerk {
                     return;
                 if ( !bEnum ) {
                     i2cScan();
+                    bEnum = true;
                 }
             }
 
