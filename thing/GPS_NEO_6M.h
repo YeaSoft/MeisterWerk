@@ -7,38 +7,30 @@
 
 #pragma once
 
-// hardware dependencies
-#include <ESP8266WiFi.h>
-
+// external libraries
 #include <SoftwareSerial.h>
 
-// external libraries
-#include <ArduinoJson.h>
-
 // dependencies
-#include "../base/i2cdev.h"
 #include "../core/entity.h"
-#include "../util/hextools.h"
 #include "../util/msgtime.h"
 
 namespace meisterwerk {
     namespace thing {
         class GPS_NEO_6M : public meisterwerk::core::entity {
             public:
-            // LiquidCrystal_I2C *plcd;
-            // Adafruit_GPS *  pgps;
             SoftwareSerial *pser;
             bool            isOn = false;
-            // meisterwerk::util::sensorprocessor tempProcessor, pressProcessor;
-            String  json;
-            String  dispSize;
-            uint8_t adr;
-            uint8_t instAddress;
-            uint8_t rxPin;
-            uint8_t txPin;
-            bool    usingInterrupt = false;
-            bool    bPublishTime   = false;
-            bool    bPublishGps    = false;
+            String          json;
+            String          dispSize;
+            uint8_t         adr;
+            uint8_t         instAddress;
+            uint8_t         rxPin;
+            uint8_t         txPin;
+            bool            usingInterrupt = false;
+            bool            bPublishTime   = false;
+            bool            bPublishGps    = false;
+            unsigned long   watchdog;
+            unsigned long   watchdogTimeout = 5000;
 
             GPS_NEO_6M( String name, uint8_t rxPin, uint8_t txPin )
                 : meisterwerk::core::entity( name ), rxPin{rxPin}, txPin{txPin} {
@@ -46,13 +38,11 @@ namespace meisterwerk {
             ~GPS_NEO_6M() {
                 if ( isOn ) {
                     isOn = false;
-                    //  delete pgps;
                     delete pser;
                 }
             }
 
             bool registerEntity( unsigned long slice = 50000 ) {
-                // 5sec sensor checks
                 bool ret = meisterwerk::core::entity::registerEntity( slice, core::scheduler::PRIORITY_TIMECRITICAL );
                 DBG( "Init gps: RX=" + String( rxPin ) + ", TX=" + String( txPin ) );
 
@@ -62,9 +52,8 @@ namespace meisterwerk {
                 resetDefaults();
                 subscribe( entName + "gps/get" );
                 subscribe( entName + "time/get" );
-                // subscribe( entName + "/gps/set" );
-                // subscribe( entName + "/time/set" );
-                isOn = true;
+                watchdog = millis();
+                isOn     = true;
                 return ret;
             }
 
@@ -109,7 +98,6 @@ namespace meisterwerk {
                     timestr = "20" + gpsdate.substring( 4, 6 ) + "-" + gpsdate.substring( 2, 4 ) + "-" +
                               gpsdate.substring( 0, 2 ) + "T" + gpstime.substring( 0, 2 ) + ":" +
                               gpstime.substring( 2, 4 ) + ":" + gpstime.substring( 4, 6 ) + "Z";
-                    // DBG( timestr );
                     if ( gpstime.substring( 4, 6 ) == "00" ) {
                         bPublishTime = true;
                     }
@@ -117,11 +105,6 @@ namespace meisterwerk {
                         afix         = fix;
                         bPublishTime = true;
                     }
-
-                    // time_t t;
-                    // t=util::msgtime::ISO2time_t(timestr);
-                    // String back=util::msgtime::time_t2ISO(t);
-                    // DBG(timestr+"->"+back);
                 }
                 if ( valid == "A" ) {
                     msg = "\"time\":\"" + timestr + "\",\"timesource\":\"GPS\",\"timeprecision\":1000000";
@@ -206,11 +189,9 @@ namespace meisterwerk {
                     dtostrf( flat, 10, 6, bufp );
                     gpsmsg += ",\"lat\":" + String( bufp );
                     gpsmsg += ",\"lath\":\"" + lath + "\"";
-                    // DBG( lon + "," + String( bufp ) );
                     dtostrf( flon, 10, 6, bufp );
                     gpsmsg += ",\"lon\":" + String( bufp );
                     gpsmsg += ",\"lonh\":\"" + lonh + "\"";
-                    // DBG( lat + "," + String( bufp ) );
                     if ( detectGpsChange( flon, flat, nosat, fix, atof( alt.c_str() ) ) )
                         bPublishGps = true;
                 }
@@ -233,17 +214,18 @@ namespace meisterwerk {
             }
             void processCmd() {
                 // DBG( cmd[0] );
-                if ( cmd[0] == "$GPGGA" ) { // GGA —Global Positioning System Fixed Data
+                if ( cmd[0] == "$GPGGA" ) { // GGA — Global Positioning System Fixed Data
                     gpstime = cmd[1];
-                    lat     = cmd[2];
-                    lath    = cmd[3];
-                    lon     = cmd[4];
-                    lonh    = cmd[5];
-                    fix     = atoi( cmd[6].c_str() );
-                    nosat   = atoi( cmd[7].c_str() );
-                    alt     = cmd[9];
+                    DBG( gpstime );
+                    lat   = cmd[2];
+                    lath  = cmd[3];
+                    lon   = cmd[4];
+                    lonh  = cmd[5];
+                    fix   = atoi( cmd[6].c_str() );
+                    nosat = atoi( cmd[7].c_str() );
+                    alt   = cmd[9];
 
-                } else if ( cmd[0] == "$GPRMC" ) {
+                } else if ( cmd[0] == "$GPRMC" ) { // RMC - recommended minimum
                     gpsdate = cmd[9];
                     valid   = cmd[2];
 
@@ -253,9 +235,30 @@ namespace meisterwerk {
                 }
             }
 
+            bool         warn   = false;
+            bool         rcvChr = false;
             virtual void onLoop( unsigned long ticker ) override {
                 if ( isOn ) {
+                    if ( util::timebudget::delta( watchdog, millis() ) > watchdogTimeout ) {
+                        warn = true;
+                        if ( !warn ) {
+                            DBG( "GPS Failure!" );
+                            Log( loglevel::ERR, "GPS Failure!" );
+                        }
+                    } else {
+                        if ( warn ) {
+                            DBG( "GPS online!" );
+                            Log( loglevel::INFO, "GPS online again." );
+                        }
+                        warn = false;
+                    }
                     while ( pser->available() > 0 ) {
+                        watchdog = millis();
+                        if ( !rcvChr ) {
+                            rcvChr = true;
+                            DBG( "GPS alive!" );
+                            Log( loglevel::VER1, "GPS, first char." );
+                        }
                         char c = pser->read();
                         if ( c == 10 )
                             continue;
@@ -281,7 +284,6 @@ namespace meisterwerk {
             }
 
             virtual void onReceive( const char *origin, const char *ctopic, const char *msg ) override {
-                // meisterwerk::core::entity::onReceive( origin, ctopic, msg );
                 String topic( ctopic );
                 DBG( "GpsReceive:" + topic + "," + msg );
                 if ( topic == entName + "/time/get" || topic == "*/time/get" ) {

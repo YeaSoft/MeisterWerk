@@ -9,6 +9,7 @@
 
 // dependencies
 #include "../util/debug.h"
+#include "../util/msgtime.h"
 #include "message.h"
 
 namespace meisterwerk {
@@ -93,6 +94,40 @@ namespace meisterwerk {
                 return false;
             }
 
+            // possible preliminary home of log functions
+            enum loglevel { ERR, WARN, INFO, DBG, VER1, VER2, VER3 };
+            loglevel logLevel = loglevel::INFO;
+            void setLogLevel( loglevel lclass ) {
+                logLevel = lclass;
+            }
+            void Log( loglevel lclass, String msg, String logtopic = "" ) {
+                if ( lclass > logLevel )
+                    return;
+                if ( logtopic == "" )
+                    logtopic = entName;
+                String cstr  = "";
+                switch ( lclass ) {
+                case loglevel::ERR:
+                    cstr = "error";
+                    break;
+                case loglevel::WARN:
+                    cstr = "warning";
+                    break;
+                case loglevel::INFO:
+                    cstr = "info";
+                    break;
+                case loglevel::DBG:
+                    cstr = "debug";
+                    break;
+                default:
+                    cstr = "undefined";
+                    break;
+                }
+                publish( "log/" + cstr + "/" + entName,
+                         "{\"time\":\"" + util::msgtime::ISOnowMillis() + "\",\"severity\":" + cstr +
+                             "\",\"topic\":\"" + logtopic + "\",\"msg\":\"" + msg + "\"}" );
+            }
+
             // callbacks
             public:
             virtual void onRegister() {
@@ -106,7 +141,9 @@ namespace meisterwerk {
             }
 
             virtual void onReceive( const char *origin, const char *topic, const char *msg ) {
-                // should be implemented if it is called - issue warning
+                // should be implemented if it is called - issue warning:
+                // XXX: we should make this optional, and
+                // possibly provide standard functions (eg. set loglevel)
                 DBG( "entity:onReceive, missing override for entity " + entName );
             }
         };

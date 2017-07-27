@@ -260,7 +260,7 @@ namespace meisterwerk {
                 }
                 if ( niDevs == 0 ) {
                     DBG( "No I2C devices found" );
-                    publish( "i2cbus/devices", "{}" );
+                    publish( "i2cbus/devices", "{\"devices\":[]}" );
                 } else {
                     i2cjson = "{\"devices\":[" + devlist + "]}";
                     DBG( "jsonstate i2c:" + i2cjson );
