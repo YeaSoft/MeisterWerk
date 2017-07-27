@@ -108,19 +108,19 @@ namespace meisterwerk {
                 String cstr  = "";
                 switch ( lclass ) {
                 case loglevel::ERR:
-                    cstr = "error";
+                    cstr = "Error";
                     break;
                 case loglevel::WARN:
-                    cstr = "warning";
+                    cstr = "Warning";
                     break;
                 case loglevel::INFO:
-                    cstr = "info";
+                    cstr = "Info";
                     break;
                 case loglevel::DBG:
-                    cstr = "debug";
+                    cstr = "Debug";
                     break;
                 default:
-                    cstr = "undefined";
+                    cstr = "Debug";
                     break;
                 }
                 publish( "log/" + cstr + "/" + entName,
