@@ -9,10 +9,6 @@
 
 // hardware dependencies
 #include <Adafruit_LEDBackpack.h>
-#include <ESP8266WiFi.h>
-
-// external libraries
-#include <ArduinoJson.h>
 
 // dependencies
 #include "../base/i2cdev.h"
@@ -29,15 +25,17 @@ namespace meisterwerk {
             uint8_t             address;
             uint8_t             segments;
             util::metronome     scroller;
+            util::metronome     blinker;
             int                 ptext;
-            int                 displayX = 4;
-            int                 displayY = 1;
-            // meisterwerk::util::sensorprocessor tempProcessor, pressProcessor;
-            String json;
+            int                 displayX   = 4;
+            int                 displayY   = 1;
+            int                 blinkMode  = 0;
+            int                 blinkState = 0;
+            String              json;
 
             i2cdev_LED7_14_SEG( String name, uint8_t address, uint8_t segments )
-                : meisterwerk::base::i2cdev( name, "LED7_14_SEG", address ),
-                  scroller( 250 ), address{address}, segments{segments} {
+                : meisterwerk::base::i2cdev( name, "LED7_14_SEG", address ), scroller( 250 ),
+                  blinker( 500 ), address{address}, segments{segments} {
             }
             ~i2cdev_LED7_14_SEG() {
                 if ( pollDisplay ) {
@@ -50,15 +48,13 @@ namespace meisterwerk {
             }
 
             bool registerEntity() {
-                // 5sec sensor checks
-                bool ret = meisterwerk::core::entity::registerEntity( 25000 );
+                bool ret = meisterwerk::base::i2cdev::registerEntity( 25000 );
                 return ret;
             }
 
             virtual void onInstantiate( String i2ctype, uint8_t address ) override {
-                // String sa = meisterwerk::util::hexByte( address );
-                DBG( "Instantiating LED7_14_SEG device at address 0x" +
-                     meisterwerk::util::hexByte( address ) + ", segments: " + String( segments ) );
+                DBG( "Instantiating LED7_14_SEG device at address 0x" + meisterwerk::util::hexByte( address ) +
+                     ", segments: " + String( segments ) );
                 if ( segments == 7 ) {
                     pled7 = new Adafruit_7segment();
                     pled7->begin( address );
@@ -78,10 +74,10 @@ namespace meisterwerk {
                 if ( segments == 7 ) {
                     while ( t.length() < 4 )
                         t += " ";
-                    pled7->writeDigitNum( 0, t[0] );
-                    pled7->writeDigitNum( 1, t[1] );
-                    pled7->writeDigitNum( 3, t[2] );
-                    pled7->writeDigitNum( 4, t[3] );
+                    pled7->writeDigitNum( 0, t[0] - '0' );
+                    pled7->writeDigitNum( 1, t[1] - '0' );
+                    pled7->writeDigitNum( 3, t[2] - '0' );
+                    pled7->writeDigitNum( 4, t[3] - '0' );
                     pled7->writeDisplay();
                 }
                 if ( segments == 14 ) {
@@ -96,6 +92,17 @@ namespace meisterwerk {
 
             virtual void onLoop( unsigned long ticker ) override {
                 if ( pollDisplay ) {
+                    if ( segments == 7 ) {
+                        if ( blinkMode == 1 ) {
+                            int nr = blinker.beat();
+                            if ( nr > 0 ) {
+                                blinkState += nr;
+                                pled7->drawColon( blinkState % 2 );
+                            }
+                        }
+                    }
+                    if ( segments == 14 ) {
+                    }
                     /*
                     if ( disptext.length() > 4 ) {
                         int d = scroller.beat();
@@ -109,12 +116,13 @@ namespace meisterwerk {
                 }
             }
 
-            virtual void onReceive( String origin, String topic, String msg ) override {
-                meisterwerk::base::i2cdev::onReceive( origin, topic, msg );
+            virtual void onReceive( const char *origin, const char *ctopic, const char *msg ) override {
+                meisterwerk::base::i2cdev::onReceive( origin, ctopic, msg );
+                String topic( ctopic );
                 if ( topic == "*/display/get" || topic == entName + "/display/get" ) {
                     publish( entName + "/display",
-                             "{\"type\":\"textdisplay\",\"x\":" + String( displayX ) + ",\"y\":" +
-                                 String( displayY ) + ",\"segments\":" + String( segments ) + "}" );
+                             "{\"type\":\"textdisplay\",\"x\":" + String( displayX ) + ",\"y\":" + String( displayY ) +
+                                 ",\"segments\":" + String( segments ) + "}" );
                 }
                 if ( topic == entName + "/display/set" ) {
                     DynamicJsonBuffer jsonBuffer( 200 );
@@ -124,6 +132,7 @@ namespace meisterwerk {
                         return;
                     }
                     String text = root["text"];
+                    blinkMode   = root["blink"];
                     print( text );
                 }
             }

@@ -19,10 +19,10 @@
 namespace meisterwerk {
     namespace base {
         enum TimeType { NONE = 0, RTC, GPS_RTC, HP_RTC, NTP, DCF77, GPS };
-        std::map<String, TimeType> TimeName2Type = {
-            {"None", TimeType::NONE},     {"RTC", TimeType::RTC}, {"GPS-RTC", TimeType::GPS_RTC},
-            {"HP-RTC", TimeType::HP_RTC}, {"NTP", TimeType::NTP}, {"DCF-77", TimeType::DCF77},
-            {"GPS", TimeType::GPS}};
+        std::map<String, TimeType> TimeName2Type = {{"None", TimeType::NONE},       {"RTC", TimeType::RTC},
+                                                    {"GPS-RTC", TimeType::GPS_RTC}, {"HP-RTC", TimeType::HP_RTC},
+                                                    {"NTP", TimeType::NTP},         {"DCF-77", TimeType::DCF77},
+                                                    {"GPS", TimeType::GPS}};
         typedef struct {
             TimeType      type;
             String        typeName;
@@ -34,12 +34,11 @@ namespace meisterwerk {
             TimeType      bestClock;
             TimeType      oldBestClock;
             unsigned long timeStampBestClock;
-            unsigned long clockRefreshTimeout =
-                3600; // Don't wait for a clock that's dead for one hour of more
-            unsigned long clockRefreshIntervall = 900; // Send clock updates after each 15min.
+            unsigned long clockRefreshTimeout   = 3600; // Don't wait for a clock that's dead for one hour of more
+            unsigned long clockRefreshIntervall = 900;  // Send clock updates after each 15min.
 
             std::map<String, T_TIMESOURCE *> clocks;
-            bool                             bSetup;
+            bool bSetup;
 
             mastertime( String name ) : meisterwerk::core::entity( name ) {
                 bSetup       = false;
@@ -52,30 +51,31 @@ namespace meisterwerk {
                 }
             }
 
-            bool registerEntity() {
-                return meisterwerk::core::entity::registerEntity(
-                    50000, core::scheduler::PRIORITY_TIMECRITICAL );
-            }
+            bool registerEntity( unsigned long slice = 50000 ) {
+                bool ret = meisterwerk::core::entity::registerEntity( slice, core::scheduler::PRIORITY_TIMECRITICAL );
+                //}
 
-            virtual void onRegister() override {
+                // virtual void onRegister() override {
                 bSetup = true;
                 subscribe( "*/time" );
                 publish( "*/time/get" );
+                return ret;
             }
 
             virtual void onLoop( unsigned long ticker ) override {
             }
 
-            virtual void onReceive( String origin, String topic, String msg ) override {
+            virtual void onReceive( const char *origin, const char *ctopic, const char *msg ) override {
+                String topic( ctopic );
                 int    p = topic.indexOf( "/" );
                 time_t tlast;
                 String t1 = topic.substring( p + 1 );
                 if ( t1 == "time" ) {
-                    DBG( "Mastertime: " + msg );
+                    DBG( "Mastertime: " + String( msg ) );
                     DynamicJsonBuffer jsonBuffer( 200 );
                     JsonObject &      root = jsonBuffer.parseObject( msg );
                     if ( !root.success() ) {
-                        DBG( "Ntp: Invalid JSON received: " + msg );
+                        DBG( "Ntp: Invalid JSON received: " + String( msg ) );
                         return;
                     }
                     String isoTime = root["time"];
@@ -88,7 +88,7 @@ namespace meisterwerk {
                     } else {
                         cur = TimeName2Type[timeSource];
                     }
-                    String clockname = origin + "-" + timeSource;
+                    String clockname = String( origin ) + "-" + timeSource;
                     if ( clocks.find( clockname ) == clocks.end() ) {
                         DBG( "New clockType " + timeSource + " at: " + origin );
                         clocks[clockname] = (T_TIMESOURCE *)malloc( sizeof( T_TIMESOURCE ) );
@@ -101,8 +101,7 @@ namespace meisterwerk {
 
                     bestClock = TimeType::NONE;
                     for ( auto p : clocks ) {
-                        if ( now() - p.second->lastActive < clockRefreshTimeout ||
-                             p.second->type == cur ) {
+                        if ( now() - p.second->lastActive < clockRefreshTimeout || p.second->type == cur ) {
                             if ( p.second->type > bestClock )
                                 bestClock = p.second->type;
                         }

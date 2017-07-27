@@ -37,8 +37,8 @@ namespace meisterwerk {
             }
 
             unsigned long beat() {
-                unsigned int now   = millis();
-                unsigned int delta = timebudget::delta( timerStart, now );
+                unsigned long now   = millis();
+                unsigned long delta = timebudget::delta( timerStart, now );
                 if ( beatLength && delta >= beatLength ) {
                     timerStart = now - ( delta % beatLength );
                     return delta / beatLength;

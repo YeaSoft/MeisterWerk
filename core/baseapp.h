@@ -24,7 +24,10 @@ namespace meisterwerk {
             baseapp( String name = "app" ) : entity( name ) {
                 _app = this;
             }
-
+            virtual void onReceive( const char *origin, const char *topic, const char *msg ) override {
+                // should be implemented if it is called - issue warning
+                DBG( "entity:onReceive, missing override for baseapp " + entName );
+            }
             virtual void onSetup() {
             }
 

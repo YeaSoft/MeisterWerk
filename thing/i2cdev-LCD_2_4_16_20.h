@@ -8,15 +8,7 @@
 #pragma once
 
 // hardware dependencies
-#include <ESP8266WiFi.h>
-
-// The LCD libraries are some serious mess, totally different implementations with
-// different APIs have same name etc. use #576.
-//#include <LiquidCrystal_I2C.h>
 #include <LiquidCrystal_PCF8574.h>
-
-// external libraries
-#include <ArduinoJson.h>
 
 // dependencies
 #include "../base/i2cdev.h"
@@ -27,14 +19,12 @@ namespace meisterwerk {
     namespace thing {
         class i2cdev_LCD_2_4_16_20 : public meisterwerk::base::i2cdev {
             public:
-            // LiquidCrystal_I2C *plcd;
             LiquidCrystal_PCF8574 *plcd;
             bool                   pollDisplay = false;
-            // meisterwerk::util::sensorprocessor tempProcessor, pressProcessor;
-            String  json;
-            uint8_t adr;
-            uint8_t instAddress;
-            int     displayX, displayY;
+            String                 json;
+            uint8_t                adr;
+            uint8_t                instAddress;
+            int                    displayX, displayY;
 
             i2cdev_LCD_2_4_16_20( String name, uint8_t address, int y, int x )
                 : meisterwerk::base::i2cdev( name, "LCD_2_4_16_20", address ),
@@ -48,8 +38,7 @@ namespace meisterwerk {
             }
 
             bool registerEntity() {
-                // 5sec sensor checks
-                bool ret = meisterwerk::core::entity::registerEntity( 5000000 );
+                bool ret = meisterwerk::base::i2cdev::registerEntity( 5000000 );
                 return ret;
             }
 
@@ -58,14 +47,13 @@ namespace meisterwerk {
                     return; // not me.
                 }
                 if ( pollDisplay ) {
-                    DBG( "Tried to re-instanciate object: {" + i2ctype + "," + entName +
-                         "} at address 0x" + meisterwerk::util::hexByte( address ) +
-                         "Display: " + String( displayY ) + "x" + String( displayX ) );
+                    DBG( "Tried to re-instanciate object: {" + i2ctype + "," + entName + "} at address 0x" +
+                         meisterwerk::util::hexByte( address ) + "Display: " + String( displayY ) + "x" +
+                         String( displayX ) );
                     return;
                 }
-                DBG( "Instantiating LCD_2_4_16_20 device {" + i2ctype + "," + entName +
-                     "} at address 0x" + meisterwerk::util::hexByte( address ) + ", " +
-                     String( displayY ) + "x" + String( displayX ) );
+                DBG( "Instantiating LCD_2_4_16_20 device {" + i2ctype + "," + entName + "} at address 0x" +
+                     meisterwerk::util::hexByte( address ) + ", " + String( displayY ) + "x" + String( displayX ) );
                 adr = address;
                 if ( displayY == 2 && displayX == 16 ) {
                     plcd = new LiquidCrystal_PCF8574( address ); // 0: default address;
@@ -86,19 +74,18 @@ namespace meisterwerk {
                 publish( entName + "/display" );
             }
 
-            int          l = 0;
             virtual void onLoop( unsigned long ticker ) override {
                 if ( pollDisplay ) {
-                    l++;
                 }
             }
 
-            virtual void onReceive( String origin, String topic, String msg ) override {
-                meisterwerk::base::i2cdev::onReceive( origin, topic, msg );
+            virtual void onReceive( const char *origin, const char *ctopic, const char *msg ) override {
+                meisterwerk::base::i2cdev::onReceive( origin, ctopic, msg );
+                String topic( ctopic );
                 if ( topic == "*/display/get" || topic == entName + "/display/get" ) {
                     publish( entName + "/display",
-                             "{\"type\":\"textdisplay\",\"x\":" + String( displayX ) +
-                                 ",\"y\":" + String( displayY ) + "}" );
+                             "{\"type\":\"textdisplay\",\"x\":" + String( displayX ) + ",\"y\":" + String( displayY ) +
+                                 "}" );
                 }
                 if ( topic == entName + "/display/set" ) {
                     DynamicJsonBuffer jsonBuffer( 200 );

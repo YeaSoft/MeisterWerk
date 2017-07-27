@@ -29,7 +29,7 @@ namespace meisterwerk {
         class dcf77 : public meisterwerk::core::entity {
             public:
             bool    isOn     = false;
-            uint8_t dcf77pin = D8;
+            uint8_t dcf77pin = D5; // D8 needs to be low on boot, don't use.
 
             dcf77( String name ) : meisterwerk::core::entity( name ) {
             }
@@ -41,29 +41,32 @@ namespace meisterwerk {
 
             bool registerEntity() {
                 // 5sec sensor checks
-                bool ret = meisterwerk::core::entity::registerEntity(
-                    10000, core::scheduler::PRIORITY_TIMECRITICAL );
-                pinMode( dcf77pin, INPUT_PULLUP );
+                bool ret = meisterwerk::core::entity::registerEntity( 20000, core::scheduler::PRIORITY_TIMECRITICAL );
+                pinMode( dcf77pin, INPUT ); // INPUT_PULLUP );
 
                 DBG( "init dcf77." );
                 subscribe( entName + "/time/get" );
                 isOn = true;
             }
 
-            int          prevSensorValue = 0;
+            int           prevSensorValue = 0;
+            unsigned long lasttick        = 0;
             virtual void onLoop( unsigned long ticker ) override {
                 if ( isOn ) {
+                    if ( lasttick == 0 )
+                        lasttick    = millis();
                     int sensorValue = digitalRead( dcf77pin );
-                    if ( sensorValue == 1 && prevSensorValue == 0 ) {
-                        Serial.println( "" );
+                    if ( sensorValue != prevSensorValue ) {
+                        DBG( "DCF-bit " + String( prevSensorValue ) + ", duration: " + String( millis() - lasttick ) );
+                        prevSensorValue = sensorValue;
+                        lasttick        = millis();
                     }
-                    Serial.print( sensorValue );
-                    prevSensorValue = sensorValue;
                 }
             }
 
-            virtual void onReceive( String origin, String topic, String msg ) override {
+            virtual void onReceive( const char *origin, const char *ctopic, const char *msg ) override {
                 // meisterwerk::core::entity::onReceive( origin, topic, msg );
+                String topic( ctopic );
                 DBG( "dcf77:" + topic + "," + msg );
                 if ( topic == entName + "/time/get" || topic == "*/time/get" ) {
                 }

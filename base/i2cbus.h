@@ -120,7 +120,7 @@ const T_I2C_PROPERTIES i2cProps[] = {
     //{Sensor, LSM303_Accel, "LSM303_Accel", "", false, {0x19}},
     //{Sensor, LSM303_Mag, "LSM303_Mag", "", false, {0x1E}},
     {RTC, DS1307_3231, "DS1307_3231", "Real time clock", false, {0x68, 0, 0, 0}},
-    {EEPROM, DS1307_EEPROM, "DS1307_EEPORM", "RTC EEPROM", false, {0x50, 0, 0, 0}},
+    {EEPROM, DS1307_EEPROM, "DS1307_EEPORM", "RTC EEPROM", false, {0x50, 0x57, 0, 0}},
     //{IO, MCP23008, "MCP23008", "", false, {0x20, 0x21, 0x22, 0x23, 0x24, 0x25, 0x26, 0x27}}, //
     // used for LCD displays {IO, MCP23017, "MCP23017", "", false, {0x20, 0x21, 0x22, 0x23, 0x24,
     // 0x25, 0x26, 0x27}}, {PWM, PCA9685, "PCA9685", "", false, {0x40, 0x41, 0x42, 0x43, 0x44, 0x45,
@@ -146,6 +146,7 @@ namespace meisterwerk {
             bool         bInternalError;
             uint8_t      sdaport, sclport;
             unsigned int nDevices;
+            String       i2cjson;
 
             i2cbus( String name, uint8_t sdaport, uint8_t sclport )
                 : meisterwerk::core::entity( name ), sdaport{sdaport}, sclport{sclport} {
@@ -154,15 +155,15 @@ namespace meisterwerk {
                 bInternalError = false;
             }
 
-            bool registerEntity() {
-                return meisterwerk::core::entity::registerEntity( 50000 );
-            }
-
-            virtual void onRegister() override {
+            bool registerEntity( unsigned long slice = 50000 ) {
+                //}
+                bool ret = meisterwerk::core::entity::registerEntity( slice );
+                // virtual void onRegister() override {
                 Wire.begin( sdaport, sclport ); // SDA, SCL;
                 bSetup = true;
                 bEnum  = false;
                 subscribe( "i2cbus/devices/get" );
+                return ret;
             }
 
             int identify( uint8_t address ) {
@@ -194,6 +195,8 @@ namespace meisterwerk {
                 return last;
             }
 
+            int  hwErrs       = 0;
+            bool bHWErrDetect = false;
             bool check( uint8_t address ) {
                 bool bDevFound = false;
                 // The i2c_scanner uses the return value of
@@ -207,16 +210,17 @@ namespace meisterwerk {
                     // DBG( "I2C device found at address 0x" + meisterwerk::util::hexByte( address )
                     // );
                 } else if ( error == 4 ) {
-                    DBG( "Unknow error at address " + meisterwerk::util::hexByte( address ) );
+                    ++hwErrs;
+                    if ( !bHWErrDetect ) {
+                        bHWErrDetect = true;
+                    }
                 }
                 return bDevFound;
             }
 
             unsigned int i2cScan() {
-                byte   address;
-                String portlist = "";
-                String devlist  = "";
-                int    niDevs, i2cid;
+                byte address;
+                int  niDevs, i2cid;
 
                 if ( !bSetup ) {
                     DBG( "i2cbus not initialized!" );
@@ -225,37 +229,42 @@ namespace meisterwerk {
                     return 0;
                 }
                 if ( bEnum ) {
-                    DBG( "For now, mulitple I2C-bus enums are allowed." ); // suppressed." );
-                    // return 0;
+                    publish( "i2cbus/devices", i2cjson );
+                    return 0;
                 }
+
+                hwErrs       = 0;
+                bHWErrDetect = false;
+
                 DBG( "Scanning I2C-Bus, SDA=" + String( sdaport ) + ", SCL=" + String( sclport ) );
-                nDevices = 0;
-                niDevs   = 0;
+                nDevices       = 0;
+                niDevs         = 0;
+                String devlist = "";
                 for ( uint8_t address = 1; address < 127; address++ ) {
                     if ( check( address ) ) {
-                        nDevices++;
-                        if ( nDevices > 1 ) {
-                            portlist += ",";
-                        }
-                        portlist += String( address );
-                        i2cid = identify( address );
+                        String port = String( address );
+                        i2cid       = identify( address );
                         if ( i2cid != -1 ) {
+                            String dev = i2cProps[i2cid].name;
                             niDevs++;
                             if ( niDevs > 1 ) {
                                 devlist += ",";
                             }
-                            devlist += "\"" + i2cProps[i2cid].name + "\"";
+                            devlist += "{\"" + dev + "\": \"" + port + "\"}";
                         }
                     }
                 }
-                if ( nDevices == 0 ) {
+                if ( hwErrs > 0 ) {
+                    DBG( "I2C-bus hardware problem: " + String( hwErrs ) +
+                         " errors during scan. Try power power-cycling device." );
+                }
+                if ( niDevs == 0 ) {
                     DBG( "No I2C devices found" );
-                    publish( "i2cbus/devices", "{}" );
+                    publish( "i2cbus/devices", "{\"devices\":[]}" );
                 } else {
-                    String json = "{\"devs\":" + String( nDevices ) + ",\"portlist\":[" + portlist +
-                                  "],\"i2cdevs\":[" + devlist + "]}";
-                    DBG( "jsonstate i2c:" + json );
-                    publish( "i2cbus/devices", json );
+                    i2cjson = "{\"devices\":[" + devlist + "]}";
+                    DBG( "jsonstate i2c:" + i2cjson );
+                    publish( "i2cbus/devices", i2cjson );
                 }
                 bEnum = true;
                 return nDevices;
@@ -266,10 +275,12 @@ namespace meisterwerk {
                     return;
                 if ( !bEnum ) {
                     i2cScan();
+                    bEnum = true;
                 }
             }
 
-            virtual void onReceive( String origin, String topic, String msg ) override {
+            virtual void onReceive( const char *origin, const char *ctopic, const char *msg ) override {
+                String topic( ctopic );
                 if ( topic == "i2cbus/devices/get" ) {
                     i2cScan();
                 }

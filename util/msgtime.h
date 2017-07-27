@@ -8,11 +8,9 @@
 
 namespace meisterwerk {
     namespace util {
-        static TimeChangeRule CEST = {"CEST", Last, Sun,
-                                      Mar,    2,    120}; // Central European Summer Time
-        static TimeChangeRule CET = {"CET ", Last, Sun,
-                                     Oct,    3,    60}; // Central European Standard Time
-        static Timezone CE( CEST, CET );
+        static TimeChangeRule CEST = {"CEST", Last, Sun, Mar, 2, 120}; // Central European Summer Time
+        static TimeChangeRule CET  = {"CET ", Last, Sun, Oct, 3, 60};  // Central European Standard Time
+        static Timezone       CE( CEST, CET );
 
         class msgtime {
             public:
@@ -23,11 +21,11 @@ namespace meisterwerk {
 
             static time_t ISO2time_t( String iso ) { // ISO: 2017-07-18T17:32:50Z
                 time_t t;
-                if ( iso.length() != 20 ) {
+                if ( iso.length() < 20 ) {
                     DBG( "Invalid ISO time legnth: " + iso );
                     return 0;
                 }
-                if ( iso[19] != 'Z' ) {
+                if ( iso[iso.length() - 1] != 'Z' ) {
                     DBG( "Unsupported time zone: " + iso );
                     return 0;
                 }
@@ -46,8 +44,28 @@ namespace meisterwerk {
                 breakTime( t, tt );
                 char ISO[21];
                 memset( ISO, 0, 21 );
-                sprintf( ISO, "%04d-%02d-%02dT%02d:%02d:%02dZ", tt.Year + 1970, tt.Month, tt.Day,
-                         tt.Hour, tt.Minute, tt.Second );
+                sprintf( ISO, "%04d-%02d-%02dT%02d:%02d:%02dZ", tt.Year + 1970, tt.Month, tt.Day, tt.Hour, tt.Minute,
+                         tt.Second );
+                return String( ISO );
+            }
+            static String ISOnowMicros() {
+                TimeElements tt;
+                breakTime( now(), tt );
+                unsigned long micro = micros() % 1000000L;
+                char          ISO[32];
+                memset( ISO, 0, 32 );
+                sprintf( ISO, "%04d-%02d-%02dT%02d:%02d:%02d.%06ldZ", tt.Year + 1970, tt.Month, tt.Day, tt.Hour,
+                         tt.Minute, tt.Second, micro );
+                return String( ISO );
+            }
+            static String ISOnowMillis() {
+                TimeElements tt;
+                breakTime( now(), tt );
+                unsigned long milli = millis() % 1000L;
+                char          ISO[32];
+                memset( ISO, 0, 32 );
+                sprintf( ISO, "%04d-%02d-%02dT%02d:%02d:%02d.%03ldZ", tt.Year + 1970, tt.Month, tt.Day, tt.Hour,
+                         tt.Minute, tt.Second, milli );
                 return String( ISO );
             }
         };

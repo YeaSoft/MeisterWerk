@@ -66,6 +66,8 @@ namespace meisterwerk {
                 taskList.clear();
                 subscriptionList.clear();
                 DBG_ONLY( allTime.snap() );
+                ESP.wdtDisable();
+                ESP.wdtEnable( WDTO_8S );
             }
 
             virtual ~scheduler() {
@@ -73,6 +75,17 @@ namespace meisterwerk {
                     delete pTask;
                 }
                 taskList.clear();
+            }
+
+            unsigned long lastYield  = 0;
+            unsigned long yieldAfter = 5000; // 5 ms
+            void          checkYield() {
+                unsigned long curMicros = micros();
+                unsigned long tDelta    = meisterwerk::util::timebudget::delta( lastYield, curMicros );
+                if ( tDelta > yieldAfter ) {
+                    yield();
+                    lastYield = micros();
+                }
             }
 
             void loop() {
@@ -85,7 +98,9 @@ namespace meisterwerk {
                     processMsgQueue();
                     // process entity and kernel tasks
                     processTask( pTask );
+                    checkYield();
                 }
+                ESP.wdtFeed();
                 DBG_ONLY( allTime.shot() );
             }
 
@@ -112,6 +127,7 @@ namespace meisterwerk {
                         break;
                     }
                     delete pMsg;
+                    checkYield();
                     DBG_ONLY( msgTime.shot() );
                 }
             }
@@ -209,7 +225,8 @@ namespace meisterwerk {
                     return false;
                 }
                 taskList.push_back( pTask );
-                pEnt->onRegister();
+                pEnt->onRegister(); // XXX: this callback is utterly pointless, it only bloats the API. -> discuss
+                                    // removal.
                 return true;
             }
 

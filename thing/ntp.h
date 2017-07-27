@@ -8,15 +8,7 @@
 #pragma once
 
 // hardware dependencies
-#include <ESP8266WebServer.h>
-//#include <ESP8266WiFi.h>
-//#include <WiFiClient.h>
 #include <WiFiUdp.h>
-
-#include <SoftwareSerial.h>
-
-// external libraries
-#include <ArduinoJson.h>
 
 // dependencies
 #include "../base/i2cdev.h"
@@ -29,19 +21,23 @@ namespace meisterwerk {
     namespace thing {
         class Ntp : public meisterwerk::core::entity {
             public:
-            enum Udpstate { IDLE, PACKETSENT };
+            enum Udpstate { IDLE, PACKETSENT, RETRY };
             Udpstate        ntpstate;
             bool            isOn     = false;
             bool            netUp    = false;
             bool            bGetTime = false;
             util::metronome ntpTicker;
             unsigned long   packettimestamp;
-            unsigned long   ntpTimeout = 3e00; // ms timeout for send/receive NTP packets.
+            unsigned long   ntpTimeout = 300; // ms timeout for send/receive NTP packets.
+            int             maxRetries = 3;
+            int             retryPause = 3000; // ms between retries
+            unsigned long   retryTime  = 0;
+            int             retryCnt;
             String          ntpServer;
             bool            ipNtpInit = false;
-            IPAddress       timeServerIP; // time.nist.gov NTP server address
-                                          // const char* ntpServerName = "time.nist.gov";
-#define NTP_PACKET_SIZE 48                // NTP time stamp is in the first 48 bytes of the message
+            IPAddress       timeServerIP;       // time.nist.gov NTP server address
+                                                // const char* ntpServerName = "time.nist.gov";
+#define NTP_PACKET_SIZE 48                      // NTP time stamp is in the first 48 bytes of the message
             byte packetBuffer[NTP_PACKET_SIZE]; // buffer to hold incoming and outgoing packets
 
             // A UDP instance to let us send and receive packets over UDP
@@ -59,10 +55,9 @@ namespace meisterwerk {
                 }
             }
 
-            bool registerEntity() {
+            bool registerEntity( unsigned long slice = 50000 ) {
                 // 5sec sensor checks
-                bool ret = meisterwerk::core::entity::registerEntity(
-                    50000, core::scheduler::PRIORITY_TIMECRITICAL );
+                bool ret = meisterwerk::core::entity::registerEntity( slice, core::scheduler::PRIORITY_TIMECRITICAL );
                 DBG( "init ntp." );
                 subscribe( "net/network" );
                 subscribe( entName + "/time/get" );
@@ -70,6 +65,7 @@ namespace meisterwerk {
                 publish( "net/network/get" );
                 publish( "net/services/timeserver/get" );
                 isOn = true;
+                return ret;
             }
 
             // send an NTP request to the time server at the given address
@@ -131,8 +127,7 @@ namespace meisterwerk {
                     unsigned long epoch = secsSince1900 - seventyYears;
 
                     String isoTime = util::msgtime::time_t2ISO( epoch );
-                    String msg     = "{\"time\":\"" + isoTime +
-                                 "\",\"timesource\":\"NTP\",\"timeprecision\":10000}";
+                    String msg     = "{\"time\":\"" + isoTime + "\",\"timesource\":\"NTP\",\"timeprecision\":10000}";
                     publish( entName + "/time", msg );
                     return true;
                 } else {
@@ -147,18 +142,33 @@ namespace meisterwerk {
                         case Udpstate::IDLE:
                             if ( bGetTime || ntpTicker.beat() > 0 ) {
                                 bGetTime = false;
-                                if ( ntpServer != "" )
+                                if ( ntpServer != "" ) {
+                                    retryCnt = 0;
                                     getNtpTime();
+                                }
+                            }
+                            break;
+                        case Udpstate::RETRY:
+                            if ( util::timebudget::delta( packettimestamp, millis() ) > retryPause ) {
+                                DBG( "Retrying NTPPacket..." );
+                                getNtpTime();
                             }
                             break;
                         case Udpstate::PACKETSENT:
                             if ( parseNtpTime() ) {
                                 ntpstate = Udpstate::IDLE;
                             } else {
-                                if ( util::timebudget::delta( packettimestamp, millis() ) >
-                                     ntpTimeout ) {
-                                    DBG( "NTP timeout receiving from server: " + ntpServer );
-                                    ntpstate = Udpstate::IDLE;
+                                if ( util::timebudget::delta( packettimestamp, millis() ) > ntpTimeout ) {
+                                    if ( retryCnt < maxRetries ) {
+                                        DBG( "NTP timeout receiving from server: " + ntpServer + ", retrying..." );
+                                        ++retryCnt;
+                                        retryTime = millis();
+                                        ntpstate + Udpstate::RETRY;
+                                    } else {
+                                        ntpstate = Udpstate::IDLE;
+                                        DBG( "NTP timeout receiving from server: " + ntpServer +
+                                             ", retry count exceeded, temporary failure." );
+                                    }
                                 }
                             }
                             break;
@@ -170,9 +180,10 @@ namespace meisterwerk {
                 }
             }
 
-            virtual void onReceive( String origin, String topic, String msg ) override {
-                // meisterwerk::core::entity::onReceive( origin, topic, msg );
-                DBG( "Ntp:" + topic + "," + msg );
+            virtual void onReceive( const char *origin, const char *ctopic, const char *msg ) override {
+                // meisterwerk::core::entity::onReceive( origin, ctopic, msg );
+                String topic( ctopic );
+                DBG( "Ntp:" + topic + "," + String( msg ) );
                 if ( topic == entName + "/time/get" || topic == "*/time/get" ) {
                     if ( !netUp ) {
                         DBG( "NTP: Cannot get time, net down." );
@@ -184,7 +195,7 @@ namespace meisterwerk {
                     DynamicJsonBuffer jsonBuffer( 200 );
                     JsonObject &      root = jsonBuffer.parseObject( msg );
                     if ( !root.success() ) {
-                        DBG( "Ntp: Invalid JSON received: " + msg );
+                        DBG( "Ntp: Invalid JSON received: " + String( msg ) );
                         return;
                     }
                     ntpServer = root["server"].as<char *>();
@@ -197,7 +208,7 @@ namespace meisterwerk {
                     DynamicJsonBuffer jsonBuffer( 200 );
                     JsonObject &      root = jsonBuffer.parseObject( msg );
                     if ( !root.success() ) {
-                        DBG( "Ntp: Invalid JSON received: " + msg );
+                        DBG( "Ntp: Invalid JSON received: " + String( msg ) );
                         return;
                     }
                     String state = root["state"];
