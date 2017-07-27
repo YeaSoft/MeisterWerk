@@ -21,7 +21,7 @@ namespace meisterwerk {
 
         class dumper : public meisterwerk::core::entity {
             public:
-#ifdef _DEBUG
+#ifdef _MW_DEBUG
             meisterwerk::util::metronome autodump;
             String                       debugButton;
 

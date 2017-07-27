@@ -332,7 +332,7 @@ namespace meisterwerk {
                 return false;
             }
 
-#ifdef _DEBUG
+#ifdef _MW_DEBUG
             public:
             meisterwerk::util::timebudget msgTime;
             meisterwerk::util::timebudget tskTime;

@@ -9,11 +9,11 @@
 
 // a generic debug define (may also affectz 3rd party libraries)
 #ifdef DEBUG
-#define _DEBUG
+#define _MW_DEBUG
 #endif
 
 // the library specific debug define
-#ifdef _DEBUG
+#ifdef _MW_DEBUG
 
 namespace meisterwerk {
 
@@ -29,22 +29,22 @@ namespace meisterwerk {
     }
 } // namespace meisterwerk
 
-#define ASSERT( f )                                                                                \
-    do {                                                                                           \
-        if ( !( f ) && meisterwerk::AssertFailedLine __FILE__, __LINE__ ) ) {                      \
-                meisterwerk::DebugBreak();                                                         \
-            }                                                                                      \
+#define ASSERT( f )                                                                                                    \
+    do {                                                                                                               \
+        if ( !( f ) && meisterwerk::AssertFailedLine __FILE__, __LINE__ ) ) {                                          \
+                meisterwerk::DebugBreak();                                                                             \
+            }                                                                                                          \
     } while ( 0 )
 
 #define VERIFY( f ) ASSERT( f )
 #define DBG_ONLY( f ) f
 #define DBG( f ) Serial.println( f )
 
-#else // _DEBUG
+#else // _MW_DEBUG
 
 #define ASSERT( f ) ( (void)( 0 ) )
 #define VERIFY( f ) ( (void)( f ) )
 #define DBG_ONLY( f )
 #define DBG( f )
 
-#endif // !_DEBUG
+#endif // !_MW_DEBUG

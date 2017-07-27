@@ -14,7 +14,7 @@ namespace meisterwerk {
     namespace util {
 
         class messagespy : public meisterwerk::core::entity {
-#ifdef _DEBUG
+#ifdef _MW_DEBUG
             private:
             String filter;
 
