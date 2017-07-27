@@ -47,6 +47,7 @@ namespace meisterwerk {
             bool registerEntity( unsigned long slice = 50000 ) {
                 bool ret = meisterwerk::core::entity::registerEntity( slice, core::scheduler::PRIORITY_NORMAL );
                 DBG( "Init mqtt" );
+                setLogLevel( loglevel::INFO );
                 subscribe( "net/network" );
                 subscribe( "net/services/mqttserver" );
                 subscribe( "*" );
@@ -92,6 +93,7 @@ namespace meisterwerk {
                 char   buf[24];
                 sprintf( buf, "%010ld", millis() );
                 DBG( String( buf ) + "MQR:" + String( ctopic ) );
+                Log( loglevel::INFO, String( msg ), String( ctopic ) );
                 if ( strlen( ctopic ) > 3 )
                     topic = (char *)( &ctopic[3] ); // strip mw/   XXX: regex
                 for ( int i = 0; i < length; i++ ) {
