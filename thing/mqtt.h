@@ -8,7 +8,7 @@
 #pragma once
 
 #include <functional>
-// hardware dependencies
+
 #define MQTT_MAX_PACKET_SIZE 1024
 #include <PubSubClient.h>
 
@@ -93,7 +93,7 @@ namespace meisterwerk {
                 sprintf( buf, "%010ld", millis() );
                 DBG( String( buf ) + "MQR:" + String( ctopic ) );
                 if ( strlen( ctopic ) > 3 )
-                    topic = (char *)( &ctopic[3] ); // strip mw/
+                    topic = (char *)( &ctopic[3] ); // strip mw/   XXX: regex
                 for ( int i = 0; i < length; i++ ) {
                     msg += (char)payload[i];
                 }
@@ -101,18 +101,17 @@ namespace meisterwerk {
             }
 
             virtual void onReceive( const char *origin, const char *ctopic, const char *msg ) override {
-                // meisterwerk::core::entity::onReceive( origin, ctopic, msg );
                 String topic( ctopic );
                 if ( mqttConnected )
                     mqttClient.publish( ctopic, msg );
 
+                DynamicJsonBuffer jsonBuffer( 200 );
+                JsonObject &      root = jsonBuffer.parseObject( msg );
+                if ( !root.success() ) {
+                    DBG( "mqtt: Invalid JSON received: " + String( msg ) );
+                    return;
+                }
                 if ( topic == "net/services/mqttserver" ) {
-                    DynamicJsonBuffer jsonBuffer( 200 );
-                    JsonObject &      root = jsonBuffer.parseObject( msg );
-                    if ( !root.success() ) {
-                        DBG( "mqtt: Invalid JSON received: " + String( msg ) );
-                        return;
-                    }
                     mqttServer       = root["server"].as<char *>();
                     bCheckConnection = true;
                     DBG( "mqtt: received server address: " + mqttServer );
@@ -124,12 +123,6 @@ namespace meisterwerk {
                     // mqttClient.setCallback( onMqttReceive );
                 }
                 if ( topic == "net/network" ) {
-                    DynamicJsonBuffer jsonBuffer( 200 );
-                    JsonObject &      root = jsonBuffer.parseObject( msg );
-                    if ( !root.success() ) {
-                        DBG( "mqtt: Invalid JSON received: " + String( msg ) );
-                        return;
-                    }
                     String state = root["state"];
                     if ( state == "connected" ) {
                         netUp            = true;

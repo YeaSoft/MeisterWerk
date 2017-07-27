@@ -8,12 +8,7 @@
 #pragma once
 
 // hardware dependencies
-#include <ESP8266WiFi.h>
-
 #include <RTClib.h>
-
-// external libraries
-#include <ArduinoJson.h>
 
 // dependencies
 #include "../base/i2cdev.h"
@@ -45,8 +40,6 @@ namespace meisterwerk {
             i2cdev_RTC_DS3231( String name, String model, uint8_t address )
                 : meisterwerk::base::i2cdev( name, "DS1307_3231", address ), tempProcessor( 5, 900, 0.1 ),
                   rtcTicker( 30000 ), model{model} {
-                // send temperature updates, if temperature changes for 0.1C over an average of 5
-                // measurements, but at least every 15min (900sec)
                 tempvalid = false;
             }
             ~i2cdev_RTC_DS3231() {
@@ -61,12 +54,10 @@ namespace meisterwerk {
             }
 
             bool registerEntity() {
-                // default sample rate: 5s
                 return meisterwerk::base::i2cdev::registerEntity( 1000000L );
             }
 
             virtual void onInstantiate( String i2ctype, uint8_t address ) override {
-                // String sa = meisterwerk::util::hexByte( address );
                 DBG( "Instantiating RTC_DS3231 device at address 0x" + meisterwerk::util::hexByte( address ) );
                 if ( model == "DS3231" ) {
                     prtc3 = new RTC_DS3231();
@@ -96,7 +87,7 @@ namespace meisterwerk {
                     DBG( "RTC DS3231/1307 hardware not found!" );
                     return;
                 }
-                // subscribe( entName + "/temperature/get" ); // not yet implemented.
+                // subscribe( entName + "/temperature/get" ); // not yet implemented: DS3231 temp sensor.
                 subscribe( entName + "/time/get" );
                 subscribe( "mastertime/time/set" );
             }
@@ -154,10 +145,6 @@ namespace meisterwerk {
                 DateTime     nowUtc;
                 time_t       t = util::msgtime::ISO2time_t( isoTime );
                 breakTime( t, tt );
-
-                // following line sets the RTC to the date & time this sketch was compiled
-                // January 21, 2014 at 3am you would call:
-                // rtc.adjust(DateTime(2014, 1, 21, 3, 0, 0));
                 if ( model == "DS3231" ) {
                     prtc3->adjust( DateTime( tt.Year + 1970, tt.Month, tt.Day, tt.Hour, tt.Minute, tt.Second ) );
                     nowUtc = prtc3->now();
@@ -210,7 +197,7 @@ namespace meisterwerk {
                     }
                 }
                 if ( topic == entName + "/temperature/get" || topic == "*/temperature/get" ) {
-                    publishTemp();
+                    publishTemp(); // XXX: DS3231 temp sensor implementation
                 }
                 if ( topic == entName + "/time/get" || topic == "*/time/get" ) {
                     if ( bRtcTimeValid ) {

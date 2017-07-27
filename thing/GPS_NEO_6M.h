@@ -52,6 +52,7 @@ namespace meisterwerk {
                 resetDefaults();
                 subscribe( entName + "gps/get" );
                 subscribe( entName + "time/get" );
+                subscribe( entName + "/loglevel/set" );
                 watchdog = millis();
                 isOn     = true;
                 return ret;
@@ -284,11 +285,16 @@ namespace meisterwerk {
             virtual void onReceive( const char *origin, const char *ctopic, const char *msg ) override {
                 String topic( ctopic );
                 DBG( "GpsReceive:" + topic + "," + msg );
+                Log( loglevel::INFO, "GpsReceive:" + topic + "," + msg );
                 if ( topic == entName + "/time/get" || topic == "*/time/get" ) {
                     bPublishTime = true;
                 }
                 if ( topic == entName + "/gps/get" ) {
                     bPublishGps = true;
+                }
+                if ( topic == entName + "/loglevel/set" ) {
+                    setLogLevel( loglevel::DBG );
+                    Log( loglevel::INFO, "Loglevel of GPS is now DEBUG" );
                 }
             }
 

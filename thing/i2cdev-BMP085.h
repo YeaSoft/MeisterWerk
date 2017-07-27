@@ -9,10 +9,6 @@
 
 // hardware dependencies
 #include <Adafruit_BMP085.h>
-#include <ESP8266WiFi.h>
-
-// external libraries
-#include <ArduinoJson.h>
 
 // dependencies
 #include "../base/i2cdev.h"
@@ -55,7 +51,6 @@ namespace meisterwerk {
             }
 
             bool registerEntity() {
-                // default sample rate: 5s
                 return meisterwerk::base::i2cdev::registerEntity( 5000000L );
             }
 

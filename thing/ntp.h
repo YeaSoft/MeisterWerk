@@ -8,15 +8,7 @@
 #pragma once
 
 // hardware dependencies
-#include <ESP8266WebServer.h>
-//#include <ESP8266WiFi.h>
-//#include <WiFiClient.h>
 #include <WiFiUdp.h>
-
-#include <SoftwareSerial.h>
-
-// external libraries
-#include <ArduinoJson.h>
 
 // dependencies
 #include "../base/i2cdev.h"

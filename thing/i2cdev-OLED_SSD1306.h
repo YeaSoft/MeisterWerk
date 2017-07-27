@@ -8,18 +8,7 @@
 #pragma once
 
 // hardware dependencies
-#include <ESP8266WiFi.h>
-
-//#define SSD1306_128_64
-//#define SSD1306_128_32
-//#define SSD1306_96_16
-
 #include <Adafruit_SSD1306.h>
-#include <SPI.h>
-#include <Wire.h>
-
-// external libraries
-#include <ArduinoJson.h>
 
 // dependencies
 #include "../base/i2cdev.h"
@@ -30,15 +19,13 @@ namespace meisterwerk {
     namespace thing {
         class i2cdev_OLED_SSD1306 : public meisterwerk::base::i2cdev {
             public:
-            // LiquidCrystal_I2C *plcd;
             Adafruit_SSD1306 *poled;
             bool              pollDisplay = false;
-            // meisterwerk::util::sensorprocessor tempProcessor, pressProcessor;
-            String  json;
-            uint8_t adr;
-            uint8_t instAddress;
-            int     displayX, displayY;
-            bool    bRedraw = false;
+            String            json;
+            uint8_t           adr;
+            uint8_t           instAddress;
+            int               displayX, displayY;
+            bool              bRedraw = false;
 
             i2cdev_OLED_SSD1306( String name, uint8_t address, int displayY, int displayX )
                 : meisterwerk::base::i2cdev( name, "SSD1306", address ),
@@ -52,7 +39,6 @@ namespace meisterwerk {
             }
 
             bool registerEntity() {
-                // 5sec sensor checks
                 bool ret = meisterwerk::base::i2cdev::registerEntity( 100000 );
                 return ret;
             }
@@ -69,11 +55,9 @@ namespace meisterwerk {
                          String( displayX ) );
                     return;
                 }
-                // String sa = meisterwerk::util::hexByte( address );
                 DBG( "Instantiating OLED_SSD1306 device {" + i2ctype + "," + entName + "} at address 0x" +
                      meisterwerk::util::hexByte( address ) + ", " + String( displayY ) + "x" + String( displayX ) );
-                adr = address;
-                // #define OLED_RESET 4
+                adr   = address;
                 poled = new Adafruit_SSD1306();
                 poled->begin( SSD1306_SWITCHCAPVCC, address ); // initialize with the I2C addr 0x3D (for the 128x64)
                                                                // poled->clear();
