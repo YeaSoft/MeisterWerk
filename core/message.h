@@ -107,7 +107,7 @@ namespace meisterwerk {
                     return false;
                 }
                 // free previous content if any
-                discard(); // XXX: how about isBufAllocated?
+                discard();
 
                 // set type
                 type = _type;
