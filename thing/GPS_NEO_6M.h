@@ -215,14 +215,13 @@ namespace meisterwerk {
                 // DBG( cmd[0] );
                 if ( cmd[0] == "$GPGGA" ) { // GGA — Global Positioning System Fixed Data
                     gpstime = cmd[1];
-                    DBG( gpstime );
-                    lat   = cmd[2];
-                    lath  = cmd[3];
-                    lon   = cmd[4];
-                    lonh  = cmd[5];
-                    fix   = atoi( cmd[6].c_str() );
-                    nosat = atoi( cmd[7].c_str() );
-                    alt   = cmd[9];
+                    lat     = cmd[2];
+                    lath    = cmd[3];
+                    lon     = cmd[4];
+                    lonh    = cmd[5];
+                    fix     = atoi( cmd[6].c_str() );
+                    nosat   = atoi( cmd[7].c_str() );
+                    alt     = cmd[9];
 
                 } else if ( cmd[0] == "$GPRMC" ) { // RMC - recommended minimum
                     gpsdate = cmd[9];
