@@ -124,7 +124,7 @@ namespace meisterwerk {
                     break;
                 }
                 publish( "log/" + cstr + "/" + entName,
-                         "{\"time\":\"" + util::msgtime::ISOnowMillis() + "\",\"severity\":" + cstr +
+                         "{\"time\":\"" + util::msgtime::ISOnowMillis() + "\",\"severity\":\"" + cstr +
                              "\",\"topic\":\"" + logtopic + "\",\"msg\":\"" + msg + "\"}" );
             }
 
