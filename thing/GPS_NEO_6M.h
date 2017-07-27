@@ -207,7 +207,6 @@ namespace meisterwerk {
                     bPublishGps = false;
                 }
                 if ( bPublishTime ) {
-                    DBG( timestr );
                     publish( entName + "/time", "{" + timestr + "}" );
                     bPublishTime = false;
                 }
