@@ -213,10 +213,12 @@ namespace meisterwerk {
                     }
                     String state = root["state"];
                     if ( state == "connected" ) {
-                        netUp = true;
-                        udp.begin( localPort );
-                        if ( ntpServer != "" ) {
-                            getNtpTime();
+                        if ( !netUp ) {
+                            netUp = true;
+                            udp.begin( localPort );
+                            if ( ntpServer != "" ) {
+                                getNtpTime();
+                            }
                         }
                     } else
                         netUp = false;

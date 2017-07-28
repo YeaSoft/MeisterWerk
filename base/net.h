@@ -27,21 +27,21 @@ namespace meisterwerk {
             enum Netstate { NOTDEFINED, NOTCONFIGURED, CONNECTINGAP, CONNECTED };
             enum Netmode { AP, STATION };
 
-            bool                  bSetup;
-            Netstate              state;
-            Netstate              oldstate;
-            Netmode               mode;
-            long                  contime;
-            long                  conto = 15000;
-            String                SSID;
-            String                password;
-            String                lhostname;
-            String                ipaddress;
-            util::metronome       tick1sec;
-            util::metronome       tick10sec;
-            util::sensorprocessor rssival;
+            bool                     bSetup;
+            Netstate                 state;
+            Netstate                 oldstate;
+            Netmode                  mode;
+            long                     contime;
+            long                     conto = 15000;
+            String                   SSID;
+            String                   password;
+            String                   lhostname;
+            String                   ipaddress;
+            util::metronome          tick1sec;
+            util::metronome          tick10sec;
+            util::sensorprocessor    rssival;
             std::map<String, String> netservices;
-            String macAddress;
+            String                   macAddress;
 
             net( String name )
                 : meisterwerk::core::entity( name ), tick1sec( 1000L ), tick10sec( 10000L ), rssival( 5, 900, 2.0 ) {
@@ -78,6 +78,7 @@ namespace meisterwerk {
                     break;
                 }
                 publish( "net/network", json );
+                Log( loglevel::INFO, json );
                 if ( state == Netstate::CONNECTED )
                     publishServices();
             }
@@ -232,6 +233,7 @@ namespace meisterwerk {
 
             virtual void onReceive( const char *origin, const char *ctopic, const char *msg ) override {
                 String topic( ctopic );
+                Log( loglevel::INFO, String( msg ), topic );
                 if ( topic == "net/network/get" ) {
                     publishNetwork();
                 } else if ( topic == "net/networks/get" ) {
