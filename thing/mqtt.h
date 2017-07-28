@@ -9,7 +9,6 @@
 
 #include <functional>
 
-// #define MQTT_MAX_PACKET_SIZE 512
 #include <PubSubClient.h>
 
 // dependencies
@@ -106,11 +105,19 @@ namespace meisterwerk {
             virtual void onReceive( const char *origin, const char *ctopic, const char *msg ) override {
                 String topic( ctopic );
                 if ( mqttConnected ) {
-                    unsigned int len = strlen( msg ) + 1;
-                    if ( mqttClient.publish( ctopic, msg, len ) ) {
-                        DBG( "MQTT publish: " + topic + " | " + String( msg ) );
-                    } else {
-                        DBG( "MQTT ERROR len=" + String( len ) + ", not published: " + topic + " | " + String( msg ) );
+                    if ( topic.indexOf( "display/set" ) == -1 ) { // XXX: better filter config needed. (get/set)
+                        unsigned int len = strlen( msg ) + 1;
+                        if ( mqttClient.publish( ctopic, msg, len ) ) {
+                            DBG( "MQTT publish: " + topic + " | " + String( msg ) );
+                        } else {
+                            DBG( "MQTT ERROR len=" + String( len ) + ", not published: " + topic + " | " +
+                                 String( msg ) );
+                            if ( len > 128 ) {
+                                DBG(
+                                    "FATAL ERROR: you need to re-compile the PubSubClient library and increase #define "
+                                    "MQTT_MAX_PACKET_SIZE." );
+                            }
+                        }
                     }
                 } else
                     DBG( "MQTT can't publish, MQTT down: " + topic );
