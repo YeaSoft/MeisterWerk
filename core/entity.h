@@ -97,7 +97,7 @@ namespace meisterwerk {
             // possible preliminary home of log functions
             enum loglevel { ERR, WARN, INFO, DBG, VER1, VER2, VER3 };
             loglevel logLevel = loglevel::INFO;
-            void setLogLevel( loglevel lclass ) {
+            void     setLogLevel( loglevel lclass ) {
                 logLevel = lclass;
             }
             void Log( loglevel lclass, String msg, String logtopic = "" ) {
@@ -105,27 +105,39 @@ namespace meisterwerk {
                     return;
                 if ( logtopic == "" )
                     logtopic = entName;
-                String cstr  = "";
+                String cstr = "";
+                String icon = "";
                 switch ( lclass ) {
                 case loglevel::ERR:
                     cstr = "Error";
+                    icon = "🛑";
                     break;
                 case loglevel::WARN:
                     cstr = "Warning";
+                    icon = "⚠️";
                     break;
                 case loglevel::INFO:
                     cstr = "Info";
+                    icon = "ℹ️ℹ";
                     break;
                 case loglevel::DBG:
                     cstr = "Debug";
+                    icon = "🗒";
                     break;
                 default:
                     cstr = "Debug";
+                    icon = "🐞";
                     break;
                 }
-                publish( "log/" + cstr + "/" + entName,
-                         "{\"time\":\"" + util::msgtime::ISOnowMillis() + "\",\"severity\":\"" + cstr +
-                             "\",\"topic\":\"" + logtopic + "\",\"msg\":\"" + msg + "\"}" );
+                // XXX: Json-in-message escaping, is that the best way:
+                msg.replace( "\\", "/" );
+                msg.replace( "\"", "'" );
+
+                String tpc    = "log/" + cstr + "/" + entName;
+                String logmsg = "{\"time\":\"" + util::msgtime::ISOnowMillis() + "\",\"severity\":\"" + cstr +
+                                "\",\"icon\":\"" + icon + "\",\"topic\":\"" + logtopic + "\",\"msg\":\"" + msg + "\"}";
+                publish( tpc, logmsg );
+                DBG( icon + "  " + tpc + " | " + logmsg );
             }
 
             // callbacks

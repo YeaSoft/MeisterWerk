@@ -9,7 +9,7 @@
 
 #include <functional>
 
-#define MQTT_MAX_PACKET_SIZE 1024
+// #define MQTT_MAX_PACKET_SIZE 512
 #include <PubSubClient.h>
 
 // dependencies
@@ -24,6 +24,7 @@ namespace meisterwerk {
             public:
             WiFiClient   wifiClient;
             PubSubClient mqttClient;
+            bool         bMqInit = false;
 
             bool            isOn             = false;
             bool            netUp            = false;
@@ -48,8 +49,8 @@ namespace meisterwerk {
                 bool ret = meisterwerk::core::entity::registerEntity( slice, core::scheduler::PRIORITY_NORMAL );
                 DBG( "Init mqtt" );
                 setLogLevel( loglevel::INFO );
-                subscribe( "net/network" );
-                subscribe( "net/services/mqttserver" );
+                // subscribe( "net/network" );
+                // subscribe( "net/services/mqttserver" );
                 subscribe( "*" );
                 publish( "net/network/get" );
                 publish( "net/services/mqttserver/get" );
@@ -104,8 +105,15 @@ namespace meisterwerk {
 
             virtual void onReceive( const char *origin, const char *ctopic, const char *msg ) override {
                 String topic( ctopic );
-                if ( mqttConnected )
-                    mqttClient.publish( ctopic, msg );
+                if ( mqttConnected ) {
+                    unsigned int len = strlen( msg ) + 1;
+                    if ( mqttClient.publish( ctopic, msg, len ) ) {
+                        DBG( "MQTT publish: " + topic + " | " + String( msg ) );
+                    } else {
+                        DBG( "MQTT ERROR len=" + String( len ) + ", not published: " + topic + " | " + String( msg ) );
+                    }
+                } else
+                    DBG( "MQTT can't publish, MQTT down: " + topic );
 
                 DynamicJsonBuffer jsonBuffer( 200 );
                 JsonObject &      root = jsonBuffer.parseObject( msg );
@@ -114,21 +122,26 @@ namespace meisterwerk {
                     return;
                 }
                 if ( topic == "net/services/mqttserver" ) {
-                    mqttServer       = root["server"].as<char *>();
-                    bCheckConnection = true;
-                    DBG( "mqtt: received server address: " + mqttServer );
-                    mqttClient.setServer( mqttServer.c_str(), 1883 );
-                    // give a c++11 lambda as callback for incoming mqtt messages:
-                    std::function<void( char *, unsigned char *, unsigned int )> f =
-                        [=]( char *t, unsigned char *m, unsigned int l ) { this->onMqttReceive( t, m, l ); };
-                    mqttClient.setCallback( f );
-                    // mqttClient.setCallback( onMqttReceive );
+                    if ( !bMqInit ) {
+                        mqttServer       = root["server"].as<char *>();
+                        bCheckConnection = true;
+                        DBG( "mqtt: received server address: " + mqttServer );
+                        mqttClient.setServer( mqttServer.c_str(), 1883 );
+                        // give a c++11 lambda as callback for incoming mqtt messages:
+                        std::function<void( char *, unsigned char *, unsigned int )> f =
+                            [=]( char *t, unsigned char *m, unsigned int l ) { this->onMqttReceive( t, m, l ); };
+                        mqttClient.setCallback( f );
+                        bMqInit = true;
+                        // mqttClient.setCallback( onMqttReceive );
+                    }
                 }
                 if ( topic == "net/network" ) {
                     String state = root["state"];
                     if ( state == "connected" ) {
-                        netUp            = true;
-                        bCheckConnection = true;
+                        if ( !netUp ) {
+                            netUp            = true;
+                            bCheckConnection = true;
+                        }
                     } else {
                         netUp = false;
                     }
