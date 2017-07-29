@@ -59,6 +59,7 @@ namespace meisterwerk {
                 DBG( "init ntp." );
                 subscribe( "net/network" );
                 subscribe( entName + "/time/get" );
+                subscribe( "time/get" );
                 subscribe( "net/services/timeserver" );
                 publish( "net/network/get" );
                 publish( "net/services/timeserver/get" );
@@ -181,7 +182,7 @@ namespace meisterwerk {
                 // meisterwerk::core::entity::receive( origin, ctopic, msg );
                 String topic( ctopic );
                 DBG( "Ntp:" + topic + "," + String( msg ) );
-                if ( topic == entName + "/time/get" || topic == "*/time/get" ) {
+                if ( topic == entName + "/time/get" || topic == "time/get" ) {
                     if ( !netUp ) {
                         DBG( "NTP: Cannot get time, net down." );
                     } else {

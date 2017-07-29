@@ -89,6 +89,7 @@ namespace meisterwerk {
                 }
                 // subscribe( entName + "/temperature/get" ); // not yet implemented: DS3231 temp sensor.
                 subscribe( entName + "/time/get" );
+                subscribe( "time/get" );
                 subscribe( "mastertime/time/set" );
             }
 
@@ -199,7 +200,7 @@ namespace meisterwerk {
                 if ( topic == entName + "/temperature/get" || topic == "*/temperature/get" ) {
                     publishTemp(); // XXX: DS3231 temp sensor implementation
                 }
-                if ( topic == entName + "/time/get" || topic == "*/time/get" ) {
+                if ( topic == entName + "/time/get" || topic == "time/get" ) {
                     if ( bRtcTimeValid ) {
                         String isoTime = readTime();
                         publishTime( isoTime );

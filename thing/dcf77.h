@@ -45,6 +45,7 @@ namespace meisterwerk {
 
                 DBG( "init dcf77." );
                 subscribe( entName + "/time/get" );
+                subscribe( "time/get" );
                 isOn = true;
             }
 
@@ -67,7 +68,7 @@ namespace meisterwerk {
                 // meisterwerk::core::entity::receive( origin, topic, msg );
                 String topic( ctopic );
                 DBG( "dcf77:" + topic + "," + msg );
-                if ( topic == entName + "/time/get" || topic == "*/time/get" ) {
+                if ( topic == entName + "/time/get" || topic == "time/get" ) {
                 }
             }
 
