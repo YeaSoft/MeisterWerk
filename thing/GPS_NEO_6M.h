@@ -51,6 +51,7 @@ namespace meisterwerk {
                 resetDefaults();
                 subscribe( entName + "gps/get" );
                 subscribe( entName + "time/get" );
+                subscribe( "time/get" );
                 subscribe( entName + "/loglevel/set" );
                 watchdog = millis();
                 isOn     = true;
@@ -284,7 +285,7 @@ namespace meisterwerk {
                 String topic( ctopic );
                 DBG( "GpsReceive:" + topic + "," + msg );
                 log( T_LOGLEVEL::INFO, "GpsReceive:" + topic + "," + msg );
-                if ( topic == entName + "/time/get" || topic == "*/time/get" ) {
+                if ( topic == entName + "/time/get" || topic == "time/get" ) {
                     bPublishTime = true;
                 }
                 if ( topic == entName + "/gps/get" ) {
