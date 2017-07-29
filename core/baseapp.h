@@ -39,9 +39,7 @@ namespace meisterwerk {
 
 // application entry points
 void setup() {
-    // Initialize debug console
-    Serial.begin( _MW_SERIAL_SPEED );
-    // call the application setup callback
+    // Call the application setup callback
     meisterwerk::core::baseapp::_app->setup();
 }
 

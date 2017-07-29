@@ -17,6 +17,7 @@ namespace meisterwerk {
     namespace core {
 
         class entity;
+        class baseapp;
 
         class msgregister {
             public:
@@ -34,38 +35,28 @@ namespace meisterwerk {
         };
 
         class entity {
+            friend class baseapp;
+
             public:
+            enum T_LOGLEVEL { ERR, WARN, INFO, DBG, VER1, VER2, VER3 };
             // members
-            String entName; // Instance name
+            String     entName;                     // Instance name
+            T_LOGLEVEL logLevel = T_LOGLEVEL::INFO; // Logging level
 
             // methods
-
-            // constructor without autoregistration
-            entity( String name ) : entName( name ) {
-            }
-
-            // EXPERIMENTAL: constructor with autoregistration
             entity( String name, unsigned long minMicroSecs, T_PRIO priority = PRIORITY_NORMAL ) : entName( name ) {
-                registerEntity( minMicroSecs, priority );
+                msgregister reg( this, minMicroSecs, priority );
+                message::send( message::MSG_DIRECT, entName.c_str(), "register", &reg, sizeof( reg ) );
             }
 
             virtual ~entity(){};
 
-            bool registerEntity( unsigned long minMicroSecs = 0, T_PRIO priority = PRIORITY_NORMAL ) {
-                msgregister reg( this, minMicroSecs, priority );
-                if ( message::send( message::MSG_DIRECT, entName.c_str(), "register", &reg, sizeof( reg ) ) ) {
-                    return true;
-                }
-                DBG( "entity::registerEntity, sendMessage failed for register " + entName );
-                return false;
-            }
-
-            bool updateEntity( unsigned long minMicroSecs = 0, T_PRIO priority = PRIORITY_NORMAL ) {
+            bool setSchedulerParams( unsigned long minMicroSecs = 0, T_PRIO priority = PRIORITY_NORMAL ) {
                 msgregister reg( this, minMicroSecs, priority );
                 if ( message::send( message::MSG_DIRECT, entName.c_str(), "update", &reg, sizeof( reg ) ) ) {
                     return true;
                 }
-                DBG( "entity::updateEntity, sendMessage failed for update " + entName );
+                DBG( "entity::setSchedulerParams, sendMessage failed for " + entName );
                 return false;
             }
 
@@ -73,7 +64,7 @@ namespace meisterwerk {
                 if ( message::send( message::MSG_PUBLISH, entName.c_str(), topic.c_str(), msg.c_str() ) ) {
                     return true;
                 }
-                DBG( "entity::publish, sendMessage failed for publish " + entName );
+                DBG( "entity::publish, sendMessage failed for " + entName );
                 return false;
             }
 
@@ -81,7 +72,7 @@ namespace meisterwerk {
                 if ( message::send( message::MSG_PUBLISH, entName.c_str(), topic.c_str(), nullptr ) ) {
                     return true;
                 }
-                DBG( "entity::publish, sendMessage failed for publish " + entName );
+                DBG( "entity::publish, sendMessage failed for " + entName );
                 return false;
             }
 
@@ -89,7 +80,7 @@ namespace meisterwerk {
                 if ( message::send( message::MSG_SUBSCRIBE, entName.c_str(), topic.c_str(), nullptr, 0 ) ) {
                     return true;
                 }
-                DBG( "entity::subscribe, sendMessage failed for subscribe " + entName );
+                DBG( "entity::subscribe, sendMessage failed for " + entName );
                 return false;
             }
 
@@ -97,31 +88,30 @@ namespace meisterwerk {
                 if ( message::send( message::MSG_UNSUBSCRIBE, entName.c_str(), topic.c_str(), nullptr, 0 ) ) {
                     return true;
                 }
-                DBG( "entity::unsubscribe, sendMessage failed for unsubscribe " + entName );
+                DBG( "entity::unsubscribe, sendMessage failed for " + entName );
                 return false;
             }
 
             // possible preliminary home of log functions
-            enum loglevel { ERR, WARN, INFO, DBG, VER1, VER2, VER3 };
-            loglevel logLevel = loglevel::INFO;
-            void setLogLevel( loglevel lclass ) {
+            void setLogLevel( T_LOGLEVEL lclass ) {
                 logLevel = lclass;
             }
-            void log( loglevel lclass, String msg, String logtopic = "" ) {
+
+            void log( T_LOGLEVEL lclass, String msg, String logtopic = "" ) {
                 if ( lclass > logLevel )
                     return;
                 String cstr;
                 switch ( lclass ) {
-                case loglevel::ERR:
+                case T_LOGLEVEL::ERR:
                     cstr = "Error";
                     break;
-                case loglevel::WARN:
+                case T_LOGLEVEL::WARN:
                     cstr = "Warning";
                     break;
-                case loglevel::INFO:
+                case T_LOGLEVEL::INFO:
                     cstr = "Info";
                     break;
-                case loglevel::DBG:
+                case T_LOGLEVEL::DBG:
                     cstr = "Debug";
                     break;
                 default:
@@ -144,6 +134,11 @@ namespace meisterwerk {
             }
 
             virtual void receive( const char *origin, const char *topic, const char *msg ) {
+            }
+
+            private:
+            entity( String name ) : entName{name} {
+                // special constructor only for baseapp
             }
         };
     } // namespace core
