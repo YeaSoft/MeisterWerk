@@ -17,11 +17,17 @@ namespace meisterwerk {
             public:
             uint8_t pin;
 
-            onoff_GPIO( String name, uint8_t pin ) : meisterwerk::base::onoff( name ), pin{pin} {
+            onoff_GPIO( String name, uint8_t pin, unsigned long minMicroSecs = 250000,
+                        meisterwerk::core::T_PRIO priority = meisterwerk::core::PRIORITY_NORMAL )
+                : meisterwerk::base::onoff( name, minMicroSecs, priority ), pin{pin} {
+                // The state timer had a millisecond resolution. For most
+                // purposes a 250 ms resolution sbhould be enought, so take
+                // this if a default. If needed an entity can be initialized
+                // to a higher resolution
             }
 
-            virtual void onRegister() override {
-                meisterwerk::base::onoff::onRegister();
+            virtual void setup() override {
+                meisterwerk::base::onoff::setup();
                 pinMode( pin, OUTPUT );
                 digitalWrite( pin, HIGH );
             }
@@ -31,11 +37,13 @@ namespace meisterwerk {
                 return true;
             }
 
+            /*
             virtual void onGetState( JsonObject &request, JsonObject &response ) override {
                 meisterwerk::base::onoff::onGetState( request, response );
                 response["type"] = response["type"].as<String>() + String( "/onoff-GPIO" );
                 response["pin"]  = pin;
             }
+            */
         };
-    }
-}
+    } // namespace thing
+} // namespace meisterwerk
