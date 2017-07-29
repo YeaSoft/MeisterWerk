@@ -20,30 +20,15 @@ namespace meisterwerk {
             // members
             scheduler sched;
 
-            // mthods
-            baseapp( String name = "app" ) : entity( name ) {
+            // methods
+            baseapp( String name = "app", unsigned long minMicroSecs = 0L, T_PRIO priority = PRIORITY_NORMAL )
+                : entity( name ) {
                 _app = this;
+                // direct registration into the scheduler - always first entity
+                // setup() callback will not be invoked from scheduler but
+                // directly from arduino core setup()
+                sched.registerEntity( this, minMicroSecs, priority, false );
             }
-            virtual void onReceive( const char *origin, const char *topic, const char *msg ) override {
-                // should be implemented if it is called - issue warning
-                DBG( "entity:onReceive, missing override for baseapp " + entName );
-            }
-            virtual void onSetup() {
-            }
-
-            // there is no clash between baseapp:onLoop and entity;:onLoop
-            // because of the number of parameters.
-            virtual void onLoop() {
-                sched.loop();
-            }
-            /*
-                        virtual void onGetState( JsonObject &request, JsonObject &response ) override {
-                        }
-
-                        virtual bool onSetState( JsonObject &request, JsonObject &response ) override {
-                            return false;
-                        }
-            */
         };
 
         // initialization of static member
@@ -54,9 +39,13 @@ namespace meisterwerk {
 
 // application entry points
 void setup() {
-    meisterwerk::core::baseapp::_app->onSetup();
+    // Initialize debug console
+    Serial.begin( _MW_SERIAL_SPEED );
+    // call the application setup callback
+    meisterwerk::core::baseapp::_app->setup();
 }
 
 void loop() {
-    meisterwerk::core::baseapp::_app->onLoop();
+    // Call the scheduler loop
+    meisterwerk::core::baseapp::_app->sched.loop();
 }

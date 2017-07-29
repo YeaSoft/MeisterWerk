@@ -10,6 +10,7 @@
 // dependencies
 #include "../util/debug.h"
 #include "../util/msgtime.h"
+#include "common.h"
 #include "message.h"
 
 namespace meisterwerk {
@@ -21,13 +22,13 @@ namespace meisterwerk {
             public:
             // members
             entity *      pEnt;         // instance object pointer to derived object instance
-            unsigned int  priority;     // Priority MW_PRIORITY_*
+            T_PRIO        priority;     // Priority MW_PRIORITY_*
             unsigned long minMicroSecs; // intervall in micro seconds the loop method
                                         // should be called. 0 means never (used for
                                         // messaging only entities)
 
             // methods
-            msgregister( entity *pEnt, unsigned long minMicroSecs, unsigned int priority )
+            msgregister( entity *pEnt, unsigned long minMicroSecs, T_PRIO priority )
                 : pEnt{pEnt}, minMicroSecs{minMicroSecs}, priority{priority} {
             }
         };
@@ -38,13 +39,19 @@ namespace meisterwerk {
             String entName; // Instance name
 
             // methods
-            entity( String name ) {
-                entName = name;
+
+            // constructor without autoregistration
+            entity( String name ) : entName( name ) {
+            }
+
+            // EXPERIMENTAL: constructor with autoregistration
+            entity( String name, unsigned long minMicroSecs, T_PRIO priority = PRIORITY_NORMAL ) : entName( name ) {
+                registerEntity( minMicroSecs, priority );
             }
 
             virtual ~entity(){};
 
-            bool registerEntity( unsigned long minMicroSecs = 0, unsigned int priority = 3 ) {
+            bool registerEntity( unsigned long minMicroSecs = 0, T_PRIO priority = PRIORITY_NORMAL ) {
                 msgregister reg( this, minMicroSecs, priority );
                 if ( message::send( message::MSG_DIRECT, entName.c_str(), "register", &reg, sizeof( reg ) ) ) {
                     return true;
@@ -53,7 +60,7 @@ namespace meisterwerk {
                 return false;
             }
 
-            bool updateEntity( unsigned long minMicroSecs = 0, unsigned int priority = 3 ) {
+            bool updateEntity( unsigned long minMicroSecs = 0, T_PRIO priority = PRIORITY_NORMAL ) {
                 msgregister reg( this, minMicroSecs, priority );
                 if ( message::send( message::MSG_DIRECT, entName.c_str(), "update", &reg, sizeof( reg ) ) ) {
                     return true;
@@ -100,12 +107,10 @@ namespace meisterwerk {
             void setLogLevel( loglevel lclass ) {
                 logLevel = lclass;
             }
-            void Log( loglevel lclass, String msg, String logtopic = "" ) {
+            void log( loglevel lclass, String msg, String logtopic = "" ) {
                 if ( lclass > logLevel )
                     return;
-                if ( logtopic == "" )
-                    logtopic = entName;
-                String cstr  = "";
+                String cstr;
                 switch ( lclass ) {
                 case loglevel::ERR:
                     cstr = "Error";
@@ -123,28 +128,22 @@ namespace meisterwerk {
                     cstr = "Debug";
                     break;
                 }
-                publish( "log/" + cstr + "/" + entName,
-                         "{\"time\":\"" + util::msgtime::ISOnowMillis() + "\",\"severity\":\"" + cstr +
-                             "\",\"topic\":\"" + logtopic + "\",\"msg\":\"" + msg + "\"}" );
+                publish( "log/" + cstr + "/" + entName, "{\"time\":\"" + util::msgtime::ISOnowMillis() +
+                                                                "\",\"severity\":\"" + cstr + "\",\"topic\":\"" +
+                                                                ( logtopic == "" )
+                                                            ? entName
+                                                            : logtopic + "\",\"msg\":\"" + msg + "\"}" );
             }
 
             // callbacks
             public:
-            virtual void onRegister() {
+            virtual void setup() {
             }
 
-            // there is no clash between baseapp:onLoop and entity;:onLoop
-            // because of a different argument list.
-            virtual void onLoop( unsigned long ticker ) {
-                // should be implemented if it is called - issue warning
-                DBG( "entity:onLook, missing override for entity " + entName );
+            virtual void loop() {
             }
 
-            virtual void onReceive( const char *origin, const char *topic, const char *msg ) {
-                // should be implemented if it is called - issue warning:
-                // XXX: we should make this optional, and
-                // possibly provide standard functions (eg. set loglevel)
-                DBG( "entity:onReceive, missing override for entity " + entName );
+            virtual void receive( const char *origin, const char *topic, const char *msg ) {
             }
         };
     } // namespace core

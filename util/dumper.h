@@ -29,14 +29,14 @@ namespace meisterwerk {
                 : meisterwerk::core::entity( name ), autodump{autodump}, debugButton{debugButton} {
             }
 
-            bool registerEntity( unsigned long minMicroSecs = 250000,
-                                 unsigned int  priority     = meisterwerk::core::scheduler::PRIORITY_NORMAL ) {
+            bool registerEntity( unsigned long             minMicroSecs = 250000,
+                                 meisterwerk::core::T_PRIO priority     = meisterwerk::core::PRIORITY_NORMAL ) {
                 // default precision for autodump rate is 250ms
                 return meisterwerk::core::entity::registerEntity( minMicroSecs, priority );
             }
 
-            void onRegister() override {
-                meisterwerk::core::entity::onRegister();
+            void setup() override {
+                meisterwerk::core::entity::setup();
                 // explicit commands
                 subscribe( "*/dump" );
                 subscribe( "*/sysinfo" );
@@ -49,13 +49,13 @@ namespace meisterwerk {
                 dumpSystemInfo();
             }
 
-            virtual void onLoop( unsigned long ticker ) override {
+            virtual void loop() override {
                 if ( autodump.beat() ) {
                     dumpRuntimeInfo();
                 }
             }
 
-            virtual void onReceive( const char *origin, const char *topic, const char *msg ) override {
+            virtual void receive( const char *origin, const char *topic, const char *msg ) override {
                 String t( topic );
                 // process my own subscriptions
                 if ( t == debugButton + "/short" ) {

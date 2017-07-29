@@ -22,13 +22,13 @@ namespace meisterwerk {
             messagespy( String name = "spy", String filter = "*" ) : meisterwerk::core::entity( name ), filter{filter} {
             }
 
-            void onRegister() override {
-                meisterwerk::core::entity::onRegister();
+            void setup() override {
+                meisterwerk::core::entity::setup();
                 // subscribe messages to display
                 subscribe( filter );
             }
 
-            virtual void onReceive( const char *origin, const char *topic, const char *msg ) override {
+            virtual void receive( const char *origin, const char *topic, const char *msg ) override {
                 char   szBuffer[24];
                 String s1( origin );
                 String s2( topic );
