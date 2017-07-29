@@ -17,17 +17,12 @@ namespace meisterwerk {
             public:
             uint8_t pin;
 
-            button_GPIO( String name, uint8_t pin ) : meisterwerk::base::button( name ), pin{pin} {
-            }
-
-            bool registerEntity( unsigned long minMicroSecs = 50000,
-                                 unsigned int  priority     = meisterwerk::core::scheduler::PRIORITY_NORMAL ) {
+            button_GPIO( String name, uint8_t pin ) : meisterwerk::base::button( name, 50000 ), pin{pin} {
                 // default sample rate: 50ms
-                return meisterwerk::base::button::registerEntity( minMicroSecs, priority );
             }
 
-            virtual void onRegister() override {
-                button::onRegister();
+            virtual void setup() override {
+                button::setup();
                 pinMode( pin, INPUT );
                 fromState = digitalRead( pin ) == LOW;
                 lastChange.start();
@@ -37,11 +32,13 @@ namespace meisterwerk {
                 change( digitalRead( pin ) == LOW );
             }
 
+            /*
             virtual void onGetState( JsonObject &request, JsonObject &response ) override {
                 meisterwerk::base::button::onGetState( request, response );
                 response["type"] = response["type"].as<String>() + String( "/button-GPIO" );
                 reposnse["pin"]  = pin;
             }
+            */
         };
     } // namespace thing
 } // namespace meisterwerk

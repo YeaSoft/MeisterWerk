@@ -30,42 +30,44 @@ namespace meisterwerk {
             unsigned long minLongMs;
             unsigned long minExtraLongMs;
             // state
-            typedef enum { NONE, SHORT, LONG, EXTRALONG } STATE;
+            enum STATE { NONE, SHORT, LONG, EXTRALONG };
             STATE         lastState;
             unsigned long lastDuration;
 
-            pushbutton( String name, unsigned int _minLongMs = 0, unsigned int _minExtraLongMs = 0 ) : button( name ) {
-                lastState      = NONE;
-                lastDuration   = 0;
-                minLongMs      = _minLongMs;
-                minExtraLongMs = _minExtraLongMs;
+            pushbutton( String name, unsigned int minLongMs = 0, unsigned int minExtraLongMs = 0,
+                        unsigned long             minMicroSecs = 0,
+                        meisterwerk::core::T_PRIO priority     = meisterwerk::core::PRIORITY_NORMAL )
+                : button( name, minMicroSecs, priority ), minLongMs{minLongMs}, minExtraLongMs{minExtraLongMs} {
+                lastState    = NONE;
+                lastDuration = 0;
             }
 
-            virtual void onGetState( JsonObject &request, JsonObject &response ) override {
-                response["type"]      = "button/pushbutton";
-                response["state"]     = getStateString( lastState );
-                response["duration"]  = lastDuration;
-                response["long"]      = minLongMs;
-                response["extraLong"] = minExtraLongMs;
-            }
+            /*
+                        virtual void onGetState( JsonObject &request, JsonObject &response ) override {
+                            response["type"]      = "button/pushbutton";
+                            response["state"]     = getStateString( lastState );
+                            response["duration"]  = lastDuration;
+                            response["long"]      = minLongMs;
+                            response["extraLong"] = minExtraLongMs;
+                        }
 
-            virtual bool onSetState( JsonObject &request, JsonObject &response ) override {
-                bool        bChanged    = false;
-                JsonVariant toLong      = request["long"];
-                JsonVariant toExtraLong = request["extraLong"];
-                if ( willSetStateU( toLong, minLongMs ) ) {
-                    bChanged         = true;
-                    minLongMs        = toLong.as<unsigned long>();
-                    response["long"] = minLongMs;
-                }
-                if ( willSetStateU( toExtraLong, minExtraLongMs ) ) {
-                    bChanged              = true;
-                    minExtraLongMs        = toExtraLong.as<unsigned long>();
-                    response["extraLong"] = minExtraLongMs;
-                }
-                return bChanged;
-            }
-
+                        virtual bool onSetState( JsonObject &request, JsonObject &response ) override {
+                            bool        bChanged    = false;
+                            JsonVariant toLong      = request["long"];
+                            JsonVariant toExtraLong = request["extraLong"];
+                            if ( willSetStateU( toLong, minLongMs ) ) {
+                                bChanged         = true;
+                                minLongMs        = toLong.as<unsigned long>();
+                                response["long"] = minLongMs;
+                            }
+                            if ( willSetStateU( toExtraLong, minExtraLongMs ) ) {
+                                bChanged              = true;
+                                minExtraLongMs        = toExtraLong.as<unsigned long>();
+                                response["extraLong"] = minExtraLongMs;
+                            }
+                            return bChanged;
+                        }
+            */
             virtual void onChange( bool toState, unsigned long duration ) override {
                 if ( toState ) {
                     button::onChange( toState, duration );
@@ -102,9 +104,9 @@ namespace meisterwerk {
                 String s     = "\"state\":\"" + x + "\"";
                 String d     = "\"duration\":" + String( duration );
                 // notify status change - generic
-                publish( ownTopic( "state" ), "{" + s + "," + d + "}" );
+                // publish( ownTopic( "state" ), "{" + s + "," + d + "}" );
                 // notify status change - FHEM style
-                publish( ownTopic( x ), "{" + d + "}" );
+                publish( entName + "/" + x, "{" + d + "}" );
             }
         };
     } // namespace base

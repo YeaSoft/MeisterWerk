@@ -22,7 +22,9 @@ namespace meisterwerk {
             meisterwerk::util::stopwatch lastChange;
 
             public:
-            button( String name ) : meisterwerk::core::entity( name ) {
+            button( String name, unsigned long minMicroSecs,
+                    meisterwerk::core::T_PRIO priority = meisterwerk::core::PRIORITY_NORMAL )
+                : meisterwerk::core::entity( name, minMicroSecs, priority ) {
                 fromState = false;
             }
 
@@ -31,21 +33,16 @@ namespace meisterwerk {
                 String s = "\"state\":\"" + x + "\"";
                 String d = "\"duration\":" + String( duration );
                 // notify status change - generic
-                publish( ownTopic( "state" ), "{" + s + "," + d + "}" );
+                // publish( ownTopic( "state" ), "{" + s + "," + d + "}" );
                 // notify status change - FHEM style
-                publish( ownTopic( x ), "{" + d + "}" );
+                publish( entName + "/" + x, "{" + d + "}" );
             }
 
-            virtual void onGetState( JsonObject &request, JsonObject &response ) override {
-                response["type"]     = "button";
-                response["state"]    = fromState ? "press" : "release";
-                response["duration"] = lastChange.getduration();
-            }
-
-            virtual bool onSetState( JsonObject &request, JsonObject &response ) override {
-                // button has no settable state
-                return false;
-            }
+            // virtual void onGetState( JsonObject &request, JsonObject &response ) override {
+            //    response["type"]     = "button";
+            //    response["state"]    = fromState ? "press" : "release";
+            //    response["duration"] = lastChange.getduration();
+            //}
 
             // internal
             protected:

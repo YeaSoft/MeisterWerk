@@ -17,6 +17,7 @@
 
 // dependencies
 #include "../core/entity.h"
+#include "../core/topic.h"
 #include "../util/eggtimer.h"
 
 namespace meisterwerk {
@@ -28,22 +29,20 @@ namespace meisterwerk {
             bool                        stateNext  = false;
             meisterwerk::util::eggtimer stateTimer = 0;
 
-            onoff( String name ) : meisterwerk::core::entity( name ) {
-            }
-
-            bool registerEntity( unsigned long minMicroSecs = 250000, unsigned int priority = 3 ) {
+            onoff( String name, unsigned long minMicroSecs = 250000,
+                   meisterwerk::core::T_PRIO priority = meisterwerk::core::PRIORITY_NORMAL )
+                : meisterwerk::core::entity( name, minMicroSecs, priority ) {
                 // The state timer had a millisecond resolution. For most
-                // purposes a 250 ms resolution sbhould be enough, so take
-                // this if a default. Iff needed an entity can be initialized
+                // purposes a 250 ms resolution sbhould be enought, so take
+                // this if a default. If needed an entity can be initialized
                 // to a higher resolution
-                return meisterwerk::core::entity::registerEntity( minMicroSecs );
             }
 
             // ABSTRACT METHOD: This override must be implemented in derived classes
             virtual bool onSwitch( bool newstate ) = 0;
 
-            virtual void onRegister() override {
-                meisterwerk::core::entity::onRegister();
+            virtual void setup() override {
+                meisterwerk::core::entity::setup();
                 // FHEM style commands
                 subscribe( ownTopic( "on" ) );
                 subscribe( ownTopic( "off" ) );
@@ -64,25 +63,25 @@ namespace meisterwerk {
                 }
             }
 
-            virtual bool receive( String origin, String topic, JsonObject &request, JsonObject &response ) override {
-                if ( meisterwerk::core::entity::onReceive( origin, topic, request, response ) ) {
-                    return true;
+            virtual void receive( const char *origin, const char *topic, const char *msg ) override {
+                // String t( topic );
+                meisterwerk::core::Topic t( topic );
+                DynamicJsonBuffer        reqBuffer( 300 );
+                DynamicJsonBuffer        resBuffer( 300 );
+                JsonObject &             req        = reqBuffer.parseObject( msg );
+                JsonObject &             res        = resBuffer.createObject();
+                JsonVariant              toDuration = req["duration"];
+
+                if ( t == ownTopic( "on" ) ) {
+                    setState( true, toDuration.as<unsigned long>(), res, true );
+                } else if ( t == ownTopic( "off" ) ) {
+                    setState( true, toDuration.as<unsigned long>(), res, true );
+                } else if ( t == ownTopic( "toggle" ) ) {
+                    setState( !state, toDuration.as<unsigned long>(), res, true );
                 }
-                // process my own subscriptions
-                JsonVariant toDuration = request["duration"];
-                if ( isOwnTopic( topic, "on" ) ) {
-                    setState( true, toDuration.as<unsigned long>(), response, true );
-                    return true;
-                } else if ( isOwnTopic( topic, "/off" ) ) {
-                    setState( false, toDuration.as<unsigned long>(), response, true );
-                    return true;
-                } else if ( isOwnTopic( topic, "toggle" ) ) {
-                    setState( !state, toDuration.as<unsigned long>(), response, true );
-                    return true;
-                }
-                return false;
             }
 
+            /*
             virtual void onGetState( JsonObject &request, JsonObject &response ) override {
                 response["type"]     = "onoff";
                 response["state"]    = state;
@@ -99,6 +98,7 @@ namespace meisterwerk {
                 }
                 return false;
             }
+            */
 
             bool setState( bool newstate, unsigned long duration, JsonObject &response, bool publishState = false ) {
                 bool bChanged = false;
@@ -121,9 +121,19 @@ namespace meisterwerk {
                     bChanged             = true;
                 }
                 if ( bChanged ) {
-                    publish( ownTopic( "state" ), response );
+                    String buffer;
+                    response.printTo( buffer );
+                    publish( ownTopic( "state" ), buffer );
                 }
                 return bChanged;
+            }
+
+            String ownTopic( String subtopic ) const {
+                return entName + "/" + subtopic;
+            }
+
+            bool isOwnTopic( String topic, String subtopic ) const {
+                return topic == entName + "/" + subtopic;
             }
         };
     } // namespace base
