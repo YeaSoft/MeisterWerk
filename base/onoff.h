@@ -50,7 +50,7 @@ namespace meisterwerk {
                 subscribe( ownTopic( "toggle" ) );
             }
 
-            virtual void onLoop( unsigned long timer ) override {
+            virtual void loop() override {
                 if ( stateTimer > 0 ) {
                     // timed state change requested
                     if ( stateTimer.isexpired() ) {
@@ -127,4 +127,4 @@ namespace meisterwerk {
             }
         };
     } // namespace base
-} // namespace meisterwek
+} // namespace meisterwerk

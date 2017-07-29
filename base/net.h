@@ -48,7 +48,7 @@ namespace meisterwerk {
                 bSetup = false;
             }
 
-            bool registerEntity() {
+            virtual void setup() override {
                 return meisterwerk::core::entity::registerEntity( 50000 );
             }
 
@@ -78,7 +78,7 @@ namespace meisterwerk {
                     break;
                 }
                 publish( "net/network", json );
-                Log( loglevel::INFO, json );
+                log( T_LOGLEVEL::INFO, json );
                 if ( state == Netstate::CONNECTED )
                     publishServices();
             }
@@ -191,7 +191,7 @@ namespace meisterwerk {
                     publish( "net/services/" + s.first, "{\"server\":\"" + s.second + "\"}" );
                 }
             }
-            virtual void onLoop( unsigned long ticker ) override {
+            virtual void loop() override {
                 switch ( state ) {
                 case Netstate::NOTCONFIGURED:
                     if ( tick10sec.beat() > 0 ) {
@@ -231,9 +231,9 @@ namespace meisterwerk {
                 }
             }
 
-            virtual void onReceive( const char *origin, const char *ctopic, const char *msg ) override {
+            virtual void receive( const char *origin, const char *ctopic, const char *msg ) override {
                 String topic( ctopic );
-                Log( loglevel::INFO, String( msg ), topic );
+                log( T_LOGLEVEL::INFO, String( msg ), topic );
                 if ( topic == "net/network/get" ) {
                     publishNetwork();
                 } else if ( topic == "net/networks/get" ) {

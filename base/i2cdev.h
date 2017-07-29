@@ -44,7 +44,7 @@ namespace meisterwerk {
                 // DBG( "i2cdev pub/sub in setup" );
             }
 
-            virtual void onReceive( const char *origin, const char *ctopic, const char *msg ) override {
+            virtual void receive( const char *origin, const char *ctopic, const char *msg ) override {
                 String topic( ctopic );
                 if ( topic == "i2cbus/devices" ) {
                     if ( !isInstantiated )

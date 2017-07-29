@@ -19,16 +19,18 @@ namespace meisterwerk {
             String filter;
 
             public:
-            messagespy( String name = "spy", String filter = "*" ) : meisterwerk::core::entity( name ), filter{filter} {
+            messagespy( String name = "spy", String filter = "*" )
+                : meisterwerk::core::entity( name, 0, meisterwerk::core::PRIORITY_NORMAL ), filter{filter} {
+                // will autoregister
             }
 
-            void onRegister() override {
-                meisterwerk::core::entity::onRegister();
+            void setup() override {
+                meisterwerk::core::entity::setup();
                 // subscribe messages to display
                 subscribe( filter );
             }
 
-            virtual void onReceive( const char *origin, const char *topic, const char *msg ) override {
+            virtual void receive( const char *origin, const char *topic, const char *msg ) override {
                 char   szBuffer[24];
                 String s1( origin );
                 String s2( topic );
@@ -42,9 +44,11 @@ namespace meisterwerk {
 #else
             // fake entity. Will neither register nor do anything
             messagespy( String name = "", String subscription = "" ) : meisterwerk::core::entity( "" ) {
+                // will NOT AUTOREGISTER
             }
 
-            bool registerEntity( unsigned long minMicroSecs = 0, unsigned int priority = 3 ) {
+            bool registerEntity( unsigned long             minMicroSecs = 0,
+                                 meisterwerk::core::T_PRIO priority     = meisterwerk::core::PRIORITY_NORMAL ) {
                 return true;
             }
 #endif

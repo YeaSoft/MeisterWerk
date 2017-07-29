@@ -39,7 +39,7 @@ namespace meisterwerk {
                 }
             }
 
-            bool registerEntity() {
+            virtual void setup() override {
                 // 5sec sensor checks
                 bool ret = meisterwerk::core::entity::registerEntity( 20000, core::scheduler::PRIORITY_TIMECRITICAL );
                 pinMode( dcf77pin, INPUT ); // INPUT_PULLUP );
@@ -51,10 +51,10 @@ namespace meisterwerk {
 
             int           prevSensorValue = 0;
             unsigned long lasttick        = 0;
-            virtual void onLoop( unsigned long ticker ) override {
+            virtual void  loop() override {
                 if ( isOn ) {
                     if ( lasttick == 0 )
-                        lasttick    = millis();
+                        lasttick = millis();
                     int sensorValue = digitalRead( dcf77pin );
                     if ( sensorValue != prevSensorValue ) {
                         DBG( "DCF-bit " + String( prevSensorValue ) + ", duration: " + String( millis() - lasttick ) );
@@ -64,7 +64,7 @@ namespace meisterwerk {
                 }
             }
 
-            virtual void onReceive( const char *origin, const char *ctopic, const char *msg ) override {
+            virtual void receive( const char *origin, const char *ctopic, const char *msg ) override {
                 // meisterwerk::core::entity::onReceive( origin, topic, msg );
                 String topic( ctopic );
                 DBG( "dcf77:" + topic + "," + msg );

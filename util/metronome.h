@@ -36,11 +36,23 @@ namespace meisterwerk {
                 timerStart = millis();
             }
 
+            // real metronome: tries to be synchrtonous with the real beat
             unsigned long beat() {
                 unsigned long now   = millis();
                 unsigned long delta = timebudget::delta( timerStart, now );
                 if ( beatLength && delta >= beatLength ) {
                     timerStart = now - ( delta % beatLength );
+                    return delta / beatLength;
+                }
+                return 0;
+            }
+
+            // watchdog style: the specified interval has passed
+            unsigned long woof() {
+                unsigned long now   = millis();
+                unsigned long delta = timebudget::delta( timerStart, now );
+                if ( beatLength && delta >= beatLength ) {
+                    timerStart = now;
                     return delta / beatLength;
                 }
                 return 0;

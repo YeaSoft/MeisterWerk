@@ -55,7 +55,7 @@ namespace meisterwerk {
                 }
             }
 
-            bool registerEntity( unsigned long slice = 50000 ) {
+            virtual void setup() override {
                 // 5sec sensor checks
                 bool ret = meisterwerk::core::entity::registerEntity( slice, core::scheduler::PRIORITY_TIMECRITICAL );
                 DBG( "init ntp." );
@@ -135,7 +135,7 @@ namespace meisterwerk {
                 }
             }
 
-            virtual void onLoop( unsigned long ticker ) override {
+            virtual void loop() override {
                 if ( isOn ) {
                     if ( netUp ) {
                         switch ( ntpstate ) {
@@ -180,7 +180,7 @@ namespace meisterwerk {
                 }
             }
 
-            virtual void onReceive( const char *origin, const char *ctopic, const char *msg ) override {
+            virtual void receive( const char *origin, const char *ctopic, const char *msg ) override {
                 // meisterwerk::core::entity::onReceive( origin, ctopic, msg );
                 String topic( ctopic );
                 DBG( "Ntp:" + topic + "," + String( msg ) );

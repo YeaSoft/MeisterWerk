@@ -160,7 +160,7 @@ namespace meisterwerk {
                 bInternalError = false;
             }
 
-            bool registerEntity( unsigned long slice = 50000 ) {
+            virtual void setup() override {
                 //}
                 bool ret = meisterwerk::core::entity::registerEntity( slice );
                 // virtual void onRegister() override {
@@ -267,7 +267,7 @@ namespace meisterwerk {
                     String errmsg = "I2C-bus hardware problem: " + String( hwErrs ) +
                                     " errors during scan. Try power power-cycling device.";
                     DBG( errmsg );
-                    Log( loglevel::ERR, errmsg );
+                    log( T_LOGLEVEL::ERR, errmsg );
                 }
                 if ( niDevs == 0 ) {
                     DBG( "No I2C devices found" );
@@ -285,14 +285,14 @@ namespace meisterwerk {
                              " connected. (Before: " + String( nDevicesOld ) + " devices." );
                     }
                 }
-                Log( loglevel::INFO, "I2Cbus enumeration: " + i2cjson );
+                log( T_LOGLEVEL::INFO, "I2Cbus enumeration: " + i2cjson );
                 nDevicesOld = nDevices;
                 i2cjsonOld  = i2cjson;
                 bEnum       = true;
                 return nDevices;
             }
 
-            virtual void onLoop( unsigned long ticker ) override {
+            virtual void loop() override {
                 if ( bInternalError )
                     return;
                 if ( !bEnum ) {
@@ -303,12 +303,12 @@ namespace meisterwerk {
                     int    oldDevs = nDevices;
                     String oldJson = i2cjson;
                     if ( i2cScan( false ) != oldDevs || i2cjson != oldJson ) {
-                        Log( loglevel::ERR, "I2C-bus change from: " + oldJson + " to: " + i2cjson );
+                        log( T_LOGLEVEL::ERR, "I2C-bus change from: " + oldJson + " to: " + i2cjson );
                     }
                 }
             }
 
-            virtual void onReceive( const char *origin, const char *ctopic, const char *msg ) override {
+            virtual void receive( const char *origin, const char *ctopic, const char *msg ) override {
                 String topic( ctopic );
                 if ( topic == "i2cbus/devices/get" ) {
                     i2cScan();

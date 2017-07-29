@@ -44,10 +44,10 @@ namespace meisterwerk {
                 }
             }
 
-            bool registerEntity( unsigned long slice = 50000 ) {
+            virtual void setup() override {
                 bool ret = meisterwerk::core::entity::registerEntity( slice, core::scheduler::PRIORITY_NORMAL );
                 DBG( "Init mqtt" );
-                setLogLevel( loglevel::INFO );
+                setLogLevel( T_LOGLEVEL::INFO );
                 // subscribe( "net/network" );
                 // subscribe( "net/services/mqttserver" );
                 subscribe( "*" );
@@ -58,7 +58,7 @@ namespace meisterwerk {
             }
 
             bool         bWarned = false;
-            virtual void onLoop( unsigned long ticker ) override {
+            virtual void loop() override {
                 if ( isOn ) {
                     if ( netUp && mqttServer != "" ) {
                         if ( mqttConnected ) {
@@ -93,7 +93,7 @@ namespace meisterwerk {
                 char   buf[24];
                 sprintf( buf, "%010ld", millis() );
                 DBG( String( buf ) + "MQR:" + String( ctopic ) );
-                Log( loglevel::INFO, String( msg ), String( ctopic ) );
+                log( T_LOGLEVEL::INFO, String( msg ), String( ctopic ) );
                 if ( strlen( ctopic ) > 3 )
                     topic = (char *)( &ctopic[3] ); // strip mw/   XXX: regex
                 for ( int i = 0; i < length; i++ ) {
@@ -102,7 +102,7 @@ namespace meisterwerk {
                 publish( topic, msg );
             }
 
-            virtual void onReceive( const char *origin, const char *ctopic, const char *msg ) override {
+            virtual void receive( const char *origin, const char *ctopic, const char *msg ) override {
                 String topic( ctopic );
                 if ( mqttConnected ) {
                     if ( topic.indexOf( "display/set" ) == -1 ) { // XXX: better filter config needed. (get/set)
