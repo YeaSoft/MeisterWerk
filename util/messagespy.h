@@ -19,7 +19,9 @@ namespace meisterwerk {
             String filter;
 
             public:
-            messagespy( String name = "spy", String filter = "*" ) : meisterwerk::core::entity( name ), filter{filter} {
+            messagespy( String name = "spy", String filter = "*" )
+                : meisterwerk::core::entity( name, 0, meisterwerk::core::PRIORITY_NORMAL ), filter{filter} {
+                // will autoregister
             }
 
             void setup() override {
@@ -42,9 +44,11 @@ namespace meisterwerk {
 #else
             // fake entity. Will neither register nor do anything
             messagespy( String name = "", String subscription = "" ) : meisterwerk::core::entity( "" ) {
+                // will NOT AUTOREGISTER
             }
 
-            bool registerEntity( unsigned long minMicroSecs = 0, unsigned int priority = 3 ) {
+            bool registerEntity( unsigned long             minMicroSecs = 0,
+                                 meisterwerk::core::T_PRIO priority     = meisterwerk::core::PRIORITY_NORMAL ) {
                 return true;
             }
 #endif

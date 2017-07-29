@@ -25,14 +25,11 @@ namespace meisterwerk {
             meisterwerk::util::metronome autodump;
             String                       debugButton;
 
-            dumper( String name = "dmp", unsigned long autodump = 0, String debugButton = "dbg" )
-                : meisterwerk::core::entity( name ), autodump{autodump}, debugButton{debugButton} {
-            }
-
-            bool registerEntity( unsigned long             minMicroSecs = 250000,
-                                 meisterwerk::core::T_PRIO priority     = meisterwerk::core::PRIORITY_NORMAL ) {
-                // default precision for autodump rate is 250ms
-                return meisterwerk::core::entity::registerEntity( minMicroSecs, priority );
+            dumper( String name = "dmp", unsigned long autodump = 0, String debugButton = "dbg",
+                    unsigned long             minMicroSecs = 250000,
+                    meisterwerk::core::T_PRIO priority     = meisterwerk::core::PRIORITY_NORMAL )
+                : meisterwerk::core::entity( name, minMicroSecs, priority ), autodump{autodump}, debugButton{
+                                                                                                     debugButton} {
             }
 
             void setup() override {
@@ -108,11 +105,15 @@ namespace meisterwerk {
             }
 #else
             // fake entity. Will neither register nor do anything
-            dumper( String name = "", int _iMinDumpSecs = 0, String _debugButton = "" )
+            dumper( String name = "dmp", unsigned long autodump = 0, String debugButton = "dbg",
+                    unsigned long             minMicroSecs = 250000,
+                    meisterwerk::core::T_PRIO priority     = meisterwerk::core::PRIORITY_NORMAL )
                 : meisterwerk::core::entity( "" ) {
+                // will NOT AUTOREGISTER
             }
 
-            bool registerEntity( unsigned long minMicroSecs = 0, unsigned int priority = 3 ) {
+            bool registerEntity( unsigned long             minMicroSecs = 0,
+                                 meisterwerk::core::T_PRIO priority     = meisterwerk::core::PRIORITY_NORMAL ) {
                 return true;
             }
 #endif
