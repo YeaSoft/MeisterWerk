@@ -45,7 +45,7 @@ namespace meisterwerk {
 
             unsigned int localPort = 2390; // local port to listen for UDP packets
 
-            Ntp( String name ) : meisterwerk::core::entity( name ), ntpTicker( 300000L ) {
+            Ntp( String name ) : meisterwerk::core::entity( name, 50000 ), ntpTicker( 300000L ) {
                 ntpstate  = Udpstate::IDLE;
                 ntpServer = "";
             }
@@ -56,8 +56,6 @@ namespace meisterwerk {
             }
 
             virtual void setup() override {
-                // 5sec sensor checks
-                bool ret = meisterwerk::core::entity::registerEntity( slice, core::scheduler::PRIORITY_TIMECRITICAL );
                 DBG( "init ntp." );
                 subscribe( "net/network" );
                 subscribe( entName + "/time/get" );
@@ -65,7 +63,6 @@ namespace meisterwerk {
                 publish( "net/network/get" );
                 publish( "net/services/timeserver/get" );
                 isOn = true;
-                return ret;
             }
 
             // send an NTP request to the time server at the given address
@@ -181,7 +178,7 @@ namespace meisterwerk {
             }
 
             virtual void receive( const char *origin, const char *ctopic, const char *msg ) override {
-                // meisterwerk::core::entity::onReceive( origin, ctopic, msg );
+                // meisterwerk::core::entity::receive( origin, ctopic, msg );
                 String topic( ctopic );
                 DBG( "Ntp:" + topic + "," + String( msg ) );
                 if ( topic == entName + "/time/get" || topic == "*/time/get" ) {

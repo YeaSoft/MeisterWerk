@@ -29,19 +29,13 @@ namespace meisterwerk {
             public:
             uint8_t address;
             i2cdev( String name, String i2cType, uint8_t address )
-                : meisterwerk::core::entity( name ), i2ctype{i2cType}, address{address} {
+                : meisterwerk::core::entity( name, 50000 ), i2ctype{i2cType}, address{address} {
                 DBG( "Constr:" + i2ctype );
             }
 
-            bool registerEntity( unsigned long slices ) {
-                bool ret = meisterwerk::core::entity::registerEntity( slices );
+            virtual void setup() override {
                 subscribe( "i2cbus/devices" );
                 publish( "i2cbus/devices/get" );
-                return ret;
-                //}
-
-                // virtual void onRegister() override {
-                // DBG( "i2cdev pub/sub in setup" );
             }
 
             virtual void receive( const char *origin, const char *ctopic, const char *msg ) override {

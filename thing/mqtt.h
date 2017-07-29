@@ -35,7 +35,8 @@ namespace meisterwerk {
             IPAddress       mqttserverIP;
 
             mqtt( String name )
-                : meisterwerk::core::entity( name ), mqttClient( wifiClient ), mqttTicker( 5000L ), clientName{name} {
+                : meisterwerk::core::entity( name, 50000 ), mqttClient( wifiClient ),
+                  mqttTicker( 5000L ), clientName{name} {
                 mqttServer = "";
             }
             ~mqtt() {
@@ -45,16 +46,12 @@ namespace meisterwerk {
             }
 
             virtual void setup() override {
-                bool ret = meisterwerk::core::entity::registerEntity( slice, core::scheduler::PRIORITY_NORMAL );
                 DBG( "Init mqtt" );
                 setLogLevel( T_LOGLEVEL::INFO );
-                // subscribe( "net/network" );
-                // subscribe( "net/services/mqttserver" );
                 subscribe( "*" );
                 publish( "net/network/get" );
                 publish( "net/services/mqttserver/get" );
                 isOn = true;
-                return ret;
             }
 
             bool         bWarned = false;

@@ -40,7 +40,7 @@ namespace meisterwerk {
             std::map<String, T_TIMESOURCE *> clocks;
             bool                             bSetup;
 
-            mastertime( String name ) : meisterwerk::core::entity( name ) {
+            mastertime( String name ) : meisterwerk::core::entity( name, 50000 ) {
                 bSetup       = false;
                 bestClock    = TimeType::NONE;
                 oldBestClock = TimeType::NONE;
@@ -52,14 +52,14 @@ namespace meisterwerk {
             }
 
             virtual void setup() override {
-                bool ret = meisterwerk::core::entity::registerEntity( slice, core::scheduler::PRIORITY_TIMECRITICAL );
+                // bool ret = meisterwerk::core::entity::registerEntity( slice, core::scheduler::PRIORITY_TIMECRITICAL
+                // );
                 //}
 
                 // virtual void onRegister() override {
                 bSetup = true;
                 subscribe( "*/time" );
                 publish( "*/time/get" );
-                return ret;
             }
 
             virtual void loop() override {

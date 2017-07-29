@@ -48,8 +48,6 @@ namespace meisterwerk {
             }
 
             virtual void setup() override {
-                bool ret = meisterwerk::base::i2cdev::registerEntity( 25000 );
-                return ret;
             }
 
             virtual void onInstantiate( String i2ctype, uint8_t address ) override {
@@ -117,7 +115,7 @@ namespace meisterwerk {
             }
 
             virtual void receive( const char *origin, const char *ctopic, const char *msg ) override {
-                meisterwerk::base::i2cdev::onReceive( origin, ctopic, msg );
+                meisterwerk::base::i2cdev::receive( origin, ctopic, msg );
                 String topic( ctopic );
                 if ( topic == "*/display/get" || topic == entName + "/display/get" ) {
                     publish( entName + "/display", "{\"type\":\"textdisplay\",\"x\":" + String( displayX ) +

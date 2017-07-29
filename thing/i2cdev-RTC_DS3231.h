@@ -54,7 +54,6 @@ namespace meisterwerk {
             }
 
             virtual void setup() override {
-                return meisterwerk::base::i2cdev::registerEntity( 1000000L );
             }
 
             virtual void onInstantiate( String i2ctype, uint8_t address ) override {
@@ -176,7 +175,7 @@ namespace meisterwerk {
             }
 
             virtual void receive( const char *origin, const char *ctopic, const char *msg ) override {
-                meisterwerk::base::i2cdev::onReceive( origin, ctopic, msg );
+                meisterwerk::base::i2cdev::receive( origin, ctopic, msg );
                 String topic( ctopic );
                 if ( topic == "mastertime/time/set" ) {
                     bTimeValid = true;

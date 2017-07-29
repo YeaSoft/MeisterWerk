@@ -154,7 +154,7 @@ namespace meisterwerk {
             util::metronome i2cWatchdog;
 
             i2cbus( String name, uint8_t sdaport, uint8_t sclport )
-                : meisterwerk::core::entity( name ), i2cWatchdog( 600000 ), sdaport{sdaport}, sclport{sclport} {
+                : meisterwerk::core::entity( name, 50000 ), i2cWatchdog( 600000 ), sdaport{sdaport}, sclport{sclport} {
                 bSetup         = false;
                 bEnum          = false;
                 bInternalError = false;
@@ -162,13 +162,12 @@ namespace meisterwerk {
 
             virtual void setup() override {
                 //}
-                bool ret = meisterwerk::core::entity::registerEntity( slice );
+                // bool ret = meisterwerk::core::entity::registerEntity( slice );
                 // virtual void onRegister() override {
                 Wire.begin( sdaport, sclport ); // SDA, SCL;
                 bSetup = true;
                 bEnum  = false;
                 subscribe( "i2cbus/devices/get" );
-                return ret;
             }
 
             int identify( uint8_t address ) {

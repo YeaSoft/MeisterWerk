@@ -33,7 +33,7 @@ namespace meisterwerk {
             unsigned long   watchdogTimeout = 5000;
 
             GPS_NEO_6M( String name, uint8_t rxPin, uint8_t txPin )
-                : meisterwerk::core::entity( name ), rxPin{rxPin}, txPin{txPin} {
+                : meisterwerk::core::entity( name, 50000 ), rxPin{rxPin}, txPin{txPin} {
             }
             ~GPS_NEO_6M() {
                 if ( isOn ) {
@@ -43,7 +43,6 @@ namespace meisterwerk {
             }
 
             virtual void setup() override {
-                bool ret = meisterwerk::core::entity::registerEntity( slice, core::scheduler::PRIORITY_TIMECRITICAL );
                 DBG( "Init gps: RX=" + String( rxPin ) + ", TX=" + String( txPin ) );
 
                 pser = new SoftwareSerial( rxPin, txPin, false, 256 ); // RX, TX, inverseLogic, bufferSize
@@ -55,7 +54,6 @@ namespace meisterwerk {
                 subscribe( entName + "/loglevel/set" );
                 watchdog = millis();
                 isOn     = true;
-                return ret;
             }
 
             int l = 0;

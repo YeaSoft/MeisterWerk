@@ -64,7 +64,7 @@ namespace meisterwerk {
                 }
             }
 
-            virtual bool onReceive( String origin, String topic, JsonObject &request, JsonObject &response ) override {
+            virtual bool receive( String origin, String topic, JsonObject &request, JsonObject &response ) override {
                 if ( meisterwerk::core::entity::onReceive( origin, topic, request, response ) ) {
                     return true;
                 }

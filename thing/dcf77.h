@@ -31,7 +31,7 @@ namespace meisterwerk {
             bool    isOn     = false;
             uint8_t dcf77pin = D5; // D8 needs to be low on boot, don't use.
 
-            dcf77( String name ) : meisterwerk::core::entity( name ) {
+            dcf77( String name ) : meisterwerk::core::entity( name, 20000 ) {
             }
             ~dcf77() {
                 if ( isOn ) {
@@ -41,7 +41,6 @@ namespace meisterwerk {
 
             virtual void setup() override {
                 // 5sec sensor checks
-                bool ret = meisterwerk::core::entity::registerEntity( 20000, core::scheduler::PRIORITY_TIMECRITICAL );
                 pinMode( dcf77pin, INPUT ); // INPUT_PULLUP );
 
                 DBG( "init dcf77." );
@@ -65,7 +64,7 @@ namespace meisterwerk {
             }
 
             virtual void receive( const char *origin, const char *ctopic, const char *msg ) override {
-                // meisterwerk::core::entity::onReceive( origin, topic, msg );
+                // meisterwerk::core::entity::receive( origin, topic, msg );
                 String topic( ctopic );
                 DBG( "dcf77:" + topic + "," + msg );
                 if ( topic == entName + "/time/get" || topic == "*/time/get" ) {
