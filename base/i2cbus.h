@@ -161,9 +161,6 @@ namespace meisterwerk {
             }
 
             virtual void setup() override {
-                //}
-                // bool ret = meisterwerk::core::entity::registerEntity( slice );
-                // virtual void onRegister() override {
                 Wire.begin( sdaport, sclport ); // SDA, SCL;
                 bSetup = true;
                 bEnum  = false;

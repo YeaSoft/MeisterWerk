@@ -48,6 +48,7 @@ namespace meisterwerk {
             }
 
             virtual void setup() override {
+                i2cdev::setup();
             }
 
             virtual void onInstantiate( String i2ctype, uint8_t address ) override {

@@ -52,11 +52,6 @@ namespace meisterwerk {
             }
 
             virtual void setup() override {
-                // bool ret = meisterwerk::core::entity::registerEntity( slice, core::scheduler::PRIORITY_TIMECRITICAL
-                // );
-                //}
-
-                // virtual void onRegister() override {
                 bSetup = true;
                 subscribe( "*/time" );
                 publish( "*/time/get" );
