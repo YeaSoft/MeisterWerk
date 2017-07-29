@@ -8,22 +8,19 @@
 #pragma once
 
 // dependencies
+#include "../util/metronome.h"
 #include "../util/timebudget.h"
+#include "common.h"
 #include "entity.h"
 #include <list>
 
 namespace meisterwerk {
     namespace core {
 
+        class baseapp;
+
         class scheduler {
-            public:
-            // constants
-            static const unsigned int PRIORITY_SYSTEMCRITICAL = 0;
-            static const unsigned int PRIORITY_TIMECRITICAL   = 1;
-            static const unsigned int PRIORITY_HIGH           = 2;
-            static const unsigned int PRIORITY_NORMAL         = 3;
-            static const unsigned int PRIORITY_LOW            = 4;
-            static const unsigned int PRIORITY_LOWEST         = 5;
+            friend class baseapp;
 
             // internal types
             protected:
@@ -34,17 +31,15 @@ namespace meisterwerk {
 
             class task {
                 public:
-                task( entity *_pEnt, unsigned long _minMicros, unsigned int _priority ) {
-                    pEnt      = _pEnt;
-                    minMicros = _minMicros;
-                    priority  = _priority;
-                    lastCall  = 0;
-                    lateTime  = 0;
+                task( entity *pEnt, unsigned long minMicros, T_PRIO priority )
+                    : pEnt{pEnt}, minMicros{minMicros}, priority{priority} {
+                    lastCall = 0;
+                    lateTime = 0;
                 }
 
                 entity *      pEnt;
                 unsigned long minMicros;
-                unsigned int  priority;
+                T_PRIO        priority;
                 unsigned long lastCall;
                 unsigned long lateTime;
 
@@ -57,8 +52,9 @@ namespace meisterwerk {
             typedef std::list<T_SUBSCRIPTION> T_SUBSCRIPTIONLIST;
 
             // members
-            T_TASKLIST         taskList;
-            T_SUBSCRIPTIONLIST subscriptionList;
+            T_TASKLIST                   taskList;
+            T_SUBSCRIPTIONLIST           subscriptionList;
+            meisterwerk::util::metronome yieldRythm = 5; // 5ms
 
             // methods
             public:
@@ -77,14 +73,9 @@ namespace meisterwerk {
                 taskList.clear();
             }
 
-            unsigned long lastYield  = 0;
-            unsigned long yieldAfter = 5000; // 5 ms
-            void          checkYield() {
-                unsigned long curMicros = micros();
-                unsigned long tDelta    = meisterwerk::util::timebudget::delta( lastYield, curMicros );
-                if ( tDelta > yieldAfter ) {
+            void checkYield() {
+                if ( yieldRythm.woof() ) {
                     yield();
-                    lastYield = micros();
                 }
             }
 
@@ -98,6 +89,7 @@ namespace meisterwerk {
                     processMsgQueue();
                     // process entity and kernel tasks
                     processTask( pTask );
+                    // serve the watchdog
                     checkYield();
                 }
                 ESP.wdtFeed();
@@ -139,7 +131,7 @@ namespace meisterwerk {
                     DBG_ONLY( tskTime.snap() );
                     DBG_ONLY( pTask->tskTime.snap() );
 
-                    pTask->pEnt->onLoop( ticker );
+                    pTask->pEnt->loop();
 
                     DBG_ONLY( pTask->tskTime.shot() );
                     DBG_ONLY( tskTime.shot() );
@@ -179,8 +171,8 @@ namespace meisterwerk {
                             if ( ( pTask->pEnt->entName == sub.subscriber ) &&
                                  ( String( pMsg->originator ) != sub.subscriber ) ) {
                                 DBG_ONLY( pTask->msgTime.snap() );
-                                pTask->pEnt->onReceive( pMsg->originator, pMsg->topic,
-                                                        pMsg->pBuf && pMsg->pBufLen ? (const char *)pMsg->pBuf : "" );
+                                pTask->pEnt->receive( pMsg->originator, pMsg->topic,
+                                                      pMsg->pBuf && pMsg->pBufLen ? (const char *)pMsg->pBuf : "" );
                                 DBG_ONLY( pTask->msgTime.shot() );
                             }
                         }
@@ -212,8 +204,8 @@ namespace meisterwerk {
                 return;
             }
 
-            bool registerEntity( entity *pEnt, unsigned long minMicroSecs = 100000L,
-                                 unsigned int priority = PRIORITY_NORMAL ) {
+            bool registerEntity( entity *pEnt, unsigned long minMicroSecs = 100000L, T_PRIO priority = PRIORITY_NORMAL,
+                                 bool bCallback = true ) {
                 for ( auto pTask : taskList ) {
                     if ( pTask->pEnt->entName == pEnt->entName ) {
                         DBG( "ERROR: cannot register another task with existing entity-name: " + pEnt->entName );
@@ -225,13 +217,14 @@ namespace meisterwerk {
                     return false;
                 }
                 taskList.push_back( pTask );
-                pEnt->onRegister(); // XXX: this callback is utterly pointless, it only bloats the API. -> discuss
-                                    // removal.
+
+                if ( bCallback ) {
+                    pEnt->setup();
+                }
                 return true;
             }
 
-            bool updateEntity( entity *pEnt, unsigned long minMicroSecs = 100000L,
-                               unsigned int priority = PRIORITY_NORMAL ) {
+            bool updateEntity( entity *pEnt, unsigned long minMicroSecs = 100000L, T_PRIO priority = PRIORITY_NORMAL ) {
                 bool    found = false;
                 T_PTASK pTask;
                 for ( auto pt : taskList ) {
@@ -246,8 +239,6 @@ namespace meisterwerk {
                 }
                 pTask->minMicros = minMicroSecs;
                 pTask->priority  = priority;
-
-                // pEnt->onUpdateEntity();   // Probably not userful?
                 return true;
             }
 
