@@ -33,7 +33,7 @@ namespace meisterwerk {
             unsigned long   watchdogTimeout = 5000;
 
             GPS_NEO_6M( String name, uint8_t rxPin, uint8_t txPin )
-                : meisterwerk::core::entity( name ), rxPin{rxPin}, txPin{txPin} {
+                : meisterwerk::core::entity( name, 50000 ), rxPin{rxPin}, txPin{txPin} {
             }
             ~GPS_NEO_6M() {
                 if ( isOn ) {
@@ -42,8 +42,7 @@ namespace meisterwerk {
                 }
             }
 
-            bool registerEntity( unsigned long slice = 50000 ) {
-                bool ret = meisterwerk::core::entity::registerEntity( slice, core::scheduler::PRIORITY_TIMECRITICAL );
+            virtual void setup() override {
                 DBG( "Init gps: RX=" + String( rxPin ) + ", TX=" + String( txPin ) );
 
                 pser = new SoftwareSerial( rxPin, txPin, false, 256 ); // RX, TX, inverseLogic, bufferSize
@@ -55,7 +54,6 @@ namespace meisterwerk {
                 subscribe( entName + "/loglevel/set" );
                 watchdog = millis();
                 isOn     = true;
-                return ret;
             }
 
             int l = 0;
@@ -68,8 +66,8 @@ namespace meisterwerk {
 
             void resetCmd() {
                 for ( int i = 0; i < NMEA_MAX_CMDS; i++ )
-                    cmd[i]  = "";
-                icmd        = 0;
+                    cmd[i] = "";
+                icmd = 0;
             }
 
             void resetDefaults() {
@@ -236,18 +234,18 @@ namespace meisterwerk {
 
             bool         warn   = false;
             bool         rcvChr = false;
-            virtual void onLoop( unsigned long ticker ) override {
+            virtual void loop() override {
                 if ( isOn ) {
                     if ( util::timebudget::delta( watchdog, millis() ) > watchdogTimeout ) {
                         warn = true;
                         if ( !warn ) {
                             DBG( "GPS Failure!" );
-                            Log( loglevel::ERR, "GPS Failure!" );
+                            log( T_LOGLEVEL::ERR, "GPS Failure!" );
                         }
                     } else {
                         if ( warn ) {
                             DBG( "GPS online!" );
-                            Log( loglevel::INFO, "GPS online again." );
+                            log( T_LOGLEVEL::INFO, "GPS online again." );
                         }
                         warn = false;
                     }
@@ -256,7 +254,7 @@ namespace meisterwerk {
                         if ( !rcvChr ) {
                             rcvChr = true;
                             DBG( "GPS alive!" );
-                            Log( loglevel::VER1, "GPS, first char." );
+                            log( T_LOGLEVEL::VER1, "GPS, first char." );
                         }
                         char c = pser->read();
                         if ( c == 10 )
@@ -282,10 +280,10 @@ namespace meisterwerk {
                 }
             }
 
-            virtual void onReceive( const char *origin, const char *ctopic, const char *msg ) override {
+            virtual void receive( const char *origin, const char *ctopic, const char *msg ) override {
                 String topic( ctopic );
                 DBG( "GpsReceive:" + topic + "," + msg );
-                Log( loglevel::INFO, "GpsReceive:" + topic + "," + msg );
+                log( T_LOGLEVEL::INFO, "GpsReceive:" + topic + "," + msg );
                 if ( topic == entName + "/time/get" || topic == "*/time/get" ) {
                     bPublishTime = true;
                 }
@@ -293,8 +291,8 @@ namespace meisterwerk {
                     bPublishGps = true;
                 }
                 if ( topic == entName + "/loglevel/set" ) {
-                    setLogLevel( loglevel::DBG );
-                    Log( loglevel::INFO, "Loglevel of GPS is now DEBUG" );
+                    setLogLevel( T_LOGLEVEL::DBG );
+                    log( T_LOGLEVEL::INFO, "Loglevel of GPS is now DEBUG" );
                 }
             }
 

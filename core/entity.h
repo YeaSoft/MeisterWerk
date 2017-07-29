@@ -92,7 +92,6 @@ namespace meisterwerk {
                 return false;
             }
 
-            // possible preliminary home of log functions
             void setLogLevel( T_LOGLEVEL lclass ) {
                 logLevel = lclass;
             }
@@ -100,29 +99,41 @@ namespace meisterwerk {
             void log( T_LOGLEVEL lclass, String msg, String logtopic = "" ) {
                 if ( lclass > logLevel )
                     return;
-                String cstr;
+                if ( logtopic == "" )
+                    logtopic = entName;
+                String cstr = "";
+                String icon = "";
                 switch ( lclass ) {
                 case T_LOGLEVEL::ERR:
                     cstr = "Error";
+                    icon = "🛑";
                     break;
                 case T_LOGLEVEL::WARN:
                     cstr = "Warning";
+                    icon = "⚠️";
                     break;
                 case T_LOGLEVEL::INFO:
                     cstr = "Info";
+                    icon = "ℹ️ℹ";
                     break;
                 case T_LOGLEVEL::DBG:
                     cstr = "Debug";
+                    icon = "🗒";
                     break;
                 default:
                     cstr = "Debug";
+                    icon = "🐞";
                     break;
                 }
-                publish( "log/" + cstr + "/" + entName, "{\"time\":\"" + util::msgtime::ISOnowMillis() +
-                                                                "\",\"severity\":\"" + cstr + "\",\"topic\":\"" +
-                                                                ( logtopic == "" )
-                                                            ? entName
-                                                            : logtopic + "\",\"msg\":\"" + msg + "\"}" );
+                // XXX: Json-in-message escaping, is that the best way:
+                msg.replace( "\\", "/" );
+                msg.replace( "\"", "'" );
+
+                String tpc    = "log/" + cstr + "/" + entName;
+                String logmsg = "{\"time\":\"" + util::msgtime::ISOnowMillis() + "\",\"severity\":\"" + cstr +
+                                "\",\"icon\":\"" + icon + "\",\"topic\":\"" + logtopic + "\",\"msg\":\"" + msg + "\"}";
+                publish( tpc, logmsg );
+                DBG( icon + "  " + tpc + " | " + logmsg );
             }
 
             // callbacks

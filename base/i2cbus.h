@@ -141,29 +141,30 @@ namespace meisterwerk {
 
         class i2cbus : public meisterwerk::core::entity {
             public:
-            bool         bSetup;
-            bool         bEnum;
-            bool         bInternalError;
-            uint8_t      sdaport, sclport;
-            unsigned int nDevices;
-            String       i2cjson;
+            bool            bSetup;
+            bool            bEnum;
+            bool            bInternalError;
+            uint8_t         sdaport, sclport;
+            unsigned int    nDevices;
+            String          i2cjson;
+            String          i2cjsonOld;
+            unsigned int    nDevicesOld;
+            time_t          lastScanTime    = 0;
+            unsigned long   i2cCacheTimeout = 15; // 15 sec, scan requests repeated within 15sec are answered by cache.
+            util::metronome i2cWatchdog;
 
             i2cbus( String name, uint8_t sdaport, uint8_t sclport )
-                : meisterwerk::core::entity( name ), sdaport{sdaport}, sclport{sclport} {
+                : meisterwerk::core::entity( name, 50000 ), i2cWatchdog( 600000 ), sdaport{sdaport}, sclport{sclport} {
                 bSetup         = false;
                 bEnum          = false;
                 bInternalError = false;
             }
 
-            bool registerEntity( unsigned long slice = 50000 ) {
-                //}
-                bool ret = meisterwerk::core::entity::registerEntity( slice );
-                // virtual void onRegister() override {
+            virtual void setup() override {
                 Wire.begin( sdaport, sclport ); // SDA, SCL;
                 bSetup = true;
                 bEnum  = false;
                 subscribe( "i2cbus/devices/get" );
-                return ret;
             }
 
             int identify( uint8_t address ) {
@@ -218,20 +219,24 @@ namespace meisterwerk {
                 return bDevFound;
             }
 
-            unsigned int i2cScan() {
+            unsigned int i2cScan( bool publishResult = true ) {
                 byte address;
                 int  niDevs, i2cid;
 
                 if ( !bSetup ) {
                     DBG( "i2cbus not initialized!" );
-                    publish( "i2cbus/devices", "{}" );
+                    if ( publishResult )
+                        publish( "i2cbus/devices", "{\"devices\":[]}" );
                     bInternalError = true;
                     return 0;
                 }
-                if ( bEnum ) {
-                    publish( "i2cbus/devices", i2cjson );
+                if ( bEnum && lastScanTime - now() < i2cCacheTimeout ) {
+                    DBG( "Cached result for i2c scan." );
+                    if ( publishResult )
+                        publish( "i2cbus/devices", i2cjson );
                     return 0;
                 }
+                lastScanTime = now();
 
                 hwErrs       = 0;
                 bHWErrDetect = false;
@@ -255,31 +260,51 @@ namespace meisterwerk {
                     }
                 }
                 if ( hwErrs > 0 ) {
-                    DBG( "I2C-bus hardware problem: " + String( hwErrs ) +
-                         " errors during scan. Try power power-cycling device." );
+                    String errmsg = "I2C-bus hardware problem: " + String( hwErrs ) +
+                                    " errors during scan. Try power power-cycling device.";
+                    DBG( errmsg );
+                    log( T_LOGLEVEL::ERR, errmsg );
                 }
                 if ( niDevs == 0 ) {
                     DBG( "No I2C devices found" );
-                    publish( "i2cbus/devices", "{\"devices\":[]}" );
+                    if ( publishResult )
+                        publish( "i2cbus/devices", "{\"devices\":[]}" );
                 } else {
                     i2cjson = "{\"devices\":[" + devlist + "]}";
                     DBG( "jsonstate i2c:" + i2cjson );
-                    publish( "i2cbus/devices", i2cjson );
+                    if ( publishResult )
+                        publish( "i2cbus/devices", i2cjson );
                 }
-                bEnum = true;
+                if ( bEnum ) {
+                    if ( nDevices != nDevicesOld || i2cjson != i2cjsonOld ) {
+                        DBG( "I2C bus state changed! " + String( nDevices ) +
+                             " connected. (Before: " + String( nDevicesOld ) + " devices." );
+                    }
+                }
+                log( T_LOGLEVEL::INFO, "I2Cbus enumeration: " + i2cjson );
+                nDevicesOld = nDevices;
+                i2cjsonOld  = i2cjson;
+                bEnum       = true;
                 return nDevices;
             }
 
-            virtual void onLoop( unsigned long ticker ) override {
+            virtual void loop() override {
                 if ( bInternalError )
                     return;
                 if ( !bEnum ) {
                     i2cScan();
                     bEnum = true;
                 }
+                if ( i2cWatchdog.beat() > 0 ) {
+                    int    oldDevs = nDevices;
+                    String oldJson = i2cjson;
+                    if ( i2cScan( false ) != oldDevs || i2cjson != oldJson ) {
+                        log( T_LOGLEVEL::ERR, "I2C-bus change from: " + oldJson + " to: " + i2cjson );
+                    }
+                }
             }
 
-            virtual void onReceive( const char *origin, const char *ctopic, const char *msg ) override {
+            virtual void receive( const char *origin, const char *ctopic, const char *msg ) override {
                 String topic( ctopic );
                 if ( topic == "i2cbus/devices/get" ) {
                     i2cScan();

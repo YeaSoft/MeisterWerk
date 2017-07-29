@@ -50,7 +50,7 @@ namespace meisterwerk {
                 subscribe( ownTopic( "toggle" ) );
             }
 
-            virtual void onLoop( unsigned long timer ) override {
+            virtual void loop() override {
                 if ( stateTimer > 0 ) {
                     // timed state change requested
                     if ( stateTimer.isexpired() ) {
@@ -64,7 +64,7 @@ namespace meisterwerk {
                 }
             }
 
-            virtual bool onReceive( String origin, String topic, JsonObject &request, JsonObject &response ) override {
+            virtual bool receive( String origin, String topic, JsonObject &request, JsonObject &response ) override {
                 if ( meisterwerk::core::entity::onReceive( origin, topic, request, response ) ) {
                     return true;
                 }
@@ -127,4 +127,4 @@ namespace meisterwerk {
             }
         };
     } // namespace base
-} // namespace meisterwek
+} // namespace meisterwerk

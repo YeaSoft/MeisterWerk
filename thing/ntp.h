@@ -45,7 +45,7 @@ namespace meisterwerk {
 
             unsigned int localPort = 2390; // local port to listen for UDP packets
 
-            Ntp( String name ) : meisterwerk::core::entity( name ), ntpTicker( 300000L ) {
+            Ntp( String name ) : meisterwerk::core::entity( name, 50000 ), ntpTicker( 300000L ) {
                 ntpstate  = Udpstate::IDLE;
                 ntpServer = "";
             }
@@ -55,9 +55,7 @@ namespace meisterwerk {
                 }
             }
 
-            bool registerEntity( unsigned long slice = 50000 ) {
-                // 5sec sensor checks
-                bool ret = meisterwerk::core::entity::registerEntity( slice, core::scheduler::PRIORITY_TIMECRITICAL );
+            virtual void setup() override {
                 DBG( "init ntp." );
                 subscribe( "net/network" );
                 subscribe( entName + "/time/get" );
@@ -65,7 +63,6 @@ namespace meisterwerk {
                 publish( "net/network/get" );
                 publish( "net/services/timeserver/get" );
                 isOn = true;
-                return ret;
             }
 
             // send an NTP request to the time server at the given address
@@ -135,7 +132,7 @@ namespace meisterwerk {
                 }
             }
 
-            virtual void onLoop( unsigned long ticker ) override {
+            virtual void loop() override {
                 if ( isOn ) {
                     if ( netUp ) {
                         switch ( ntpstate ) {
@@ -180,8 +177,8 @@ namespace meisterwerk {
                 }
             }
 
-            virtual void onReceive( const char *origin, const char *ctopic, const char *msg ) override {
-                // meisterwerk::core::entity::onReceive( origin, ctopic, msg );
+            virtual void receive( const char *origin, const char *ctopic, const char *msg ) override {
+                // meisterwerk::core::entity::receive( origin, ctopic, msg );
                 String topic( ctopic );
                 DBG( "Ntp:" + topic + "," + String( msg ) );
                 if ( topic == entName + "/time/get" || topic == "*/time/get" ) {
@@ -213,10 +210,12 @@ namespace meisterwerk {
                     }
                     String state = root["state"];
                     if ( state == "connected" ) {
-                        netUp = true;
-                        udp.begin( localPort );
-                        if ( ntpServer != "" ) {
-                            getNtpTime();
+                        if ( !netUp ) {
+                            netUp = true;
+                            udp.begin( localPort );
+                            if ( ntpServer != "" ) {
+                                getNtpTime();
+                            }
                         }
                     } else
                         netUp = false;

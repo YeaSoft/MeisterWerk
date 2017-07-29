@@ -27,29 +27,39 @@ namespace meisterwerk {
             enum Netstate { NOTDEFINED, NOTCONFIGURED, CONNECTINGAP, CONNECTED };
             enum Netmode { AP, STATION };
 
-            bool                  bSetup;
-            Netstate              state;
-            Netstate              oldstate;
-            Netmode               mode;
-            long                  contime;
-            long                  conto = 15000;
-            String                SSID;
-            String                password;
-            String                lhostname;
-            String                ipaddress;
-            util::metronome       tick1sec;
-            util::metronome       tick10sec;
-            util::sensorprocessor rssival;
+            bool                     bSetup;
+            Netstate                 state;
+            Netstate                 oldstate;
+            Netmode                  mode;
+            long                     contime;
+            long                     conto = 15000;
+            String                   SSID;
+            String                   password;
+            String                   lhostname;
+            String                   ipaddress;
+            util::metronome          tick1sec;
+            util::metronome          tick10sec;
+            util::sensorprocessor    rssival;
             std::map<String, String> netservices;
-            String macAddress;
+            String                   macAddress;
 
             net( String name )
-                : meisterwerk::core::entity( name ), tick1sec( 1000L ), tick10sec( 10000L ), rssival( 5, 900, 2.0 ) {
+                : meisterwerk::core::entity( name, 50000 ), tick1sec( 1000L ), tick10sec( 10000L ),
+                  rssival( 5, 900, 2.0 ) {
                 bSetup = false;
             }
 
-            bool registerEntity() {
-                return meisterwerk::core::entity::registerEntity( 50000 );
+            virtual void setup() override {
+                bSetup   = true;
+                oldstate = Netstate::NOTDEFINED;
+                state    = Netstate::NOTCONFIGURED;
+                mode     = Netmode::AP;
+                if ( readNetConfig() ) {
+                    connectAP();
+                }
+                subscribe( "net/network/get" );
+                subscribe( "net/network/set" );
+                subscribe( "net/networks/get" );
             }
 
             void publishNetwork() {
@@ -78,6 +88,7 @@ namespace meisterwerk {
                     break;
                 }
                 publish( "net/network", json );
+                log( T_LOGLEVEL::INFO, json );
                 if ( state == Netstate::CONNECTED )
                     publishServices();
             }
@@ -132,19 +143,6 @@ namespace meisterwerk {
                 contime = millis();
             }
 
-            virtual void onRegister() override {
-                bSetup   = true;
-                oldstate = Netstate::NOTDEFINED;
-                state    = Netstate::NOTCONFIGURED;
-                mode     = Netmode::AP;
-                if ( readNetConfig() ) {
-                    connectAP();
-                }
-                subscribe( "net/network/get" );
-                subscribe( "net/network/set" );
-                subscribe( "net/networks/get" );
-            }
-
             String strEncryptionType( int thisType ) {
                 // read the encryption type and print out the name:
                 switch ( thisType ) {
@@ -190,7 +188,7 @@ namespace meisterwerk {
                     publish( "net/services/" + s.first, "{\"server\":\"" + s.second + "\"}" );
                 }
             }
-            virtual void onLoop( unsigned long ticker ) override {
+            virtual void loop() override {
                 switch ( state ) {
                 case Netstate::NOTCONFIGURED:
                     if ( tick10sec.beat() > 0 ) {
@@ -230,8 +228,9 @@ namespace meisterwerk {
                 }
             }
 
-            virtual void onReceive( const char *origin, const char *ctopic, const char *msg ) override {
+            virtual void receive( const char *origin, const char *ctopic, const char *msg ) override {
                 String topic( ctopic );
+                log( T_LOGLEVEL::INFO, String( msg ), topic );
                 if ( topic == "net/network/get" ) {
                     publishNetwork();
                 } else if ( topic == "net/networks/get" ) {

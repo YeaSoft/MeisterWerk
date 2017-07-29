@@ -33,7 +33,7 @@ namespace meisterwerk {
                 lastChange.start();
             }
 
-            virtual void onLoop( unsigned long ticker ) override {
+            virtual void loop() override {
                 change( digitalRead( pin ) == LOW );
             }
 
@@ -43,5 +43,5 @@ namespace meisterwerk {
                 reposnse["pin"]  = pin;
             }
         };
-    }
-}
+    } // namespace thing
+} // namespace meisterwerk

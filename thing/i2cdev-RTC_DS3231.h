@@ -53,8 +53,8 @@ namespace meisterwerk {
                 }
             }
 
-            bool registerEntity() {
-                return meisterwerk::base::i2cdev::registerEntity( 1000000L );
+            virtual void setup() override {
+                i2cdev::setup();
             }
 
             virtual void onInstantiate( String i2ctype, uint8_t address ) override {
@@ -117,7 +117,7 @@ namespace meisterwerk {
                 }
             }
 
-            virtual void onLoop( unsigned long ticker ) override {
+            virtual void loop() override {
                 if ( pollSensor ) {
                     if ( bRtcTimeValid ) {
                         if ( bGetTime || rtcTicker.beat() > 0 ) {
@@ -175,8 +175,8 @@ namespace meisterwerk {
                 return isoTime;
             }
 
-            virtual void onReceive( const char *origin, const char *ctopic, const char *msg ) override {
-                meisterwerk::base::i2cdev::onReceive( origin, ctopic, msg );
+            virtual void receive( const char *origin, const char *ctopic, const char *msg ) override {
+                meisterwerk::base::i2cdev::receive( origin, ctopic, msg );
                 String topic( ctopic );
                 if ( topic == "mastertime/time/set" ) {
                     bTimeValid = true;

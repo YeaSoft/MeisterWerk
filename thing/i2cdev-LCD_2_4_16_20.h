@@ -37,9 +37,8 @@ namespace meisterwerk {
                 }
             }
 
-            bool registerEntity() {
-                bool ret = meisterwerk::base::i2cdev::registerEntity( 5000000 );
-                return ret;
+            virtual void setup() override {
+                i2cdev::setup();
             }
 
             virtual void onInstantiate( String i2ctype, uint8_t address ) override {
@@ -74,18 +73,17 @@ namespace meisterwerk {
                 publish( entName + "/display" );
             }
 
-            virtual void onLoop( unsigned long ticker ) override {
+            virtual void loop() override {
                 if ( pollDisplay ) {
                 }
             }
 
-            virtual void onReceive( const char *origin, const char *ctopic, const char *msg ) override {
-                meisterwerk::base::i2cdev::onReceive( origin, ctopic, msg );
+            virtual void receive( const char *origin, const char *ctopic, const char *msg ) override {
+                meisterwerk::base::i2cdev::receive( origin, ctopic, msg );
                 String topic( ctopic );
                 if ( topic == "*/display/get" || topic == entName + "/display/get" ) {
-                    publish( entName + "/display",
-                             "{\"type\":\"textdisplay\",\"x\":" + String( displayX ) + ",\"y\":" + String( displayY ) +
-                                 "}" );
+                    publish( entName + "/display", "{\"type\":\"textdisplay\",\"x\":" + String( displayX ) +
+                                                       ",\"y\":" + String( displayY ) + "}" );
                 }
                 if ( topic == entName + "/display/set" ) {
                     DynamicJsonBuffer jsonBuffer( 200 );

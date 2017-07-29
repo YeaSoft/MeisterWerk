@@ -38,9 +38,9 @@ namespace meisterwerk {
             unsigned long clockRefreshIntervall = 900;  // Send clock updates after each 15min.
 
             std::map<String, T_TIMESOURCE *> clocks;
-            bool bSetup;
+            bool                             bSetup;
 
-            mastertime( String name ) : meisterwerk::core::entity( name ) {
+            mastertime( String name ) : meisterwerk::core::entity( name, 50000 ) {
                 bSetup       = false;
                 bestClock    = TimeType::NONE;
                 oldBestClock = TimeType::NONE;
@@ -51,21 +51,16 @@ namespace meisterwerk {
                 }
             }
 
-            bool registerEntity( unsigned long slice = 50000 ) {
-                bool ret = meisterwerk::core::entity::registerEntity( slice, core::scheduler::PRIORITY_TIMECRITICAL );
-                //}
-
-                // virtual void onRegister() override {
+            virtual void setup() override {
                 bSetup = true;
                 subscribe( "*/time" );
                 publish( "*/time/get" );
-                return ret;
             }
 
-            virtual void onLoop( unsigned long ticker ) override {
+            virtual void loop() override {
             }
 
-            virtual void onReceive( const char *origin, const char *ctopic, const char *msg ) override {
+            virtual void receive( const char *origin, const char *ctopic, const char *msg ) override {
                 String topic( ctopic );
                 int    p = topic.indexOf( "/" );
                 time_t tlast;
