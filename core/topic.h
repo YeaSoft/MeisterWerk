@@ -15,20 +15,32 @@ namespace meisterwerk {
             public:
             Topic( const char *cstr = "" ) : String( cstr ) {
             }
-
             Topic( const String &str ) : String( str ) {
             }
-
             Topic( const __FlashStringHelper *str ) : String( str ) {
             }
-
 #ifdef __GXX_EXPERIMENTAL_CXX0X__
             Topic( String &&rval ) : String( rval ) {
             }
-
             Topic( StringSumHelper &&rval ) : String( rval ) {
             }
 #endif
+            explicit Topic( char c ) : String( c ) {
+            }
+            explicit Topic( unsigned char value, unsigned char base = 10 ) : String( value, base ) {
+            }
+            explicit Topic( int value, unsigned char base = 10 ) : String( value, base ) {
+            }
+            explicit Topic( unsigned int value, unsigned char base = 10 ) : String( value, base ) {
+            }
+            explicit Topic( long value, unsigned char base = 10 ) : String( value, base ) {
+            }
+            explicit Topic( unsigned long value, unsigned char base = 10 ) : String( value, base ) {
+            }
+            explicit Topic( float value, unsigned char decimalPlaces = 2 ) : String( value, decimalPlaces ) {
+            }
+            explicit Topic( double value, unsigned char decimalPlaces = 2 ) : String( value, decimalPlaces ) {
+            }
 
             bool match( String &mask ) const {
                 return mqttmatch( c_str(), mask.c_str() );
@@ -38,7 +50,7 @@ namespace meisterwerk {
                 return mqttmatch( c_str(), mask );
             }
 
-            String getFirst() const {
+            String getfirst() const {
                 char *pPtr = strchr( buffer, '/' );
                 if ( pPtr ) {
                     char cTemp = *pPtr;
@@ -50,7 +62,7 @@ namespace meisterwerk {
                 return c_str();
             }
 
-            String getNext() const {
+            String getnext() const {
                 char *pStart = strchr( buffer, '/' );
                 if ( pStart ) {
                     ++pStart;
@@ -65,6 +77,46 @@ namespace meisterwerk {
                     return pStart;
                 }
                 return "";
+            }
+
+            String &format( const char *format, ... ) {
+                va_list argList;
+                va_start( argList, format );
+                String &ret = formatv( format, argList );
+                va_end( argList );
+                return ret;
+            }
+
+            String &format( const String &format, ... ) {
+                va_list argList;
+                va_start( argList, format );
+                String &ret = formatv( format.c_str(), argList );
+                va_end( argList );
+                return ret;
+            }
+
+            String &formatv( const char *format, va_list argList ) {
+                int reslen = vsnprintf( buffer, capacity, format, argList );
+                if ( reslen >= capacity ) {
+                    if ( reserve( reslen + 1 ) ) {
+                        vsnprintf( buffer, capacity, format, argList );
+                    } else {
+                        invalidate();
+                    }
+                }
+                return *this;
+            }
+
+            String &formatv( const String &format, va_list argList ) {
+                int reslen = vsnprintf( buffer, capacity, format.c_str(), argList );
+                if ( reslen >= capacity ) {
+                    if ( reserve( reslen + 1 ) ) {
+                        vsnprintf( buffer, capacity, format.c_str(), argList );
+                    } else {
+                        invalidate();
+                    }
+                }
+                return *this;
             }
 
             public:

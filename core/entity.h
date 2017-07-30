@@ -60,8 +60,20 @@ namespace meisterwerk {
                 return false;
             }
 
+            bool publish( const char *topic, const char *msg ) const {
+                if ( message::send( message::MSG_PUBLISH, entName.c_str(), topic, msg ) ) {
+                    return true;
+                }
+                DBG( "entity::publish, sendMessage failed for " + entName );
+                return false;
+            }
+
             bool publish( String topic, String msg ) const {
-                if ( message::send( message::MSG_PUBLISH, entName.c_str(), topic.c_str(), msg.c_str() ) ) {
+                return publish( topic.c_str(), msg.c_str() );
+            }
+
+            bool publish( const char *topic ) const {
+                if ( message::send( message::MSG_PUBLISH, entName.c_str(), topic, nullptr ) ) {
                     return true;
                 }
                 DBG( "entity::publish, sendMessage failed for " + entName );
@@ -69,11 +81,7 @@ namespace meisterwerk {
             }
 
             bool publish( String topic ) const {
-                if ( message::send( message::MSG_PUBLISH, entName.c_str(), topic.c_str(), nullptr ) ) {
-                    return true;
-                }
-                DBG( "entity::publish, sendMessage failed for " + entName );
-                return false;
+                return publish( topic );
             }
 
             bool subscribe( String topic ) const {
@@ -101,8 +109,8 @@ namespace meisterwerk {
                     return;
                 if ( logtopic == "" )
                     logtopic = entName;
-                String cstr = "";
-                String icon = "";
+                String cstr  = "";
+                String icon  = "";
                 switch ( lclass ) {
                 case T_LOGLEVEL::ERR:
                     cstr = "Error";
