@@ -68,7 +68,7 @@ namespace meisterwerk {
                 return false;
             }
 
-            bool publish( String topic, String msg ) const {
+            bool publish( const String &topic, const String &msg ) const {
                 return publish( topic.c_str(), msg.c_str() );
             }
 
@@ -80,20 +80,28 @@ namespace meisterwerk {
                 return false;
             }
 
-            bool publish( String topic ) const {
-                return publish( topic );
+            bool publish( const String &topic ) const {
+                return publish( topic.c_str() );
             }
 
-            bool subscribe( String topic ) const {
-                if ( message::send( message::MSG_SUBSCRIBE, entName.c_str(), topic.c_str(), nullptr, 0 ) ) {
+            bool subscribe( const String &topic ) const {
+                return subscribe( topic.c_str() );
+            }
+
+            bool subscribe( const char *topic ) const {
+                if ( message::send( message::MSG_SUBSCRIBE, entName.c_str(), topic, nullptr, 0 ) ) {
                     return true;
                 }
                 DBG( "entity::subscribe, sendMessage failed for " + entName );
                 return false;
             }
 
-            bool unsubscribe( String topic ) const {
-                if ( message::send( message::MSG_UNSUBSCRIBE, entName.c_str(), topic.c_str(), nullptr, 0 ) ) {
+            bool unsubscribe( const String &topic ) const {
+                return unsubscribe( topic.c_str() );
+            }
+
+            bool unsubscribe( const char *topic ) const {
+                if ( message::send( message::MSG_UNSUBSCRIBE, entName.c_str(), topic, nullptr, 0 ) ) {
                     return true;
                 }
                 DBG( "entity::unsubscribe, sendMessage failed for " + entName );
