@@ -5,6 +5,8 @@
 // emitted through the serial interface
 // The class works only if #define DEBUG
 
+#pragma once
+
 // dependencies
 #include "../core/entity.h"
 
@@ -12,52 +14,44 @@ namespace meisterwerk {
     namespace util {
 
         class messagespy : public meisterwerk::core::entity {
+#ifdef _MW_DEBUG
             private:
-#ifdef DEBUG
-            String tmpSubscribedTopic;
-#endif
+            String filter;
 
             public:
-#ifdef DEBUG
-            messagespy( String name = "dbg", String subscription = "*" )
-                : meisterwerk::core::entity( name ) {
-                tmpSubscribedTopic = subscription;
-            }
-#else
-            messagespy( String name = "", String subscription = "" )
-                : meisterwerk::core::entity( "" ) {
+            messagespy( String name = "spy", String filter = "*" )
+                : meisterwerk::core::entity( name, 0, meisterwerk::core::PRIORITY_NORMAL ), filter{filter} {
+                // will autoregister
             }
 
-            bool registerEntity( unsigned long minMicroSecs = 0, unsigned int priority = 3 ) {
-                // never register
+            void setup() override {
+                meisterwerk::core::entity::setup();
+                // subscribe messages to display
+                subscribe( filter );
+            }
+
+            virtual void receive( const char *origin, const char *topic, const char *msg ) override {
+                char   szBuffer[24];
+                String s1( origin );
+                String s2( topic );
+                String s3( msg );
+
+                sprintf( szBuffer, "%010ld:", millis() );
+                s3.replace( "\n", "␤" );
+                Serial.println( szBuffer + entName + ": origin='" + s1 + "' topic='" + s2 + "' body='" + s3 + "'" );
+            }
+
+#else
+            // fake entity. Will neither register nor do anything
+            messagespy( String name = "", String subscription = "" ) : meisterwerk::core::entity( "" ) {
+                // will NOT AUTOREGISTER
+            }
+
+            bool registerEntity( unsigned long             minMicroSecs = 0,
+                                 meisterwerk::core::T_PRIO priority     = meisterwerk::core::PRIORITY_NORMAL ) {
                 return true;
             }
 #endif
-
-#ifdef DEBUG
-            void onSetup() override {
-                subscribe( tmpSubscribedTopic );
-                tmpSubscribedTopic = "";
-            }
-
-            virtual void onReceiveMessage( String topic, const char *pBuf, unsigned int len ) {
-                if ( len = 0 ) {
-                    Serial.println( "messagespy(" + entName + "): topic='" + topic + "'" );
-                } else {
-                    for ( int i = 0; i < len - 1; i++ ) {
-                        if ( pBuf[i] < 32 || pBuf[i] > 126 ) {
-                            // binary body
-                            // XXX: output Hexdump?
-                            Serial.println( "messagespy(" + entName + "): topic='" + topic +
-                                            "' body=(binary data)" );
-                            return;
-                        }
-                    }
-                    Serial.println( "messagespy(" + entName + "): topic='" + topic + "' body='" +
-                                    String( pBuf ) + "'" );
-                }
-            }
-#endif
         };
-    }
-}
+    } // namespace util
+} // namespace meisterwerk

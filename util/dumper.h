@@ -7,130 +7,116 @@
 // at regular intervals or only on request.
 // The class works only if #define DEBUG
 
-// dependencies
-#include "../core/entity.h"
+#pragma once
+
+// external libraries
+#include <ArduinoJson.h>
 
 // dependencies
 #include "../core/entity.h"
+#include "../util/metronome.h"
 
 namespace meisterwerk {
     namespace util {
 
         class dumper : public meisterwerk::core::entity {
             public:
-#ifdef DEBUG
-            String debugButton;
-            int    iMinDumpSecs;
-            int    iCount = 0;
+#ifdef _MW_DEBUG
+            meisterwerk::util::metronome autodump;
+            String                       debugButton;
 
-            dumper( String name = "dmp", int _iMinDumpSecs = 0, String _debugButton = "dbg" )
-                : meisterwerk::core::entity( name ) {
-                debugButton  = _debugButton;
-                iMinDumpSecs = _iMinDumpSecs;
-            }
-#else
-            dumper( String name = "", int _iMinDumpSecs = 0, String _debugButton = "" )
-                : meisterwerk::core::entity( "" ) {
+            dumper( String name = "dmp", unsigned long autodump = 0, String debugButton = "dbg",
+                    unsigned long             minMicroSecs = 250000,
+                    meisterwerk::core::T_PRIO priority     = meisterwerk::core::PRIORITY_NORMAL )
+                : meisterwerk::core::entity( name, minMicroSecs, priority ), autodump{autodump}, debugButton{
+                                                                                                     debugButton} {
             }
 
-            bool registerEntity() {
-                return true;
-            }
-#endif
-
-#ifdef DEBUG
-            bool registerEntity() {
-                return meisterwerk::core::entity::registerEntity( 1000000 );
-            }
-
-            void onSetup() override {
-                dumpSystemInfo();
-                // explicit dump messages
+            void setup() override {
+                meisterwerk::core::entity::setup();
+                // explicit commands
                 subscribe( "*/dump" );
                 subscribe( "*/sysinfo" );
                 subscribe( "*/taskinfo" );
-                // Debug Button
-                subscribe( debugButton + "/push" );
-                subscribe( debugButton + "/longpush" );
-                subscribe( debugButton + "/longestpush" );
+                // events from debug Button
+                subscribe( debugButton + "/short" );
+                subscribe( debugButton + "/long" );
+                subscribe( debugButton + "/extralong" );
+                // dump system info on start
+                dumpSystemInfo();
             }
 
-            virtual void onLoop( unsigned long ticker ) override {
-                if ( iMinDumpSecs ) {
-                    if ( iCount < 1 ) {
-                        dumpRuntimeInfo();
-                        iCount = iMinDumpSecs;
-                    } else {
-                        --iCount;
-                    }
+            virtual void loop() override {
+                if ( autodump.beat() ) {
+                    dumpRuntimeInfo();
                 }
             }
 
-            virtual void onReceiveMessage( String topic, const char *pBuf, unsigned int len ) {
-                if ( topic == debugButton + "/push" ) {
+            virtual void receive( const char *origin, const char *topic, const char *msg ) override {
+                String t( topic );
+                // process my own subscriptions
+                if ( t == debugButton + "/short" ) {
                     dumpRuntimeInfo();
-                } else if ( topic == debugButton + "/longpush" ) {
+                } else if ( t == debugButton + "/long" ) {
                     dumpSystemInfo();
-                } else if ( topic == debugButton + "/longestpush" ) {
+                } else if ( t == debugButton + "/extralong" ) {
                     dumpTaskInfo();
                 }
             }
 
             void dumpSystemInfo() {
-                char szBuffer[256];
-                DBG( "System Information:" );
-                DBG( "-------------------" );
-                /*
-                sprintf( szBuffer, "Chip ID: %d", ESP.getChipId() );
-                DBG( szBuffer );
-                sprintf( szBuffer, "Core Verion: %s", ESP.getCoreVersion() );
-                DBG( szBuffer );
-                sprintf( szBuffer, "SDK Verion: %s", ESP.getSdkVersion() );
-                DBG( szBuffer );
-                sprintf( szBuffer, "CPU Frequency: %d MHz", ESP.getCpuFreqMHz() );
-                DBG( szBuffer );
-                sprintf( szBuffer, "Program Size: %d bytes", ESP.getSketchSize() );
-                DBG( szBuffer );
-                sprintf( szBuffer, "Program Free: %d bytes", ESP.getFreeSketchSpace() );
-                DBG( szBuffer );
-                sprintf( szBuffer, "Flash Chip ID: %d", ESP.getFlashChipId() );
-                DBG( szBuffer );
-                sprintf( szBuffer, "Flash Chip Size: %d bytes", ESP.getFlashChipSize() );
-                DBG( szBuffer );
-                sprintf( szBuffer, "Flash Chip Real Size: %d bytes", ESP.getFlashChipRealSize() );
-                DBG( szBuffer );
-                sprintf( szBuffer, "Flash Chip Speed: %d hz", ESP.getFlashChipSpeed() );
-                DBG( szBuffer );
-                sprintf( szBuffer, "Last Reset Reason: %s", ESP.getResetReason() );
-                DBG( szBuffer );
-                */
-                String pre = "dumper(" + entName + ") ";
-                DBG( pre + "Chip ID: " + ESP.getChipId() );
-                DBG( pre + "Core Verion: " + ESP.getCoreVersion() );
-                DBG( pre + "SDK Verion: " + ESP.getSdkVersion() );
-                DBG( pre + "CPU Frequency: " + ESP.getCpuFreqMHz() + " MHz" );
-                DBG( pre + "Program Size: " + ESP.getSketchSize() + " bytes" );
-                DBG( pre + "Program Free: " + ESP.getFreeSketchSpace() + " bytes" );
-                DBG( pre + "Flash Chip ID: " + ESP.getFlashChipId() );
-                DBG( pre + "Flash Chip Size: " + ESP.getFlashChipSize() + " bytes" );
-                DBG( pre + "Flash Chip Real Size: " + ESP.getFlashChipRealSize() + " bytes" );
-                DBG( pre + "Flash Chip Speed: " + ESP.getFlashChipSpeed() + " hz" );
-                DBG( pre + "Last Reset Reason: " + ESP.getResetReason() );
+                String                     pre   = "dumper(" + entName + ") ";
+                const __FlashStringHelper *bytes = F( " bytes" );
+                DBG( "" );
+                DBG( pre + F( "System Information:" ) );
+                DBG( pre + F( "-------------------" ) );
+                DBG( pre + F( "Chip ID: " ) + ESP.getChipId() );
+                DBG( pre + F( "Core Verion: " ) + ESP.getCoreVersion() );
+                DBG( pre + F( "SDK Verion: " ) + ESP.getSdkVersion() );
+                DBG( pre + F( "CPU Frequency: " ) + ESP.getCpuFreqMHz() + " MHz" );
+                DBG( pre + F( "Program Size: " ) + ESP.getSketchSize() + bytes );
+                DBG( pre + F( "Program Free: " ) + ESP.getFreeSketchSpace() + bytes );
+                DBG( pre + F( "Flash Chip ID: " ) + ESP.getFlashChipId() );
+                DBG( pre + F( "Flash Chip Size: " ) + ESP.getFlashChipSize() + bytes );
+                DBG( pre + F( "Flash Chip Real Size: " ) + ESP.getFlashChipRealSize() + bytes );
+                DBG( pre + F( "Flash Chip Speed: " ) + ESP.getFlashChipSpeed() + " hz" );
+                DBG( pre + F( "Last Reset Reason: " ) + ESP.getResetReason() );
             }
 
             void dumpRuntimeInfo() {
-                unsigned int qps = meisterwerk::core::message::que.peak();
-                unsigned int qln = meisterwerk::core::message::que.length();
-                String       pre = "dumper(" + entName + ") ";
-                DBG( pre + "Free Heap: " + ESP.getFreeHeap() + " bytes, Queue(cur/max): " + qln +
-                     "/" + qps );
+                unsigned int  qps  = meisterwerk::core::message::que.peak();
+                unsigned int  qln  = meisterwerk::core::message::que.length();
+                unsigned long smdp = meisterwerk::core::baseapp::_app->sched.msgTime.getcount();
+                unsigned long smqt = meisterwerk::core::baseapp::_app->sched.msgTime.getms();
+                unsigned long stkc = meisterwerk::core::baseapp::_app->sched.tskTime.getcount();
+                unsigned long stkt = meisterwerk::core::baseapp::_app->sched.tskTime.getms();
+                unsigned long slit = meisterwerk::core::baseapp::_app->sched.allTime.getms();
+                String        pre  = "dumper(" + entName + ") Runtime Information - ";
+
+                DBG( pre + "Memory(Free Heap=" + ESP.getFreeHeap() + " bytes), Queue(cur=" + qln + " / max=" + qps +
+                     "), Scheduler(msg=" + smdp + " / tasks=" + stkc + " / msg_time=" + smqt +
+                     " ms / task_time=" + stkt + " ms / life_time=" + slit + " ms)" );
             }
 
             void dumpTaskInfo() {
-                String pre = "dumper(" + entName + ") ";
-                // XXX dump task statistics
+                if ( meisterwerk::core::baseapp::_app ) {
+                    meisterwerk::core::baseapp::_app->sched.dumpInfo( "dumper(" + entName + ") " );
+                }
+            }
+#else
+            // fake entity. Will neither register nor do anything
+            dumper( String name = "dmp", unsigned long autodump = 0, String debugButton = "dbg",
+                    unsigned long             minMicroSecs = 250000,
+                    meisterwerk::core::T_PRIO priority     = meisterwerk::core::PRIORITY_NORMAL )
+                : meisterwerk::core::entity( "" ) {
+                // will NOT AUTOREGISTER
+            }
+
+            bool registerEntity( unsigned long             minMicroSecs = 0,
+                                 meisterwerk::core::T_PRIO priority     = meisterwerk::core::PRIORITY_NORMAL ) {
+                return true;
             }
 #endif
         };
-    }
-}
+    } // namespace util
+} // namespace meisterwerk

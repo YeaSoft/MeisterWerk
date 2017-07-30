@@ -3,35 +3,32 @@
 // This is the declaration of the base class for an
 // embedded application.
 
-#ifndef baseapp_h
-#define baseapp_h
+#pragma once
 
 // dependencies
+#include "entity.h"
 #include "scheduler.h"
 
 namespace meisterwerk {
     namespace core {
 
-        class baseapp {
+        class baseapp : public entity {
             public:
-            baseapp( String name ) {
-                appName = name;
-                _app    = this;
-            }
-
-            virtual void onSetup() {
-            }
-
-            virtual void onLoop() {
-                sched.loop();
-            }
+            // static members
+            static baseapp *_app;
 
             // members
-            String    appName;
             scheduler sched;
 
-            // general availability
-            static baseapp *_app;
+            // methods
+            baseapp( String name = "app", unsigned long minMicroSecs = 0L, T_PRIO priority = PRIORITY_NORMAL )
+                : entity( name ) {
+                _app = this;
+                // direct registration into the scheduler - always first entity
+                // setup() callback will not be invoked from scheduler but
+                // directly from arduino core setup()
+                sched.registerEntity( this, minMicroSecs, priority, false );
+            }
         };
 
         // initialization of static member
@@ -42,11 +39,11 @@ namespace meisterwerk {
 
 // application entry points
 void setup() {
-    meisterwerk::core::baseapp::_app->onSetup();
+    // Call the application setup callback
+    meisterwerk::core::baseapp::_app->setup();
 }
 
 void loop() {
-    meisterwerk::core::baseapp::_app->onLoop();
+    // Call the scheduler loop
+    meisterwerk::core::baseapp::_app->sched.loop();
 }
-
-#endif

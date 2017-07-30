@@ -5,15 +5,14 @@
 // application method for non blocking communication
 // between the components and scheduling
 
-#ifndef message_h
-#define message_h
+#pragma once
 
 // configuration of message properties
 #ifndef MW_MSG_MAX_TOPIC_LENGTH
 #define MW_MSG_MAX_TOPIC_LENGTH 32
 #endif
 #ifndef MW_MSG_MAX_MSGBUFFER_LENGTH
-#define MW_MSG_MAX_MSGBUFFER_LENGTH 256
+#define MW_MSG_MAX_MSGBUFFER_LENGTH 768
 #endif
 
 // configuration of the message Queue
@@ -21,7 +20,8 @@
 #define MW_MAX_QUEUE 256
 #endif
 
-#include "helpers.h"
+// dependencies
+#include "../util/debug.h"
 #include "queue.h"
 
 namespace meisterwerk {
@@ -30,10 +30,12 @@ namespace meisterwerk {
         class message {
             public:
             // constants
-            static const unsigned int MSG_NONE      = 0;
-            static const unsigned int MSG_DIRECT    = 1;
-            static const unsigned int MSG_PUBLISH   = 2;
-            static const unsigned int MSG_SUBSCRIBE = 3;
+            static const unsigned int MSG_NONE        = 0;
+            static const unsigned int MSG_DIRECT      = 1;
+            static const unsigned int MSG_SUBSCRIBE   = 2;
+            static const unsigned int MSG_UNSUBSCRIBE = 3;
+            static const unsigned int MSG_PUBLISH     = 4;
+            static const unsigned int MSG_PUBLISHRAW  = 5;
 
             // static members
             static queue<message> que;
@@ -43,14 +45,14 @@ namespace meisterwerk {
             unsigned int pBufLen;    // Length of binary buffer pBuf
             char *       originator; // allocated instance name of originator
             char *       topic;      // allocated zero terminated string
-            char *       pBuf;       // allocated bin buffer of size pBufLen
+            void *       pBuf;       // allocated bin buffer of size pBufLen
 
             // static methods
-            static bool send( unsigned int _type, String _originator, String _topic, char *_pBuf,
+            static bool send( unsigned int _type, const char *_originator, const char *_topic, const void *_pBuf,
                               unsigned int _len, bool isBufAllocated = false ) {
                 message *msg = new message();
                 if ( msg == nullptr ) {
-                    DBG( "message::sendMessage, failed to allocate message" );
+                    DBG( F( "message::sendMessage, failed to allocate message" ) );
                     return false;
                 }
                 if ( msg->create( _type, _originator, _topic, _pBuf, _len, isBufAllocated ) ) {
@@ -60,18 +62,17 @@ namespace meisterwerk {
                 return false;
             }
 
-            static bool send( unsigned int _type, String _originator, String _topic,
-                              String _content ) {
-                if ( _content == nullptr || _content.length() == 0 ) {
+            static bool send( unsigned int _type, const char *_originator, const char *_topic, const char *_content ) {
+                if ( _content == nullptr || strlen( _content ) == 0 ) {
                     return send( _type, _originator, _topic, nullptr, 0 );
                 }
-                unsigned int _length = _content.length() + 1;
-                char *       _buffer = (char *)malloc( _length );
+                size_t _length = strlen( _content ) + 1;
+                char * _buffer = (char *)malloc( _length );
                 if ( _buffer == nullptr ) {
-                    DBG( "message::sendMessage, failed to allocate content" );
+                    DBG( F( "message::sendMessage, failed to allocate content" ) );
                     return false;
                 }
-                strcpy( _buffer, _content.c_str() );
+                strcpy( _buffer, _content );
                 return send( _type, _originator, _topic, _buffer, _length, true );
             }
 
@@ -84,21 +85,25 @@ namespace meisterwerk {
                 discard();
             }
 
-            void init( unsigned int _type = 0, char *_originator = nullptr, char *_topic = nullptr,
-                       char *_pBuf = nullptr, unsigned int _pBufLen = 0 ) {
+            void init( unsigned int _type = 0, const char *_originator = nullptr, const char *_topic = nullptr,
+                       const void *_pBuf = nullptr, unsigned int _pBufLen = 0 ) {
                 type       = _type;
-                originator = _originator;
-                topic      = _topic;
-                pBuf       = _pBuf;
+                originator = (char *)_originator;
+                topic      = (char *)_topic;
+                pBuf       = (void *)_pBuf;
                 pBufLen    = _pBufLen;
             }
 
-            bool create( unsigned int _type, String _originator, String _topic, char *_pBuf,
+            bool create( unsigned int _type, const char *_originator, const char *_topic, const void *_pBuf,
                          unsigned int _len, bool isBufAllocated = false ) {
-                DBG( "message::create, from: " + _originator + ", topic: " + _topic );
-                int tLen = _topic.length() + 1;
+                if ( _originator == nullptr || _topic == nullptr ) {
+                    DBG( "message::create, originator and topic must be speicifed." );
+                    return false;
+                }
+
+                size_t tLen = strlen( _topic ) + 1;
                 if ( tLen > MW_MSG_MAX_TOPIC_LENGTH || _len > MW_MSG_MAX_MSGBUFFER_LENGTH ) {
-                    DBG( "message::create, size too large. " + _topic );
+                    DBG( "message::create, size too large. " + String( _topic ) );
                     return false;
                 }
                 // free previous content if any
@@ -108,31 +113,31 @@ namespace meisterwerk {
                 type = _type;
 
                 // set originator
-                int olen   = _originator.length() + 1;
-                originator = (char *)malloc( olen );
+                size_t olen = strlen( _originator ) + 1;
+                originator  = (char *)malloc( olen );
                 if ( originator == nullptr ) {
-                    DBG( "message::create, Cannot allocate originator" );
+                    DBG( F( "message::create, Cannot allocate originator" ) );
                     return false;
                 }
-                strcpy( originator, _originator.c_str() );
+                strcpy( originator, _originator );
 
                 // set topic
                 topic = (char *)malloc( tLen );
                 if ( topic == nullptr ) {
-                    DBG( "message::create, Cannot allocate topic" );
+                    DBG( F( "message::create, Cannot allocate topic" ) );
                     discard();
                     return false;
                 }
-                strcpy( topic, _topic.c_str() );
+                strcpy( topic, _topic );
 
                 // set content
                 if ( _len > 0 ) {
                     if ( isBufAllocated ) {
-                        pBuf = _pBuf;
+                        pBuf = (void *)_pBuf;
                     } else {
-                        pBuf = (char *)malloc( _len );
+                        pBuf = (void *)malloc( _len );
                         if ( pBuf == nullptr ) {
-                            DBG( "message::create, Cannot allocate content" );
+                            DBG( F( "message::create, Cannot allocate content" ) );
                             discard();
                             return false;
                         }
@@ -161,5 +166,3 @@ namespace meisterwerk {
         queue<message> message::que( MW_MAX_QUEUE );
     } // namespace core
 } // namespace meisterwerk
-
-#endif

@@ -5,8 +5,7 @@
 // application method for non blocking communication
 // between the components and scheduling
 
-#ifndef queue_h
-#define queue_h
+#pragma once
 
 namespace meisterwerk {
     namespace core {
@@ -14,9 +13,7 @@ namespace meisterwerk {
         template <class T> class queue {
             private:
             T **que;
-#ifdef DEBUG
-            unsigned int peakSize;
-#endif
+            DBG_ONLY( unsigned int peakSize );
             unsigned int maxSize;
             unsigned int size;
             unsigned int quePtr0;
@@ -24,9 +21,7 @@ namespace meisterwerk {
 
             public:
             queue( unsigned int maxQueueSize ) {
-#ifdef DEBUG
-                peakSize = 0;
-#endif
+                DBG_ONLY( peakSize = 0 );
                 quePtr0 = 0;
                 quePtr1 = 0;
                 size    = 0;
@@ -35,6 +30,7 @@ namespace meisterwerk {
                 if ( que == nullptr )
                     maxSize = 0;
             }
+
             ~queue() {
                 if ( que != nullptr ) {
                     // If size > 0 then there's a potential memory leak.
@@ -42,6 +38,7 @@ namespace meisterwerk {
                     free( que );
                 }
             }
+
             bool push( T *ent ) {
                 if ( size >= maxSize ) {
                     return false;
@@ -51,13 +48,10 @@ namespace meisterwerk {
                     quePtr1      = ( quePtr1 + 1 ) % maxSize;
                     ++size;
                 }
-#ifdef DEBUG
-                if ( size > peakSize ) {
-                    peakSize = size;
-                }
-#endif
+                DBG_ONLY( if ( size > peakSize ) { peakSize = size; } )
                 return true;
             }
+
             T *pop() {
                 if ( size == 0 )
                     return nullptr;
@@ -66,22 +60,19 @@ namespace meisterwerk {
                 --size;
                 return pEnt;
             }
+
             bool isEmpty() {
                 if ( size == 0 )
                     return true;
                 else
                     return false;
             }
+
             unsigned int length() {
                 return ( size );
             }
-#ifdef DEBUG
-            unsigned int peak() {
-                return ( peakSize );
-            }
-#endif
-        };
-    }
-}
 
-#endif
+            DBG_ONLY( unsigned int peak() { return ( peakSize ); } )
+        };
+    } // namespace core
+} // namespace meisterwerk

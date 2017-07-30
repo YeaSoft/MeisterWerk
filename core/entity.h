@@ -5,97 +5,152 @@
 // application method for non blocking communication
 // between the components and scheduling
 
-#ifndef entity_h
-#define entity_h
+#pragma once
 
-#include "helpers.h"
+// dependencies
+#include "../util/debug.h"
+#include "../util/msgtime.h"
+#include "common.h"
 #include "message.h"
 
 namespace meisterwerk {
     namespace core {
 
         class entity;
+        class baseapp;
 
         class msgregister {
             public:
             // members
             entity *      pEnt;         // instance object pointer to derived object instance
-            unsigned int  priority;     // Priority MW_PRIORITY_*
+            T_PRIO        priority;     // Priority MW_PRIORITY_*
             unsigned long minMicroSecs; // intervall in micro seconds the loop method
                                         // should be called. 0 means never (used for
                                         // messaging only entities)
 
             // methods
-            msgregister( entity *_pEnt, unsigned long _minMicroSecs, unsigned int _priority ) {
-                pEnt         = _pEnt;
-                priority     = _priority;
-                minMicroSecs = _minMicroSecs;
+            msgregister( entity *pEnt, unsigned long minMicroSecs, T_PRIO priority )
+                : pEnt{pEnt}, minMicroSecs{minMicroSecs}, priority{priority} {
             }
         };
 
         class entity {
+            friend class baseapp;
+
             public:
+            enum T_LOGLEVEL { ERR, WARN, INFO, DBG, VER1, VER2, VER3 };
             // members
-            String entName; // Instance name
+            String     entName;                     // Instance name
+            T_LOGLEVEL logLevel = T_LOGLEVEL::INFO; // Logging level
 
             // methods
-            entity( String name ) {
-                entName = name;
+            entity( String name, unsigned long minMicroSecs, T_PRIO priority = PRIORITY_NORMAL ) : entName( name ) {
+                msgregister reg( this, minMicroSecs, priority );
+                message::send( message::MSG_DIRECT, entName.c_str(), "register", &reg, sizeof( reg ) );
             }
 
             virtual ~entity(){};
 
-            bool registerEntity( unsigned long minMicroSecs = 0, unsigned int priority = 3 ) {
+            bool setSchedulerParams( unsigned long minMicroSecs = 0, T_PRIO priority = PRIORITY_NORMAL ) {
                 msgregister reg( this, minMicroSecs, priority );
-                if ( sendMessage( message::MSG_DIRECT, "register", (char *)&reg, sizeof( reg ) ) ) {
+                if ( message::send( message::MSG_DIRECT, entName.c_str(), "update", &reg, sizeof( reg ) ) ) {
                     return true;
                 }
-                DBG( "entity::registerEntity, sendMessage failed for register " + entName );
+                DBG( "entity::setSchedulerParams, sendMessage failed for " + entName );
                 return false;
             }
 
-            bool publish( String topic, String msg ) {
-                if ( sendMessage( message::MSG_PUBLISH, topic, msg ) ) {
+            bool publish( String topic, String msg ) const {
+                if ( message::send( message::MSG_PUBLISH, entName.c_str(), topic.c_str(), msg.c_str() ) ) {
                     return true;
                 }
-                DBG( "entity::publish, sendMessage failed for publish " + entName );
+                DBG( "entity::publish, sendMessage failed for " + entName );
                 return false;
             }
 
-            bool subscribe( String topic ) {
-                if ( sendMessage( message::MSG_SUBSCRIBE, topic, nullptr, 0 ) ) {
+            bool publish( String topic ) const {
+                if ( message::send( message::MSG_PUBLISH, entName.c_str(), topic.c_str(), nullptr ) ) {
                     return true;
                 }
-                DBG( "entity::publish, sendMessage failed for subscribe " + entName );
+                DBG( "entity::publish, sendMessage failed for " + entName );
                 return false;
             }
 
-            virtual void onSetup() {
-                DBG( "entity::onSetup, missing override for class " + entName );
+            bool subscribe( String topic ) const {
+                if ( message::send( message::MSG_SUBSCRIBE, entName.c_str(), topic.c_str(), nullptr, 0 ) ) {
+                    return true;
+                }
+                DBG( "entity::subscribe, sendMessage failed for " + entName );
+                return false;
             }
 
-            virtual void onLoop( unsigned long ticker ) {
-                DBG( "entity:onLook, missing override for class " + entName );
+            bool unsubscribe( String topic ) const {
+                if ( message::send( message::MSG_UNSUBSCRIBE, entName.c_str(), topic.c_str(), nullptr, 0 ) ) {
+                    return true;
+                }
+                DBG( "entity::unsubscribe, sendMessage failed for " + entName );
+                return false;
             }
 
-            virtual void onReceiveMessage( String topic, const char *pBuf, unsigned int len ) {
-                DBG( "entity:receiveMessage, missing override for class " + entName );
+            void setLogLevel( T_LOGLEVEL lclass ) {
+                logLevel = lclass;
             }
 
-            protected:
-            // This sends messages to scheduler via messageQueue
-            bool sendMessage( unsigned int type, String topic, char *pBuf, unsigned int len,
-                              bool isBufAllocated = false ) {
-                DBG( "entity::sendMessage, from: " + entName + ", topic: " + topic );
-                return message::send( type, entName, topic, pBuf, len, isBufAllocated );
+            void log( T_LOGLEVEL lclass, String msg, String logtopic = "" ) {
+                if ( lclass > logLevel )
+                    return;
+                if ( logtopic == "" )
+                    logtopic = entName;
+                String cstr = "";
+                String icon = "";
+                switch ( lclass ) {
+                case T_LOGLEVEL::ERR:
+                    cstr = "Error";
+                    icon = "🛑";
+                    break;
+                case T_LOGLEVEL::WARN:
+                    cstr = "Warning";
+                    icon = "⚠️";
+                    break;
+                case T_LOGLEVEL::INFO:
+                    cstr = "Info";
+                    icon = "ℹ️ℹ";
+                    break;
+                case T_LOGLEVEL::DBG:
+                    cstr = "Debug";
+                    icon = "🗒";
+                    break;
+                default:
+                    cstr = "Debug";
+                    icon = "🐞";
+                    break;
+                }
+                // XXX: Json-in-message escaping, is that the best way:
+                msg.replace( "\\", "/" );
+                msg.replace( "\"", "'" );
+
+                String tpc    = "log/" + cstr + "/" + entName;
+                String logmsg = "{\"time\":\"" + util::msgtime::ISOnowMillis() + "\",\"severity\":\"" + cstr +
+                                "\",\"icon\":\"" + icon + "\",\"topic\":\"" + logtopic + "\",\"msg\":\"" + msg + "\"}";
+                publish( tpc, logmsg );
+                DBG( icon + "  " + tpc + " | " + logmsg );
             }
 
-            // Send text message to Scheduler
-            bool sendMessage( unsigned int type, String topic, String content ) {
-                DBG( "entity::sendMessage, from: " + entName + ", topic: " + topic );
-                return message::send( type, entName, topic, content );
+            // callbacks
+            public:
+            virtual void setup() {
+            }
+
+            virtual void loop() {
+            }
+
+            virtual void receive( const char *origin, const char *topic, const char *msg ) {
+            }
+
+            private:
+            entity( String name ) : entName{name} {
+                // special constructor only for baseapp
             }
         };
     } // namespace core
 } // namespace meisterwerk
-#endif
