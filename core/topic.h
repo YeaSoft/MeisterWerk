@@ -120,90 +120,90 @@ namespace meisterwerk {
             }
 
             public:
-            static bool mqttmatch( String &s1, String &s2 ) {
-                return mqttmatch( s1.c_str(), s2.c_str() );
+            static bool mqttmatch( const String &pub, const String &sub ) {
+                return mqttmatch( pub.c_str(), sub.c_str() );
             }
 
-            static bool mqttmatch( const char *s1, const char *s2 ) {
-                // compares topic-paths <subtopic>/<subtopic/...
-                // the compare is symmetric, s1==s2 <=> s2==s1.
-                // subtopic can be <chars> or <chars>+'*', '*' must be last char of a subtopic.
-                // '*' acts within only the current subtopic. Exception: a '*' as last character of
-                // a topic-path
-                //    matches all deeper subptopics:  a*==a/b/c/d/e, but a*/c1!=a1/b1/c1
-                // Samples:   abc/def/ghi == */de*/*, abc/def!=abc, ab*==abc, a*==a/b/c/d
-                //    a/b*==a/b/c/d/e, a/b*/d!=a/b/c/d
-                if ( s1 == s2 )
+            static bool mqttmatch( const char *pub, const char *sub ) {
+                // compares publish and subscribe topics.
+                // subscriptions can contain the MQTT wildcards '#' and '+'.
+                if ( pub == sub )
                     return true;
-                int l1 = strlen( s1 );
-                int l2 = strlen( s2 );
-                int l;
-                if ( l1 < l2 )
-                    l = l2;
-                else
-                    l  = l1;
-                int p1 = 0, p2 = 0;
-                for ( int i = 0; i < l; l++ ) {
-                    if ( ( p1 > l1 ) || ( p2 > l2 ) )
-                        return false;
-                    if ( s1[p1] == s2[p2] ) {
-                        ++p1;
-                        ++p2;
-                        if ( ( p1 == l1 ) && ( p2 == l2 ) )
-                            return true;
-                        continue;
+                int lp = strlen( pub );
+                int ls = strlen( sub );
+
+                bool wPos = true; // sub wildcard is legal now
+                int  ps   = 0;
+                for ( int pp = 0; pp < lp; pp++ ) {
+                    // if ( pp >= ls || ps > ls ) {
+                    //    DBG( "Pub more spec than sub: " + String( pp ) + "," + String( ps ) );
+                    //    return false; // Pub is more specific than sub
+                    // }
+                    if ( pub[pp] == '+' || pub[pp] == '#' ) {
+                        DBG( "Bad wildcard in pub" );
+                        return false; // Illegal wildcards in pub
                     }
-                    if ( ( s1[p1] != '*' ) && ( s2[p2] != '*' ) )
-                        return false;
-                    if ( s1[p1] == '*' ) {
-                        ++p1;
-                        if ( p1 == l1 )
-                            return true;
-                        if ( s1[p1] != '/' )
-                            return false;
-                        else
-                            ++p1;
-                        while ( p2 < l2 && s2[p2] != '/' )
-                            ++p2;
-                        if ( p2 == l2 ) {
-                            if ( p1 == l1 )
+                    if ( wPos ) {
+                        wPos = false;
+                        if ( sub[ps] == '#' ) {
+                            if ( ps == ls - 1 ) {
+                                DBG( "# ending (+)" );
                                 return true;
-                            else
-                                return false;
+                            } else {
+                                DBG( "# followed by stuff! (-)" );
+                                return false; // In sub, # must not be followed by anything else
+                            }
                         }
-                        if ( s2[p2] != '/' )
-                            return false;
-                        else
-                            ++p2;
-                        continue;
+                        if ( sub[ps] == '+' ) {
+                            while ( pp < lp && pub[pp] != '/' )
+                                ++pp;
+                            ++ps;
+                            if ( pp == lp ) {
+                                if ( ps == ls ) {
+                                    DBG( "End in + compare (+)" );
+                                    return true;
+                                } else if ( !strcmp( &sub[ps], "/#" ) ) {
+                                    DBG( "End in + and /# (+)" );
+                                    return true;
+                                }
+                            }
+                        }
+                    } else {
+                        if ( sub[ps] == '+' || sub[ps] == '#' ) {
+                            DBG( "bad wildcard position (-)" );
+                            return false; // Illegal wildcard-position
+                        }
                     }
-                    if ( s2[p2] == '*' ) {
-                        ++p2;
-                        if ( p2 == l2 )
+                    if ( pub[pp] != sub[ps] && strcmp( &sub[ps], "/#" ) ) {
+                        DBG( "char mismatch (-)" );
+                        return false;
+                    }
+                    if ( pub[pp] == '/' )
+                        wPos = true;
+                    if ( pp == lp - 1 ) {
+                        if ( ps == ls - 1 ) {
+                            DBG( "End pub/sub (+)" );
                             return true;
-                        if ( s2[p2] != '/' )
-                            return false;
-                        else
-                            ++p2;
-                        while ( p1 < l1 && s1[p1] != '/' )
-                            ++p1;
-                        if ( p1 == l1 ) {
-                            if ( p2 == l2 )
-                                return true;
-                            else
-                                return false;
                         }
-                        if ( s1[p1] != '/' )
-                            return false;
-                        else
-                            ++p1;
-                        continue;
+                        if ( !strcmp( &sub[ps + 1], "/#" ) || !strcmp( &sub[ps + 1], "#" ) ||
+                             !strcmp( &sub[ps + 1], "+" ) ) {
+                            DBG( "End followed by sub '/#' is ok (+)" );
+                            return true;
+                        }
+                        DBG( "Overlap on sub (-)" );
+                        return false;
                     }
+                    ++ps;
+                }
+                if ( ps == ls ) {
+                    DBG( "Loop end: Sub finished (+)" );
+                    return true;
+                } else {
+                    DBG( "Loop end: Sub not finished (-)" );
                     return false;
                 }
-                return false;
             }
-        }; // namespace core
 
-    } // namespace core
+        }; // namespace core
+    }      // namespace core
 } // namespace meisterwerk
