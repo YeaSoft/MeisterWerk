@@ -89,10 +89,13 @@ namespace meisterwerk {
                         return false; // Illegal wildcards in pub
                     if ( wPos ) {
                         if ( sub[ps] == '#' ) {
-                            if ( ps == ls - 1 )
+                            if ( ps == ls - 1 ) {
+                                DBG( "# ending (+)" );
                                 return true;
-                            else
+                            } else {
+                                DBG( "# followed by stuff! (-)" );
                                 return false; // In sub, # must not be followed by anything else
+                            }
                         }
                         if ( sub[ps] == '+' ) {
                             while ( pp < lp && pub[pp] != '/' )
@@ -100,11 +103,15 @@ namespace meisterwerk {
                         }
                         wPos = false;
                     } else {
-                        if ( sub[ps] == '+' || sub[ps] == '#' )
+                        if ( sub[ps] == '+' || sub[ps] == '#' ) {
+                            DBG( "bad wildcard position (-)" );
                             return false; // Illegal wildcard-position
+                        }
                     }
-                    if ( pub[pp] != sub[ps] )
+                    if ( pub[pp] != sub[ps] ) {
+                        DBG( "char mismatch (-)" );
                         return false;
+                    }
                     if ( pub[pp] == '/' )
                         wPos = true;
                     if ( pp == lp - 1 ) {
