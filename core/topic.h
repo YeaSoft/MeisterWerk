@@ -22,6 +22,14 @@ namespace meisterwerk {
             Topic( const __FlashStringHelper *str ) : String( str ) {
             }
 
+#ifdef __GXX_EXPERIMENTAL_CXX0X__
+            Topic( String &&rval ) : String( rval ) {
+            }
+
+            Topic( StringSumHelper &&rval ) : String( rval ) {
+            }
+#endif
+
             bool match( String &mask ) const {
                 return mqttmatch( c_str(), mask.c_str() );
             }
@@ -31,17 +39,31 @@ namespace meisterwerk {
             }
 
             String getFirst() const {
-                // XXX todo
-                return "";
+                char *pPtr = strchr( buffer, '/' );
+                if ( pPtr ) {
+                    char cTemp = *pPtr;
+                    *pPtr      = '\0';
+                    String out = buffer;
+                    *pPtr      = cTemp;
+                    return out;
+                }
+                return c_str();
             }
 
-            String getSecond() const {
-                // XXX todo
-                return "";
-            }
-
-            String getThird() const {
-                // XXX todo
+            String getNext() const {
+                char *pStart = strchr( buffer, '/' );
+                if ( pStart ) {
+                    ++pStart;
+                    char *pEnd = strchr( pStart, '/' );
+                    if ( pEnd ) {
+                        char cTemp = *pEnd;
+                        *pEnd      = '\0';
+                        String out = pStart;
+                        *pEnd      = cTemp;
+                        return out;
+                    }
+                    return pStart;
+                }
                 return "";
             }
 
