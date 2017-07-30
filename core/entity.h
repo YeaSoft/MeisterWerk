@@ -84,10 +84,6 @@ namespace meisterwerk {
                 return publish( topic.c_str() );
             }
 
-            bool subscribe( const String &topic ) const {
-                return subscribe( topic.c_str() );
-            }
-
             bool subscribe( const char *topic ) const {
                 if ( message::send( message::MSG_SUBSCRIBE, entName.c_str(), topic, nullptr, 0 ) ) {
                     return true;
@@ -96,8 +92,8 @@ namespace meisterwerk {
                 return false;
             }
 
-            bool unsubscribe( const String &topic ) const {
-                return unsubscribe( topic.c_str() );
+            bool subscribe( const String &topic ) const {
+                return subscribe( topic.c_str() );
             }
 
             bool unsubscribe( const char *topic ) const {
@@ -106,6 +102,10 @@ namespace meisterwerk {
                 }
                 DBG( "entity::unsubscribe, sendMessage failed for " + entName );
                 return false;
+            }
+
+            bool unsubscribe( const String &topic ) const {
+                return unsubscribe( topic.c_str() );
             }
 
             void setLogLevel( T_LOGLEVEL lclass ) {
@@ -130,7 +130,7 @@ namespace meisterwerk {
                     break;
                 case T_LOGLEVEL::INFO:
                     cstr = "Info";
-                    icon = "ℹ️ℹ";
+                    icon = "ℹ️";
                     break;
                 case T_LOGLEVEL::DBG:
                     cstr = "Debug";
