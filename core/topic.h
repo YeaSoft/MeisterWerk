@@ -88,6 +88,7 @@ namespace meisterwerk {
                     if ( pub[pp] == '+' || pub[pp] == '#' )
                         return false; // Illegal wildcards in pub
                     if ( wPos ) {
+                        wPos = false;
                         if ( sub[ps] == '#' ) {
                             if ( ps == ls - 1 )
                                 return true;
@@ -97,8 +98,10 @@ namespace meisterwerk {
                         if ( sub[ps] == '+' ) {
                             while ( pp < lp && pub[pp] != '/' )
                                 ++pp;
+                            ++ps;
+                            if ( ps == ls - 1 && pp == lp - 1 )
+                                return true;
                         }
-                        wPos = false;
                     } else {
                         if ( sub[ps] == '+' || sub[ps] == '#' )
                             return false; // Illegal wildcard-position
@@ -112,10 +115,14 @@ namespace meisterwerk {
                             return true;
                         if ( !strcmp( &sub[ps + 1], "/#" ) )
                             return true;
+                        return false;
                     }
                     ++ps;
                 }
-                return true;
+                if ( ps == ls )
+                    return true;
+                else
+                    return false;
             }
 
         }; // namespace core
