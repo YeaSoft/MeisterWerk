@@ -83,10 +83,14 @@ namespace meisterwerk {
                 bool wPos = true; // sub wildcard is legal now
                 int  ps   = 0;
                 for ( int pp = 0; pp < lp; pp++ ) {
-                    if ( pp >= ls || ps >= ls )
-                        return false; // Pub is more specific than sub
-                    if ( pub[pp] == '+' || pub[pp] == '#' )
+                    // if ( pp >= ls || ps > ls ) {
+                    //    DBG( "Pub more spec than sub: " + String( pp ) + "," + String( ps ) );
+                    //    return false; // Pub is more specific than sub
+                    // }
+                    if ( pub[pp] == '+' || pub[pp] == '#' ) {
+                        DBG( "Bad wildcard in pub" );
                         return false; // Illegal wildcards in pub
+                    }
                     if ( wPos ) {
                         wPos = false;
                         if ( sub[ps] == '#' ) {
@@ -102,8 +106,15 @@ namespace meisterwerk {
                             while ( pp < lp && pub[pp] != '/' )
                                 ++pp;
                             ++ps;
-                            if ( ps == ls - 1 && pp == lp - 1 )
-                                return true;
+                            if ( pp == lp ) {
+                                if ( ps == ls ) {
+                                    DBG( "End in + compare (+)" );
+                                    return true;
+                                } else if ( !strcmp( &sub[ps], "/#" ) ) {
+                                    DBG( "End in + and /# (+)" );
+                                    return true;
+                                }
+                            }
                         }
                     } else {
                         if ( sub[ps] == '+' || sub[ps] == '#' ) {
@@ -111,25 +122,34 @@ namespace meisterwerk {
                             return false; // Illegal wildcard-position
                         }
                     }
-                    if ( pub[pp] != sub[ps] ) {
+                    if ( pub[pp] != sub[ps] && strcmp( &sub[ps], "/#" ) ) {
                         DBG( "char mismatch (-)" );
                         return false;
                     }
                     if ( pub[pp] == '/' )
                         wPos = true;
                     if ( pp == lp - 1 ) {
-                        if ( ps == ls - 1 )
+                        if ( ps == ls - 1 ) {
+                            DBG( "End pub/sub (+)" );
                             return true;
-                        if ( !strcmp( &sub[ps + 1], "/#" ) )
+                        }
+                        if ( !strcmp( &sub[ps + 1], "/#" ) || !strcmp( &sub[ps + 1], "#" ) ||
+                             !strcmp( &sub[ps + 1], "+" ) ) {
+                            DBG( "End followed by sub '/#' is ok (+)" );
                             return true;
+                        }
+                        DBG( "Overlap on sub (-)" );
                         return false;
                     }
                     ++ps;
                 }
-                if ( ps == ls )
+                if ( ps == ls ) {
+                    DBG( "Loop end: Sub finished (+)" );
                     return true;
-                else
+                } else {
+                    DBG( "Loop end: Sub not finished (-)" );
                     return false;
+                }
             }
 
         }; // namespace core
