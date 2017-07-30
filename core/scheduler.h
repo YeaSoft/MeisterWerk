@@ -12,6 +12,7 @@
 #include "../util/timebudget.h"
 #include "common.h"
 #include "entity.h"
+#include "topic.h"
 #include <list>
 
 namespace meisterwerk {
@@ -260,7 +261,7 @@ namespace meisterwerk {
                 if ( l1 < l2 )
                     l = l2;
                 else
-                    l  = l1;
+                    l = l1;
                 int p1 = 0, p2 = 0;
                 for ( int i = 0; i < l; l++ ) {
                     if ( ( p1 > l1 ) || ( p2 > l2 ) )
