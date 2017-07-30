@@ -60,36 +60,52 @@ namespace meisterwerk {
                 return false;
             }
 
-            bool publish( String topic, String msg ) const {
-                if ( message::send( message::MSG_PUBLISH, entName.c_str(), topic.c_str(), msg.c_str() ) ) {
+            bool publish( const char *topic, const char *msg ) const {
+                if ( message::send( message::MSG_PUBLISH, entName.c_str(), topic, msg ) ) {
                     return true;
                 }
                 DBG( "entity::publish, sendMessage failed for " + entName );
                 return false;
             }
 
-            bool publish( String topic ) const {
-                if ( message::send( message::MSG_PUBLISH, entName.c_str(), topic.c_str(), nullptr ) ) {
+            bool publish( const String &topic, const String &msg ) const {
+                return publish( topic.c_str(), msg.c_str() );
+            }
+
+            bool publish( const char *topic ) const {
+                if ( message::send( message::MSG_PUBLISH, entName.c_str(), topic, nullptr ) ) {
                     return true;
                 }
                 DBG( "entity::publish, sendMessage failed for " + entName );
                 return false;
             }
 
-            bool subscribe( String topic ) const {
-                if ( message::send( message::MSG_SUBSCRIBE, entName.c_str(), topic.c_str(), nullptr, 0 ) ) {
+            bool publish( const String &topic ) const {
+                return publish( topic.c_str() );
+            }
+
+            bool subscribe( const char *topic ) const {
+                if ( message::send( message::MSG_SUBSCRIBE, entName.c_str(), topic, nullptr, 0 ) ) {
                     return true;
                 }
                 DBG( "entity::subscribe, sendMessage failed for " + entName );
                 return false;
             }
 
-            bool unsubscribe( String topic ) const {
-                if ( message::send( message::MSG_UNSUBSCRIBE, entName.c_str(), topic.c_str(), nullptr, 0 ) ) {
+            bool subscribe( const String &topic ) const {
+                return subscribe( topic.c_str() );
+            }
+
+            bool unsubscribe( const char *topic ) const {
+                if ( message::send( message::MSG_UNSUBSCRIBE, entName.c_str(), topic, nullptr, 0 ) ) {
                     return true;
                 }
                 DBG( "entity::unsubscribe, sendMessage failed for " + entName );
                 return false;
+            }
+
+            bool unsubscribe( const String &topic ) const {
+                return unsubscribe( topic.c_str() );
             }
 
             void setLogLevel( T_LOGLEVEL lclass ) {
@@ -101,8 +117,8 @@ namespace meisterwerk {
                     return;
                 if ( logtopic == "" )
                     logtopic = entName;
-                String cstr = "";
-                String icon = "";
+                String cstr  = "";
+                String icon  = "";
                 switch ( lclass ) {
                 case T_LOGLEVEL::ERR:
                     cstr = "Error";
@@ -114,7 +130,7 @@ namespace meisterwerk {
                     break;
                 case T_LOGLEVEL::INFO:
                     cstr = "Info";
-                    icon = "ℹ️ℹ";
+                    icon = "ℹ️";
                     break;
                 case T_LOGLEVEL::DBG:
                     cstr = "Debug";
