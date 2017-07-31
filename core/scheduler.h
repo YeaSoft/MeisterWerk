@@ -78,14 +78,6 @@ namespace meisterwerk {
             }
 
             virtual ~scheduler() {
-                /*
-                for ( int i = 0; i < taskList.length(); i++ ) {
-                    delete taskList[i];
-                }
-                for ( int i = 0; i < subscriptionList.length(); i++ ) {
-                    delete subscriptionList[i];
-                }
-                */
             }
 
             void checkYield() {
