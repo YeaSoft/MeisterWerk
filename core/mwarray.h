@@ -59,7 +59,7 @@ namespace meisterwerk {
                 return true;
             }
             T operator[]( int i ) const {
-                return *arr[i];
+                return arr[i];
             }
 
             T &operator[]( int i ) {
