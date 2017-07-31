@@ -10,9 +10,9 @@
 // dependencies
 #include "../util/metronome.h"
 #include "../util/timebudget.h"
+#include "array.h"
 #include "common.h"
 #include "entity.h"
-#include "mwarray.h"
 #include "topic.h"
 //#include <list>
 
@@ -63,8 +63,8 @@ namespace meisterwerk {
             };
 
             // members
-            mwarray<task>         taskList;
-            mwarray<subscription> subscriptionList;
+            array<task>         taskList;
+            array<subscription> subscriptionList;
 
             meisterwerk::util::metronome yieldRythm = 5; // 5ms
 
