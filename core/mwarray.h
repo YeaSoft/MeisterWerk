@@ -64,6 +64,8 @@ namespace meisterwerk {
                 return true;
             }
             T *operator[]( int i ) const {
+                if ( i >= size )
+                    return nullptr;
                 return (T *)arr[i];
             }
 
