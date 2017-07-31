@@ -26,10 +26,11 @@ namespace meisterwerk {
 
             // internal types
             protected:
-            typedef struct {
+            class subscription {
+                public:
                 String subscriber;
                 String topic;
-            } T_SUBSCRIPTION;
+            };
 
             class task {
                 public:
@@ -49,12 +50,9 @@ namespace meisterwerk {
                 DBG_ONLY( meisterwerk::util::timebudget tskTime );
             };
 
-            typedef task *          T_PTASK;
-            typedef T_SUBSCRIPTION *T_PSUBSCRIPTION;
-
             // members
-            mwarray<task>           taskList;
-            mwarray<T_SUBSCRIPTION> subscriptionList;
+            mwarray<task>         taskList;
+            mwarray<subscription> subscriptionList;
 
             meisterwerk::util::metronome yieldRythm = 5; // 5ms
 
@@ -71,11 +69,9 @@ namespace meisterwerk {
                 for ( int i = 0; i < taskList.length(); i++ ) {
                     delete taskList[i];
                 }
-                taskList;
                 for ( int i = 0; i < subscriptionList.length(); i++ ) {
-                    free( subscriptionList[i] );
+                    delete subscriptionList[i];
                 }
-                subscriptionList;
             }
 
             void checkYield() {
@@ -129,7 +125,7 @@ namespace meisterwerk {
                 }
             }
 
-            void processTask( T_PTASK pTask ) {
+            void processTask( task *pTask ) {
                 unsigned long ticker = micros();
                 unsigned long tDelta = meisterwerk::util::timebudget::delta( pTask->lastCall, ticker );
                 if ( ( pTask->minMicros > 0 ) && ( tDelta >= pTask->minMicros ) ) {
@@ -187,12 +183,13 @@ namespace meisterwerk {
             }
 
             bool subscribeMsg( message *pMsg ) {
-                T_SUBSCRIPTION *pSubs = (T_SUBSCRIPTION *)malloc( sizeof( T_SUBSCRIPTION ) );
+                subscription *pSubs = new subscription();
                 if ( pSubs == nullptr )
                     return false;
-                pSubs->subscriber = pMsg->originator;
-                pSubs->topic      = pMsg->topic;
-                return subscriptionList.add( pSubs );
+                pSubs->subscriber = String( pMsg->originator );
+                pSubs->topic      = String( pMsg->topic );
+                bool ret          = subscriptionList.add( pSubs );
+                return ret;
             }
 
             void unsubscribeMsg( message *pMsg ) {
