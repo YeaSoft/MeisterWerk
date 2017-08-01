@@ -30,8 +30,6 @@ namespace meisterwerk {
 
             ~array() {
                 if ( arr != nullptr ) {
-                    // If size > 0 then there's a potential memory leak.
-                    // This must be taken care of by the array owner.
                     delete[] arr;
                 }
             }
