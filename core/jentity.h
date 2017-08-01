@@ -29,28 +29,16 @@ namespace meisterwerk {
             // type definitions
             class controlword {
                 public:
-                static const unsigned char REACTION = 1;
-                static const unsigned char NOTIFIED = 2;
-                static const unsigned char GETTABLE = 4;
-                static const unsigned char SETTABLE = 8;
+                static const unsigned char REACT  = 1;
+                static const unsigned char NOTIFY = 2;
+                static const unsigned char READ   = 4;
+                static const unsigned char WRITE  = 8;
                 String                     cwname;
                 unsigned char              cwtype;
                 controlword() {
                     cwtype = 0;
                 }
                 controlword( const char *cwname, unsigned char cwtype ) : cwname{cwname}, cwtype{cwtype} {
-                }
-
-                bool subscribe( jentity *pe ) const {
-                    if ( cwtype & controlword::REACTION ) {
-                        pe->subscribe( pe->entName + "/" + cwname );
-                    }
-                    if ( cwtype & controlword::GETTABLE ) {
-                        pe->subscribe( pe->entName + "/" + cwname + "/get" );
-                    }
-                    if ( cwtype & controlword::SETTABLE ) {
-                        pe->subscribe( pe->entName + "/" + cwname + "/set" );
-                    }
                 }
             };
 
@@ -66,7 +54,7 @@ namespace meisterwerk {
                 : entity( name, minMicroSecs, priority ), wordList( wordListSize ) {
                 subscribe( "info" );
                 subscribe( "mastertime/time/set" );
-                registerWord( "info", controlword::GETTABLE );
+                registerWord( "info", controlword::READ );
             }
 
             bool notify( const char *name, JsonObject &json ) const {
@@ -94,73 +82,70 @@ namespace meisterwerk {
             }
 
             void Reaction( const char *wordName ) {
-                registerWord( wordName, controlword::REACTION );
+                registerWord( wordName, controlword::REACT );
             }
 
             void Notifies( const char *wordName ) {
-                registerWord( wordName, controlword::NOTIFIED );
+                registerWord( wordName, controlword::NOTIFY );
             }
 
             void SensorValue( const char *wordName ) {
-                registerWord( wordName, controlword::NOTIFIED | controlword::GETTABLE );
+                registerWord( wordName, controlword::NOTIFY | controlword::READ );
             }
 
             void ReadOnly( const char *wordName ) {
-                registerWord( wordName, controlword::GETTABLE );
+                registerWord( wordName, controlword::READ );
             }
 
             void Setting( const char *wordName ) {
-                registerWord( wordName, controlword::GETTABLE | controlword::SETTABLE );
+                registerWord( wordName, controlword::READ | controlword::WRITE );
             }
 
             void SettableState( const char *wordName ) {
-                registerWord( wordName, controlword::NOTIFIED | controlword::GETTABLE | controlword::SETTABLE );
+                registerWord( wordName, controlword::NOTIFY | controlword::READ | controlword::WRITE );
             }
 
             void registerWord( const char *wordName, unsigned char wordType ) {
                 controlword cw( wordName, wordType );
                 wordList.add( cw );
 
-                if ( wordType & controlword::REACTION ) {
+                if ( wordType & controlword::REACT ) {
                     subscribe( entName + "/" + wordName );
                 }
-                if ( wordType & controlword::GETTABLE ) {
+                if ( wordType & controlword::READ ) {
                     subscribe( entName + "/" + wordName + "/get" );
                 }
-                if ( wordType & controlword::SETTABLE ) {
+                if ( wordType & controlword::WRITE ) {
                     subscribe( entName + "/" + wordName + "/set" );
                 }
             }
 
-            void prepareData( JsonObject &data, const char *correlation = nullptr ) const {
+            void prepareData( JsonObject &data ) const {
                 data["name"]  = entName;
                 data["timer"] = millis();
                 if ( bValidTime ) {
                     data["time"] = util::msgtime::ISOnowMillis();
                 }
-                if ( correlation ) {
-                    data["correlation"] = correlation;
-                }
             }
 
             void prepareInfo( JsonObject &data ) const {
-                JsonArray &reaction = data.createNestedArray( String( "reaction" ) );
-                JsonArray &notified = data.createNestedArray( String( "notified" ) );
-                JsonArray &gettable = data.createNestedArray( String( "gettable" ) );
-                JsonArray &settable = data.createNestedArray( String( "settable" ) );
+                JsonArray &react  = data.createNestedArray( "react" );
+                JsonArray &notify = data.createNestedArray( "notify" );
+                JsonArray &read   = data.createNestedArray( "read" );
+                JsonArray &write  = data.createNestedArray( "write" );
 
                 for ( unsigned int i = 0; i < wordList.length(); i++ ) {
-                    if ( wordList[i].cwtype & controlword::REACTION ) {
-                        reaction.add( wordList[i].cwname );
+                    if ( wordList[i].cwtype & controlword::REACT ) {
+                        react.add( wordList[i].cwname );
                     }
-                    if ( wordList[i].cwtype & controlword::NOTIFIED ) {
-                        notified.add( wordList[i].cwname );
+                    if ( wordList[i].cwtype & controlword::NOTIFY ) {
+                        notify.add( wordList[i].cwname );
                     }
-                    if ( wordList[i].cwtype & controlword::GETTABLE ) {
-                        gettable.add( wordList[i].cwname );
+                    if ( wordList[i].cwtype & controlword::READ ) {
+                        read.add( wordList[i].cwname );
                     }
-                    if ( wordList[i].cwtype & controlword::SETTABLE ) {
-                        settable.add( wordList[i].cwname );
+                    if ( wordList[i].cwtype & controlword::WRITE ) {
+                        write.add( wordList[i].cwname );
                     }
                 }
             }
@@ -184,7 +169,7 @@ namespace meisterwerk {
                 JsonObject &      res = resBuffer.createObject();
                 Topic             tpc = topic;
 
-                prepareData( res, req["correlation"] );
+                prepareData( res );
 
                 if ( tpc == "mastertime/time/set" ) {
                     bValidTime = true;
