@@ -13,7 +13,10 @@
 #include "array.h"
 #include "common.h"
 #include "entity.h"
+
+#include "stdarg.h"
 #include "topic.h"
+
 //#include <list>
 
 namespace meisterwerk {
@@ -73,8 +76,8 @@ namespace meisterwerk {
             scheduler( int nTaskListSize = 32, int nSubscriptionListSize = 128, int nRetainPubs = 32 )
                 : taskList( nTaskListSize ), subscriptionList( nSubscriptionListSize ) {
                 DBG_ONLY( allTime.snap() );
-                ESP.wdtDisable();
-                ESP.wdtEnable( WDTO_8S );
+                // ESP.wdtDisable();
+                // ESP.wdtEnable( WDTO_8S );
             }
 
             virtual ~scheduler() {
@@ -91,7 +94,7 @@ namespace meisterwerk {
                 processMsgQueue();
 
                 // XXX: sort tasks according to urgency
-                for ( int i = 0; i < taskList.length(); i++ ) {
+                for ( unsigned int i = 0; i < taskList.length(); i++ ) {
                     // process message queue
                     processMsgQueue();
                     // process entity and kernel tasks
@@ -99,7 +102,7 @@ namespace meisterwerk {
                     // serve the watchdog
                     checkYield();
                 }
-                ESP.wdtFeed();
+                // ESP.wdtFeed();
                 DBG_ONLY( allTime.shot() );
             }
 
@@ -172,9 +175,9 @@ namespace meisterwerk {
             }
 
             void publishMsg( message *pMsg ) {
-                for ( int isub = 0; isub < subscriptionList.length(); isub++ ) {
+                for ( unsigned int isub = 0; isub < subscriptionList.length(); isub++ ) {
                     if ( msgmatches( subscriptionList[isub].topic, pMsg->topic ) ) {
-                        for ( int itask = 0; itask < taskList.length(); itask++ ) {
+                        for ( unsigned int itask = 0; itask < taskList.length(); itask++ ) {
                             if ( ( taskList[itask].pEnt->entName == subscriptionList[isub].subscriber ) &&
                                  ( String( pMsg->originator ) != subscriptionList[isub].subscriber ) ) {
                                 DBG_ONLY( taskList[itask].msgTime.snap() );
@@ -195,7 +198,7 @@ namespace meisterwerk {
             }
 
             void unsubscribeMsg( message *pMsg ) {
-                for ( int i = 0; i < subscriptionList.length(); i++ ) {
+                for ( unsigned int i = 0; i < subscriptionList.length(); i++ ) {
                     if ( ( subscriptionList[i].topic == String( pMsg->topic ) ) &&
                          ( subscriptionList[i].subscriber == String( pMsg->originator ) ) ) {
                         subscriptionList.erase( i );
@@ -209,7 +212,7 @@ namespace meisterwerk {
 
             bool registerEntity( entity *pEnt, unsigned long minMicroSecs = 100000L, T_PRIO priority = PRIORITY_NORMAL,
                                  bool bCallback = true ) {
-                for ( int i = 0; i < taskList.length(); i++ ) {
+                for ( unsigned int i = 0; i < taskList.length(); i++ ) {
                     if ( taskList[i].pEnt->entName == pEnt->entName ) {
                         DBG( "ERROR: cannot register another task with existing entity-name: " + pEnt->entName );
                         return false;
@@ -229,7 +232,7 @@ namespace meisterwerk {
 
             bool updateEntity( entity *pEnt, unsigned long minMicroSecs = 100000L, T_PRIO priority = PRIORITY_NORMAL ) {
                 bool found = false;
-                for ( int i = 0; i < taskList.length(); i++ ) {
+                for ( unsigned int i = 0; i < taskList.length(); i++ ) {
                     if ( taskList[i].pEnt->entName == pEnt->entName ) {
                         taskList[i].minMicros = minMicroSecs;
                         taskList[i].priority  = priority;
@@ -337,7 +340,7 @@ namespace meisterwerk {
                 DBG( "" );
                 DBG( F( "Subscriptions" ) );
                 DBG( F( "=============" ) );
-                for ( int i = 0; i < subscriptionList.length(); i++ ) {
+                for ( unsigned int i = 0; i < subscriptionList.length(); i++ ) {
                     DBG( pre + "subscriber='" + subscriptionList[i].subscriber + "' topic='" +
                          subscriptionList[i].topic + "'" );
                 }
@@ -354,7 +357,7 @@ namespace meisterwerk {
                 DBG( "" );
                 DBG( pre + F( "Individual Task Statistics:" ) );
                 DBG( pre + F( "---------------------------" ) );
-                for ( int i = 0; i < taskList.length(); i++ ) {
+                for ( unsigned int i = 0; i < taskList.length(); i++ ) {
                     DBG( "" );
                     DBG( pre + F( "  Name: " ) + taskList[i].pEnt->entName );
                     DBG( pre + F( "  Calls: " ) + taskList[i].tskTime.getcount() );

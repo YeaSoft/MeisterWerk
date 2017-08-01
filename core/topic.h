@@ -87,7 +87,7 @@ namespace meisterwerk {
             }
 
             String &formatv( const char *format, va_list argList ) {
-                int reslen = vsnprintf( buffer, capacity, format, argList );
+                unsigned int reslen = vsnprintf( buffer, capacity, format, argList );
                 if ( reslen >= capacity ) {
                     if ( reserve( reslen + 1 ) ) {
                         vsnprintf( buffer, capacity, format, argList );
@@ -99,7 +99,7 @@ namespace meisterwerk {
             }
 
             String &formatv( const String &format, va_list argList ) {
-                int reslen = vsnprintf( buffer, capacity, format.c_str(), argList );
+                unsigned int reslen = vsnprintf( buffer, capacity, format.c_str(), argList );
                 if ( reslen >= capacity ) {
                     if ( reserve( reslen + 1 ) ) {
                         vsnprintf( buffer, capacity, format.c_str(), argList );
@@ -216,7 +216,7 @@ namespace meisterwerk {
                 if ( l1 < l2 )
                     l = l2;
                 else
-                    l  = l1;
+                    l = l1;
                 int p1 = 0, p2 = 0;
                 for ( int i = 0; i < l; l++ ) {
                     if ( ( p1 > l1 ) || ( p2 > l2 ) )
