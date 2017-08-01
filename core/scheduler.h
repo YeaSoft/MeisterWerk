@@ -13,8 +13,6 @@
 #include "array.h"
 #include "common.h"
 #include "entity.h"
-
-#include "stdarg.h"
 #include "topic.h"
 
 //#include <list>
