@@ -23,10 +23,10 @@ namespace meisterwerk {
             public:
             // members
             entity *      pEnt;         // instance object pointer to derived object instance
-            T_PRIO        priority;     // Priority MW_PRIORITY_*
             unsigned long minMicroSecs; // intervall in micro seconds the loop method
                                         // should be called. 0 means never (used for
                                         // messaging only entities)
+            T_PRIO priority;            // Priority MW_PRIORITY_*
 
             // methods
             msgregister( entity *pEnt, unsigned long minMicroSecs, T_PRIO priority )
@@ -117,8 +117,8 @@ namespace meisterwerk {
                     return;
                 if ( logtopic == "" )
                     logtopic = entName;
-                String cstr  = "";
-                String icon  = "";
+                String cstr = "";
+                String icon = "";
                 switch ( lclass ) {
                 case T_LOGLEVEL::ERR:
                     cstr = "Error";

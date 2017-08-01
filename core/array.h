@@ -1,4 +1,4 @@
-// mwarray.h - The internal array class
+// array.h - The internal array class
 //
 // This is the declaration of the internal array
 // class used for resource-management
@@ -8,47 +8,43 @@
 
 #pragma once
 
+#include <cassert>
+
 namespace meisterwerk {
     namespace core {
 
-        template <class T> class mwarray {
+        template <typename T> class array {
             private:
-            T **arr;
+            T *arr;
             DBG_ONLY( unsigned int peakSize );
             unsigned int maxSize;
             unsigned int size;
             unsigned int arrPtr;
 
             public:
-            mwarray( unsigned int maxArraySize ) {
+            array( int maxArraySize ) {
                 DBG_ONLY( peakSize = 0 );
                 arrPtr  = 0;
                 size    = 0;
                 maxSize = maxArraySize;
-                arr     = (T **)malloc( sizeof( T * ) * maxSize );
-                if ( arr == nullptr )
-                    maxSize = 0;
+                arr     = new T[maxArraySize];
             }
 
-            ~mwarray() {
+            ~array() {
                 if ( arr != nullptr ) {
-                    // If size > 0 then there's a potential memory leak.
-                    // This must be taken care of by the array owner.
-                    free( arr );
+                    delete[] arr;
                 }
             }
 
-            bool add( T *ent ) {
+            bool add( T ent ) {
                 if ( size >= maxSize ) {
                     return false;
                 }
-                if ( ent != nullptr ) {
-                    arr[arrPtr] = ent;
-                    arrPtr      = arrPtr + 1;
-                    ++size;
-                } else
-                    return false;
-                DBG_ONLY( if ( size > peakSize ) { peakSize = size; } ) return true;
+                arr[arrPtr] = ent;
+                arrPtr      = arrPtr + 1;
+                ++size;
+                DBG_ONLY( if ( size > peakSize ) { peakSize = size; } );
+                return true;
             }
 
             bool erase( unsigned int index ) {
@@ -56,20 +52,26 @@ namespace meisterwerk {
                     return false;
                 }
                 for ( int i = index; i < size - 1; i++ ) {
-                    arr[i]     = arr[i + 1];
-                    arr[i + 1] = nullptr;
-                } // XXX: memcpy
+                    arr[i] = arr[i + 1];
+                }
                 --size;
                 --arrPtr;
                 return true;
             }
+<<<<<<< HEAD:core/mwarray.h
             T *operator[]( int i ) const {
                 if ( i >= size )
                     return nullptr;
                 return (T *)arr[i];
+=======
+            T operator[]( unsigned int i ) const {
+                assert( i < size );
+                return arr[i];
+>>>>>>> origin/nostdlibbloat:core/array.h
             }
 
-            T *&operator[]( int i ) {
+            T &operator[]( unsigned int i ) {
+                assert( i < size );
                 return arr[i];
             }
 
@@ -84,7 +86,7 @@ namespace meisterwerk {
                 return ( size );
             }
 
-            DBG_ONLY( unsigned int peak() { return ( peakSize ); } )
+            DBG_ONLY( unsigned int peak() { return ( peakSize ); } );
         };
     } // namespace core
 } // namespace meisterwerk
