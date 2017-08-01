@@ -31,8 +31,8 @@ namespace meisterwerk {
             TSL2561 *                          ptsl;
 
             i2cdev_TSL2561( String name, uint8_t address )
-                : meisterwerk::base::i2cdev( name, "TSL2561", address ), luminosityProcessor( 5, 900, 1.0 ) {
-                // send luminosity updates, if luminosity changes for 1.0lux over an average of 5
+                : meisterwerk::base::i2cdev( name, "TSL2561", address ), luminosityProcessor( 20, 900, 5.0 ) {
+                // send luminosity updates, if luminosity changes for 5.0lux over an average of 20
                 // measurements, but at least every 15min (900sec)
                 luminosityValid = false;
             }
@@ -75,7 +75,7 @@ namespace meisterwerk {
                 if ( luminosityValid ) {
                     json = "{\"time\":\"" + luminosityTime + "\",\"luminosity\":" + String( luminosityLast ) + "}";
                     publish( entName + "/luminosity", json );
-                    log( T_LOGLEVEL::INFO, "Luminosity: " + String( luminosityLast ) );
+                    // log( T_LOGLEVEL::INFO, "Luminosity: " + String( luminosityLast ) );
                 } else {
                     DBG( "No valid luminosity measurement for pub" );
                 }
