@@ -64,6 +64,8 @@ namespace meisterwerk {
                     pollSensor = true;
                     subscribe( entName + "/temperature/get" );
                     subscribe( entName + "/pressure/get" );
+                    subscribe( "temperature/get" );
+                    subscribe( "pressure/get" );
                     subscribe( "mastertime/time/set" );
                 }
             }
@@ -114,10 +116,10 @@ namespace meisterwerk {
                 String topic( ctopic );
                 if ( topic == "mastertime/time/set" )
                     bTimeValid = true;
-                if ( topic == entName + "/temperature/get" || topic == "*/temperature/get" ) {
+                if ( topic == entName + "/temperature/get" || topic == "temperature/get" ) {
                     publishTemp();
                 }
-                if ( topic == entName + "/pressure/get" || topic == "*/pressure/get" ) {
+                if ( topic == entName + "/pressure/get" || topic == "pressure/get" ) {
                     publishPressure();
                 }
             }
