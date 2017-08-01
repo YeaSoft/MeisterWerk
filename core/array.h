@@ -8,6 +8,8 @@
 
 #pragma once
 
+#include <cassert>
+
 namespace meisterwerk {
     namespace core {
 
@@ -56,11 +58,13 @@ namespace meisterwerk {
                 --arrPtr;
                 return true;
             }
-            T operator[]( int i ) const {
+            T operator[]( unsigned int i ) const {
+                assert( i < size );
                 return arr[i];
             }
 
-            T &operator[]( int i ) {
+            T &operator[]( unsigned int i ) {
+                assert( i < size );
                 return arr[i];
             }
 
