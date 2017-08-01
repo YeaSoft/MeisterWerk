@@ -7,20 +7,19 @@
 
 #pragma once
 
-// hardware dependencies
-#include <TSL2561.h>
-
 // dependencies
 #include "../base/i2cdev.h"
 #include "../core/entity.h"
 #include "../util/hextools.h"
 #include "../util/sensorprocessor.h"
 
+// hardware dependencies
+#include <TSL2561.h>
+
 namespace meisterwerk {
     namespace thing {
         class i2cdev_TSL2561 : public meisterwerk::base::i2cdev {
             public:
-            TSL2561 *                          ptsl;
             bool                               pollSensor = false;
             meisterwerk::util::sensorprocessor luminosityProcessor;
             String                             json;
@@ -29,6 +28,7 @@ namespace meisterwerk {
             String                             luminosityTime;
             bool                               bOptionWaitForValidTime = true;
             bool                               bTimeValid              = false;
+            TSL2561 *                          ptsl;
 
             i2cdev_TSL2561( String name, uint8_t address )
                 : meisterwerk::base::i2cdev( name, "TSL2561", address ), luminosityProcessor( 5, 900, 1.0 ) {
@@ -57,12 +57,12 @@ namespace meisterwerk {
                     DBG( "TSL2561 initialization failure." );
                 } else {
                     // You can change the gain on the fly, to adapt to brighter/dimmer light situations
-                    tsl.setGain( TSL2561_GAIN_0X ); // set no gain (for bright situtations)
+                    ptsl->setGain( TSL2561_GAIN_0X ); // set no gain (for bright situtations)
                     // tsl.setGain(TSL2561_GAIN_16X);      // set 16x gain (for dim situations)
 
                     // Changing the integration time gives you a longer time over which to sense light
                     // longer timelines are slower, but are good in very low light situtations!
-                    tsl.setTiming( TSL2561_INTEGRATIONTIME_13MS ); // shortest integration time (bright light)
+                    ptsl->setTiming( TSL2561_INTEGRATIONTIME_13MS ); // shortest integration time (bright light)
                     // tsl.setTiming(TSL2561_INTEGRATIONTIME_101MS);  // medium integration time (medium light)
                     // tsl.setTiming(TSL2561_INTEGRATIONTIME_402MS);  // longest integration time (dim light)
 
@@ -87,11 +87,11 @@ namespace meisterwerk {
                     if ( bOptionWaitForValidTime && !bTimeValid )
                         return;
 
-                    uint32_t lum = tsl.getFullLuminosity();
+                    uint32_t lum = ptsl->getFullLuminosity();
                     uint16_t ir, full;
                     ir                = lum >> 16;
                     full              = lum & 0xFFFF;
-                    double luminosity = (double)tsl.calculateLux( full, ir );
+                    double luminosity = (double)ptsl->calculateLux( full, ir );
 
                     if ( luminosityProcessor.filter( &luminosity ) ) {
                         luminosityLast  = luminosity;

@@ -45,7 +45,7 @@ enum I2CDevType {
 enum I2CDev {
     SSD1306,
     PN532,
-    TSL2561,
+    TSL_2561,
     BMP085,
     ADXL345,
     HMC5883L,
@@ -97,7 +97,7 @@ const T_I2C_PROPERTIES i2cProps[] = {
     // https://learn.adafruit.com/adafruit-led-backpack/0-54-alphanumeric
     // {NFC, PN532, "PN532", "RFID controller", false, {0x48}},
     // https://www.adafruit.com/product/364
-    {Sensor, TSL2561, "TSL2561", "Luminosity sensor", false, {0x29, 0x39, 0x49, 0}},
+    {Sensor, TSL_2561, "TSL2561", "Luminosity sensor", false, {0x29, 0x39, 0x49, 0}},
     // https://www.adafruit.com/product/439
     {Sensor, BMP085, "BMP085", "Pressure, temperature, altitude sensor", false, {0x77, 0, 0, 0}},
     // https://www.adafruit.com/product/391
