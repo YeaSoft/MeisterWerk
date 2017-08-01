@@ -72,8 +72,10 @@ namespace meisterwerk {
             scheduler( int nTaskListSize = 32, int nSubscriptionListSize = 128, int nRetainPubs = 32 )
                 : taskList( nTaskListSize ), subscriptionList( nSubscriptionListSize ) {
                 DBG_ONLY( allTime.snap() );
-                // ESP.wdtDisable();
-                // ESP.wdtEnable( WDTO_8S );
+                #ifdef ESP8266
+                ESP.wdtDisable();
+                ESP.wdtEnable( WDTO_8S );
+                #endif
             }
 
             virtual ~scheduler() {
@@ -98,7 +100,9 @@ namespace meisterwerk {
                     // serve the watchdog
                     checkYield();
                 }
-                // ESP.wdtFeed();
+                #ifdef ESP8266
+                ESP.wdtFeed();
+                #endif
                 DBG_ONLY( allTime.shot() );
             }
 
