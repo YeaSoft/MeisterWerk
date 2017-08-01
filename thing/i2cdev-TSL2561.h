@@ -48,7 +48,6 @@ namespace meisterwerk {
             }
 
             virtual void onInstantiate( String i2ctype, uint8_t address ) override {
-                // String sa = meisterwerk::util::hexByte( address );
                 DBG( "Instantiating TSL2561 device at address 0x" + meisterwerk::util::hexByte( address ) );
                 // The address will be different depending on whether you let
                 // the ADDR pin float (addr 0x39), or tie it to ground or vcc. In those cases
