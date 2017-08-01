@@ -32,7 +32,7 @@ namespace meisterwerk {
 
             i2cdev_TSL2561( String name, uint8_t address )
                 : meisterwerk::base::i2cdev( name, "TSL2561", address ), luminosityProcessor( 5, 900, 1.0 ) {
-                // send luminosity updates, if luminosity changes for 0.1C over an average of 5
+                // send luminosity updates, if luminosity changes for 1.0lux over an average of 5
                 // measurements, but at least every 15min (900sec)
                 luminosityValid = false;
             }
