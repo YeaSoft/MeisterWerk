@@ -56,11 +56,11 @@ namespace meisterwerk {
                 --arrPtr;
                 return true;
             }
-            T operator[]( int i ) const {
+            T operator[]( unsigned int i ) const {
                 return arr[i];
             }
 
-            T &operator[]( int i ) {
+            T &operator[]( unsigned int i ) {
                 return arr[i];
             }
 

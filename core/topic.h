@@ -7,6 +7,7 @@
 #pragma once
 
 // dependencies
+#include <stdarg.h>
 
 namespace meisterwerk {
     namespace core {

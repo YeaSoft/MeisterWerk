@@ -14,7 +14,6 @@
 #include "common.h"
 #include "entity.h"
 #include "topic.h"
-//#include <list>
 
 namespace meisterwerk {
     namespace core {
