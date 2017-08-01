@@ -58,16 +58,9 @@ namespace meisterwerk {
                 --arrPtr;
                 return true;
             }
-<<<<<<< HEAD:core/mwarray.h
-            T *operator[]( int i ) const {
-                if ( i >= size )
-                    return nullptr;
-                return (T *)arr[i];
-=======
             T operator[]( unsigned int i ) const {
                 assert( i < size );
                 return arr[i];
->>>>>>> origin/nostdlibbloat:core/array.h
             }
 
             T &operator[]( unsigned int i ) {
