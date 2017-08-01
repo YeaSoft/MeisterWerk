@@ -10,11 +10,10 @@
 // dependencies
 #include "../util/metronome.h"
 #include "../util/timebudget.h"
+#include "array.h"
 #include "common.h"
 #include "entity.h"
-#include "mwarray.h"
 #include "topic.h"
-//#include <list>
 
 namespace meisterwerk {
     namespace core {
@@ -30,10 +29,22 @@ namespace meisterwerk {
                 public:
                 String subscriber;
                 String topic;
+                subscription() {
+                    subscriber = "", topic = "";
+                }
+                subscription( String sub, String top ) : subscriber{sub}, topic{top} {
+                }
             };
 
             class task {
                 public:
+                task() {
+                    pEnt      = nullptr;
+                    minMicros = 0;
+                    priority  = PRIORITY_LOWEST;
+                    lastCall  = 0;
+                    lateTime  = 0;
+                }
                 task( entity *pEnt, unsigned long minMicros, T_PRIO priority )
                     : pEnt{pEnt}, minMicros{minMicros}, priority{priority} {
                     lastCall = 0;
@@ -51,8 +62,8 @@ namespace meisterwerk {
             };
 
             // members
-            mwarray<task>         taskList;
-            mwarray<subscription> subscriptionList;
+            array<task>         taskList;
+            array<subscription> subscriptionList;
 
             meisterwerk::util::metronome yieldRythm = 5; // 5ms
 
@@ -61,17 +72,11 @@ namespace meisterwerk {
             scheduler( int nTaskListSize = 32, int nSubscriptionListSize = 128, int nRetainPubs = 32 )
                 : taskList( nTaskListSize ), subscriptionList( nSubscriptionListSize ) {
                 DBG_ONLY( allTime.snap() );
-                ESP.wdtDisable();
-                ESP.wdtEnable( WDTO_8S );
+                // ESP.wdtDisable();
+                // ESP.wdtEnable( WDTO_8S );
             }
 
             virtual ~scheduler() {
-                for ( int i = 0; i < taskList.length(); i++ ) {
-                    delete taskList[i];
-                }
-                for ( int i = 0; i < subscriptionList.length(); i++ ) {
-                    delete subscriptionList[i];
-                }
             }
 
             void checkYield() {
@@ -85,15 +90,15 @@ namespace meisterwerk {
                 processMsgQueue();
 
                 // XXX: sort tasks according to urgency
-                for ( int i = 0; i < taskList.length(); i++ ) {
+                for ( unsigned int i = 0; i < taskList.length(); i++ ) {
                     // process message queue
                     processMsgQueue();
                     // process entity and kernel tasks
-                    processTask( taskList[i] );
+                    processTask( &taskList[i] );
                     // serve the watchdog
                     checkYield();
                 }
-                ESP.wdtFeed();
+                // ESP.wdtFeed();
                 DBG_ONLY( allTime.shot() );
             }
 
@@ -166,16 +171,16 @@ namespace meisterwerk {
             }
 
             void publishMsg( message *pMsg ) {
-                for ( int isub = 0; isub < subscriptionList.length(); isub++ ) {
-                    if ( msgmatches( subscriptionList[isub]->topic, pMsg->topic ) ) {
-                        for ( int itask = 0; itask < taskList.length(); itask++ ) {
-                            if ( ( taskList[itask]->pEnt->entName == subscriptionList[isub]->subscriber ) &&
-                                 ( String( pMsg->originator ) != subscriptionList[isub]->subscriber ) ) {
-                                DBG_ONLY( taskList[itask]->msgTime.snap() );
-                                taskList[itask]->pEnt->receive( pMsg->originator, pMsg->topic,
-                                                                pMsg->pBuf && pMsg->pBufLen ? (const char *)pMsg->pBuf
-                                                                                            : "" );
-                                DBG_ONLY( taskList[itask]->msgTime.shot() );
+                for ( unsigned int isub = 0; isub < subscriptionList.length(); isub++ ) {
+                    if ( msgmatches( subscriptionList[isub].topic, pMsg->topic ) ) {
+                        for ( unsigned int itask = 0; itask < taskList.length(); itask++ ) {
+                            if ( ( taskList[itask].pEnt->entName == subscriptionList[isub].subscriber ) &&
+                                 ( String( pMsg->originator ) != subscriptionList[isub].subscriber ) ) {
+                                DBG_ONLY( taskList[itask].msgTime.snap() );
+                                taskList[itask].pEnt->receive( pMsg->originator, pMsg->topic,
+                                                               pMsg->pBuf && pMsg->pBufLen ? (const char *)pMsg->pBuf
+                                                                                           : "" );
+                                DBG_ONLY( taskList[itask].msgTime.shot() );
                             }
                         }
                     }
@@ -183,21 +188,15 @@ namespace meisterwerk {
             }
 
             bool subscribeMsg( message *pMsg ) {
-                subscription *pSubs = new subscription();
-                if ( pSubs == nullptr )
-                    return false;
-                pSubs->subscriber = String( pMsg->originator );
-                pSubs->topic      = String( pMsg->topic );
-                bool ret          = subscriptionList.add( pSubs );
+                subscription Subs( pMsg->originator, pMsg->topic );
+                bool         ret = subscriptionList.add( Subs );
                 return ret;
             }
 
             void unsubscribeMsg( message *pMsg ) {
-                // T_SUBSCRIPTIONLIST::iterator iter = subscriptionList.begin();
-                // while ( iter != subscriptionList.end() ) {
-                for ( int i = 0; i < subscriptionList.length(); i++ ) {
-                    if ( ( subscriptionList[i]->topic == String( pMsg->topic ) ) &&
-                         ( subscriptionList[i]->subscriber == String( pMsg->originator ) ) ) {
+                for ( unsigned int i = 0; i < subscriptionList.length(); i++ ) {
+                    if ( ( subscriptionList[i].topic == String( pMsg->topic ) ) &&
+                         ( subscriptionList[i].subscriber == String( pMsg->originator ) ) ) {
                         subscriptionList.erase( i );
                         return;
                     }
@@ -209,8 +208,8 @@ namespace meisterwerk {
 
             bool registerEntity( entity *pEnt, unsigned long minMicroSecs = 100000L, T_PRIO priority = PRIORITY_NORMAL,
                                  bool bCallback = true ) {
-                for ( int i = 0; i < taskList.length(); i++ ) {
-                    if ( taskList[i]->pEnt->entName == pEnt->entName ) {
+                for ( unsigned int i = 0; i < taskList.length(); i++ ) {
+                    if ( taskList[i].pEnt->entName == pEnt->entName ) {
                         DBG( "ERROR: cannot register another task with existing entity-name: " + pEnt->entName );
                         return false;
                     }
@@ -219,7 +218,7 @@ namespace meisterwerk {
                 if ( pTask == nullptr ) {
                     return false;
                 }
-                taskList.add( pTask );
+                taskList.add( *pTask );
 
                 if ( bCallback ) {
                     pEnt->setup();
@@ -229,11 +228,11 @@ namespace meisterwerk {
 
             bool updateEntity( entity *pEnt, unsigned long minMicroSecs = 100000L, T_PRIO priority = PRIORITY_NORMAL ) {
                 bool found = false;
-                for ( int i = 0; i < taskList.length(); i++ ) {
-                    if ( taskList[i]->pEnt->entName == pEnt->entName ) {
-                        taskList[i]->minMicros = minMicroSecs;
-                        taskList[i]->priority  = priority;
-                        found                  = true;
+                for ( unsigned int i = 0; i < taskList.length(); i++ ) {
+                    if ( taskList[i].pEnt->entName == pEnt->entName ) {
+                        taskList[i].minMicros = minMicroSecs;
+                        taskList[i].priority  = priority;
+                        found                 = true;
                         break;
                     }
                 }
@@ -337,9 +336,9 @@ namespace meisterwerk {
                 DBG( "" );
                 DBG( F( "Subscriptions" ) );
                 DBG( F( "=============" ) );
-                for ( int i = 0; i < subscriptionList.length(); i++ ) {
-                    DBG( pre + "subscriber='" + subscriptionList[i]->subscriber + "' topic='" +
-                         subscriptionList[i]->topic + "'" );
+                for ( unsigned int i = 0; i < subscriptionList.length(); i++ ) {
+                    DBG( pre + "subscriber='" + subscriptionList[i].subscriber + "' topic='" +
+                         subscriptionList[i].topic + "'" );
                 }
 
                 DBG( "" );
@@ -354,17 +353,17 @@ namespace meisterwerk {
                 DBG( "" );
                 DBG( pre + F( "Individual Task Statistics:" ) );
                 DBG( pre + F( "---------------------------" ) );
-                for ( int i = 0; i < taskList.length(); i++ ) {
+                for ( unsigned int i = 0; i < taskList.length(); i++ ) {
                     DBG( "" );
-                    DBG( pre + F( "  Name: " ) + taskList[i]->pEnt->entName );
-                    DBG( pre + F( "  Calls: " ) + taskList[i]->tskTime.getcount() );
-                    DBG( pre + F( "  Calls Time: " ) + taskList[i]->tskTime.getms() + ms + " (" +
-                         taskList[i]->tskTime.getPercent( allTime.getms() ) + "%)" );
-                    DBG( pre + F( "  Calls Max Time: " ) + taskList[i]->tskTime.getmaxus() + us );
-                    DBG( pre + F( "  Messages: " ) + taskList[i]->msgTime.getcount() );
-                    DBG( pre + F( "  Message Time: " ) + taskList[i]->msgTime.getms() + ms + " (" +
-                         taskList[i]->msgTime.getPercent( allTime.getms() ) + "%)" );
-                    DBG( pre + F( "  Message Max Time: " ) + taskList[i]->msgTime.getmaxus() + us );
+                    DBG( pre + F( "  Name: " ) + taskList[i].pEnt->entName );
+                    DBG( pre + F( "  Calls: " ) + taskList[i].tskTime.getcount() );
+                    DBG( pre + F( "  Calls Time: " ) + taskList[i].tskTime.getms() + ms + " (" +
+                         taskList[i].tskTime.getPercent( allTime.getms() ) + "%)" );
+                    DBG( pre + F( "  Calls Max Time: " ) + taskList[i].tskTime.getmaxus() + us );
+                    DBG( pre + F( "  Messages: " ) + taskList[i].msgTime.getcount() );
+                    DBG( pre + F( "  Message Time: " ) + taskList[i].msgTime.getms() + ms + " (" +
+                         taskList[i].msgTime.getPercent( allTime.getms() ) + "%)" );
+                    DBG( pre + F( "  Message Max Time: " ) + taskList[i].msgTime.getmaxus() + us );
                 }
             }
 #endif
