@@ -58,6 +58,7 @@ namespace meisterwerk {
                 --arrPtr;
                 return true;
             }
+
             T operator[]( unsigned int i ) const {
                 assert( i < size );
                 return arr[i];
