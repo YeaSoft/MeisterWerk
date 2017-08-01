@@ -118,6 +118,25 @@ namespace meisterwerk {
             virtual void receive( const char *origin, const char *ctopic, const char *msg ) override {
                 meisterwerk::base::i2cdev::receive( origin, ctopic, msg );
                 String topic( ctopic );
+                int    p  = topic.indexOf( "/" );
+                String t1 = topic.substring( p + 1 );
+                if ( t1 == "luminosity" ) {
+                    DBG( "Luminosity msg: " + String( msg ) );
+                    DynamicJsonBuffer jsonBuffer( 200 );
+                    JsonObject &      root = jsonBuffer.parseObject( msg );
+                    if ( !root.success() ) {
+                        DBG( "Oled/luminosity: Invalid JSON received: " + String( msg ) );
+                        return;
+                    }
+                    float lx     = atof( root["luminosity"] );
+                    int   bright = ( (float)lx / 1000.0 * 15.0 );
+                    if ( bright > 15 )
+                        bright = 15;
+                    if ( segments == 7 )
+                        pled7->setBrightness( bright ); // Brightness [0..15] Max 15 at 1000lux.
+                    else
+                        pled14->setBrightness( bright ); // Brightness [0..15] Max 15 at 1000lux.
+                }
                 if ( topic == "*/display/get" || topic == entName + "/display/get" ) {
                     publish( entName + "/display", "{\"type\":\"textdisplay\",\"x\":" + String( displayX ) +
                                                        ",\"y\":" + String( displayY ) +

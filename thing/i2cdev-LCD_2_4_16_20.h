@@ -70,6 +70,7 @@ namespace meisterwerk {
                 pollDisplay = true;
                 subscribe( entName + "/display/set" );
                 subscribe( entName + "/display/get" );
+                subscribe( "*/luminosity" );
                 publish( entName + "/display" );
             }
 
@@ -81,6 +82,25 @@ namespace meisterwerk {
             virtual void receive( const char *origin, const char *ctopic, const char *msg ) override {
                 meisterwerk::base::i2cdev::receive( origin, ctopic, msg );
                 String topic( ctopic );
+                int    p  = topic.indexOf( "/" );
+                String t1 = topic.substring( p + 1 );
+                if ( t1 == "luminosity" ) {
+                    DBG( "Luminosity msg: " + String( msg ) );
+                    DynamicJsonBuffer jsonBuffer( 200 );
+                    JsonObject &      root = jsonBuffer.parseObject( msg );
+                    if ( !root.success() ) {
+                        DBG( "Oled/luminosity: Invalid JSON received: " + String( msg ) );
+                        return;
+                    }
+                    float lx        = atof( root["luminosity"] );
+                    int   lcdBright = ( lx / 1000.0 * 256.0 );
+                    if ( lcdBright > 255 )
+                        lcdBright = 255;
+                    if ( lcdBright < 1 )
+                        lcdBright = 1;
+                    plcd->setBacklight( lcdBright );
+                }
+
                 if ( topic == "*/display/get" || topic == entName + "/display/get" ) {
                     publish( entName + "/display", "{\"type\":\"textdisplay\",\"x\":" + String( displayX ) +
                                                        ",\"y\":" + String( displayY ) + "}" );
