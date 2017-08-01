@@ -36,7 +36,7 @@ namespace meisterwerk {
                 }
             }
 
-            bool add( T ent ) {
+            bool add( T &ent ) {
                 if ( size >= maxSize ) {
                     return false;
                 }
