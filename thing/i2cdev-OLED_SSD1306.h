@@ -68,7 +68,8 @@ namespace meisterwerk {
 
                 pollDisplay = true;
                 subscribe( entName + "/display/set" );
-                subscribe( entName + "/display/get" );
+                subscribe( "display/get" );
+                subscribe( "*/luminosity" );
                 publish( entName + "/display" );
             }
 
@@ -80,7 +81,24 @@ namespace meisterwerk {
             virtual void receive( const char *origin, const char *ctopic, const char *msg ) override {
                 meisterwerk::base::i2cdev::receive( origin, ctopic, msg );
                 String topic( ctopic );
-                if ( topic == "*/display/get" || topic == entName + "/display/get" ) {
+                int    p  = topic.indexOf( "/" );
+                String t1 = topic.substring( p + 1 );
+                if ( t1 == "luminosity" ) {
+                    DBG( "Luminosity msg: " + String( msg ) );
+                    DynamicJsonBuffer jsonBuffer( 200 );
+                    JsonObject &      root = jsonBuffer.parseObject( msg );
+                    if ( !root.success() ) {
+                        DBG( "Oled/luminosity: Invalid JSON received: " + String( msg ) );
+                        return;
+                    }
+                    float lx         = atof( root["luminosity"] );
+                    int   oledBright = ( lx / 1000.0 * 256.0 );
+                    if ( oledBright > 255 )
+                        oledBright = 255;
+                    // XXX: freaking adafruit lib cant set brightness!
+                    // poled->setContrast( (unsigned char)oledBright );
+                }
+                if ( topic == "display/get" || topic == entName + "/display/get" ) {
                     publish( entName + "/display", "{\"type\":\"pixeldisplay\",\"x\":" + String( displayX ) +
                                                        ",\"y\":" + String( displayY ) + "}" );
                 }
