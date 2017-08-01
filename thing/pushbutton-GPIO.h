@@ -19,6 +19,7 @@ namespace meisterwerk {
 
             pushbutton_GPIO( String name, uint8_t pin, unsigned int minLongMs = 0, unsigned int minExtraLongMs = 0 )
                 : meisterwerk::base::pushbutton( name, minLongMs, minExtraLongMs, 50000 ), pin{pin} {
+                // default sample rate: 50ms
             }
 
             virtual void setup() override {
@@ -31,14 +32,6 @@ namespace meisterwerk {
             virtual void loop() override {
                 change( digitalRead( pin ) == LOW );
             }
-
-            /*
-            virtual void onGetState( JsonObject &request, JsonObject &response ) override {
-                meisterwerk::base::pushbutton::onGetState( request, response );
-                response["type"] = response["type"].as<String>() + String( "/pushbutton-GPIO" );
-                response["pin"]  = pin;
-            }
-            */
         };
     } // namespace thing
 } // namespace meisterwerk

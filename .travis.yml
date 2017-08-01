@@ -8,7 +8,7 @@ cache:
         - "~/.platformio"
 
 env:
-    - PLATFORMIO_CI_SRC=src/buildtest.cpp
+    - PLATFORMIO_CI_SRC=test/buildtest.cpp
 
 install:
     - pip install -U platformio

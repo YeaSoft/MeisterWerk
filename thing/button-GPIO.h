@@ -31,14 +31,6 @@ namespace meisterwerk {
             virtual void loop() override {
                 change( digitalRead( pin ) == LOW );
             }
-
-            /*
-            virtual void onGetState( JsonObject &request, JsonObject &response ) override {
-                meisterwerk::base::button::onGetState( request, response );
-                response["type"] = response["type"].as<String>() + String( "/button-GPIO" );
-                reposnse["pin"]  = pin;
-            }
-            */
         };
     } // namespace thing
 } // namespace meisterwerk

@@ -36,38 +36,47 @@ namespace meisterwerk {
 
             pushbutton( String name, unsigned int minLongMs = 0, unsigned int minExtraLongMs = 0,
                         unsigned long             minMicroSecs = 0,
-                        meisterwerk::core::T_PRIO priority     = meisterwerk::core::PRIORITY_NORMAL )
-                : button( name, minMicroSecs, priority ), minLongMs{minLongMs}, minExtraLongMs{minExtraLongMs} {
+                        meisterwerk::core::T_PRIO priority     = meisterwerk::core::PRIORITY_NORMAL,
+                        unsigned int              wordListSize = 8 )
+                : button( name, minMicroSecs, priority, wordListSize ), minLongMs{minLongMs}, minExtraLongMs{
+                                                                                                  minExtraLongMs} {
                 lastState    = NONE;
                 lastDuration = 0;
             }
 
-            /*
-                        virtual void onGetState( JsonObject &request, JsonObject &response ) override {
-                            response["type"]      = "button/pushbutton";
-                            response["state"]     = getStateString( lastState );
-                            response["duration"]  = lastDuration;
-                            response["long"]      = minLongMs;
-                            response["extraLong"] = minExtraLongMs;
-                        }
+            virtual void setup() override {
+                Notifies( "press" );
+                Notifies( "short" );
+                Notifies( "long" );
+                Notifies( "extralong" );
 
-                        virtual bool onSetState( JsonObject &request, JsonObject &response ) override {
-                            bool        bChanged    = false;
-                            JsonVariant toLong      = request["long"];
-                            JsonVariant toExtraLong = request["extraLong"];
-                            if ( willSetStateU( toLong, minLongMs ) ) {
-                                bChanged         = true;
-                                minLongMs        = toLong.as<unsigned long>();
-                                response["long"] = minLongMs;
-                            }
-                            if ( willSetStateU( toExtraLong, minExtraLongMs ) ) {
-                                bChanged              = true;
-                                minExtraLongMs        = toExtraLong.as<unsigned long>();
-                                response["extraLong"] = minExtraLongMs;
-                            }
-                            return bChanged;
-                        }
-            */
+                Setting( "longduration" );
+                Setting( "extralongduration" );
+            }
+
+            virtual void onGetValue( String value, JsonObject &params, JsonObject &data ) override {
+                if ( value == "info" ) {
+                    data["type"]              = "pushbutton";
+                    data["longduration"]      = minLongMs;
+                    data["extralongduration"] = minExtraLongMs;
+                    notify( value, data );
+                } else if ( value == "longduration" ) {
+                    data["longduration"] = minLongMs;
+                    notify( value, data );
+                } else if ( value == "extralongduration" ) {
+                    data["extralongduration"] = minExtraLongMs;
+                    notify( value, data );
+                }
+            }
+
+            virtual void onSetValue( String value, JsonObject &params, JsonObject &data ) override {
+                if ( value == "longduration" ) {
+                    minLongMs = params["longduration"].as<unsigned long>();
+                } else if ( value == "extralongduration" ) {
+                    minExtraLongMs = params["extralongduration"].as<unsigned long>();
+                }
+            }
+
             virtual void onChange( bool toState, unsigned long duration ) override {
                 if ( toState ) {
                     button::onChange( toState, duration );
@@ -100,13 +109,12 @@ namespace meisterwerk {
             void setState( STATE state, unsigned int duration ) {
                 lastState    = state;
                 lastDuration = duration;
-                String x     = getStateString( state );
-                String s     = "\"state\":\"" + x + "\"";
-                String d     = "\"duration\":" + String( duration );
-                // notify status change - generic
-                // publish( ownTopic( "state" ), "{" + s + "," + d + "}" );
-                // notify status change - FHEM style
-                publish( entName + "/" + x, "{" + d + "}" );
+
+                DynamicJsonBuffer resBuffer( 256 );
+                JsonObject &      data = resBuffer.createObject();
+                prepareData( data );
+                data["duration"] = duration;
+                notify( getStateString( state ), data );
             }
         };
     } // namespace base
