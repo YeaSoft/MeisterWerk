@@ -15,5 +15,4 @@ install:
     - platformio lib -g install 64 76
 
 script:
-    - platformio run
-#    - platformio ci --lib="." --board=esp12e --board=adafruit_feather_m0
+    - platformio ci --lib="." --board=esp12e --board=adafruit_feather_m0 test/buildtest.cpp

@@ -10,7 +10,7 @@
 #define DEBUG 1
 
 // framework includes
-#include <../MeisterWerk.h>
+#include <MeisterWerk.h>
 
 using namespace meisterwerk;
 
