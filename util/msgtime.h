@@ -2,7 +2,7 @@
 // based on XXTEA algorithm.
 
 #pragma once
-#include <ArduinoJson.h>
+//#include <ArduinoJson.h>
 #include <Time.h>
 #include <Timezone.h>
 
