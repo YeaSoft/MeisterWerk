@@ -33,7 +33,7 @@ namespace meisterwerk {
                 Notifies( "press" );
                 Notifies( "release" );
 
-                ReadOnly( "state" );
+                Reading( "state" );
             }
 
             virtual void onGetValue( String value, JsonObject &params, JsonObject &data ) override {
