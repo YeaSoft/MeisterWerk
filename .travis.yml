@@ -12,9 +12,7 @@ env:
 
 install:
     - pip install -U platformio
-# Install ArduinoJson and Timezone by ID:
     - platformio lib -g install 64 76
 
 script:
-    - platformio ci --lib="." --board=esp12e --board=adafruit_feather_m0 
-test/buildtest.cpp
+    - platformio ci --lib="." --board=esp12e --board=adafruit_feather_m0 test/buildtest.cpp
