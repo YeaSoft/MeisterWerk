@@ -9,7 +9,7 @@
 
 // a generic debug define (may also affectz 3rd party libraries)
 #ifdef DEBUG
-#define _MW_DEBUG
+#define _MW_DEBUG 1
 #endif
 
 // the library specific debug define
