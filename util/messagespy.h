@@ -19,7 +19,7 @@ namespace meisterwerk {
             String filter;
 
             public:
-            messagespy( String name = "spy", String filter = "*" )
+            messagespy( String name = "spy", String filter = "#" )
                 : meisterwerk::core::entity( name, 0, meisterwerk::core::PRIORITY_NORMAL ), filter{filter} {
                 // will autoregister
             }
