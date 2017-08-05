@@ -28,10 +28,12 @@ namespace meisterwerk {
     namespace thing {
         class dcf77 : public meisterwerk::core::entity {
             public:
-            bool    isOn     = false;
-            uint8_t dcf77pin = D5; // D8 needs to be low on boot, don't use.
+            bool isOn = false;
+            char addr = 0x6e;
+            char cmd0[2];
+            char cmd2[16];
 
-            dcf77( String name ) : meisterwerk::core::entity( name, 20000 ) {
+            dcf77( String name ) : meisterwerk::core::entity( name, 1000000 ) {
             }
             ~dcf77() {
                 if ( isOn ) {
@@ -40,26 +42,41 @@ namespace meisterwerk {
             }
 
             virtual void setup() override {
-                // 5sec sensor checks
-                pinMode( dcf77pin, INPUT ); // INPUT_PULLUP );
-
                 DBG( "init dcf77." );
+                cmd0[0] = 0;
+                cmd0[1] = 2;
                 subscribe( entName + "/time/get" );
                 subscribe( "time/get" );
                 isOn = true;
             }
 
-            int           prevSensorValue = 0;
-            unsigned long lasttick        = 0;
-            virtual void  loop() override {
+            virtual void loop() override {
                 if ( isOn ) {
-                    if ( lasttick == 0 )
-                        lasttick = millis();
-                    int sensorValue = digitalRead( dcf77pin );
-                    if ( sensorValue != prevSensorValue ) {
-                        DBG( "DCF-bit " + String( prevSensorValue ) + ", duration: " + String( millis() - lasttick ) );
-                        prevSensorValue = sensorValue;
-                        lasttick        = millis();
+                    Wire.beginTransmission( addr );
+                    Wire.write( cmd0[0] ); // , 1 );
+                    byte error = Wire.endTransmission();
+                    if ( error != 0 ) {
+                        DBG( "Transmission send error" );
+                    }
+                    Wire.requestFrom( addr, 9 );
+                    DBG( "DCF-send" );
+                    delay( 50 );
+                    int n  = 0;
+                    int to = 20;
+                    while ( n < 9 && to > 0 ) {
+                        if ( Wire.available() ) {
+                            cmd2[n] = Wire.read();
+                            DBG( "DCF rcv[" + String( n ) + "]:" + String( (int)cmd2[n] ) );
+                            ++n;
+                        } else {
+                            delay( 10 );
+                            --to;
+                        }
+                    }
+                    if ( to == 0 ) {
+                        DBG( "DCF77: Timeout!" );
+                    } else {
+                        DBG( "DCF77: received!" );
                     }
                 }
             }

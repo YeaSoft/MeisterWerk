@@ -59,6 +59,7 @@ enum I2CDev {
     LSM9DS0_Gyro,
     LSM303_Accel,
     LSM303_Mag,
+    LPC810DCF77,
     DS1307_3231,
     DS1307_EEPROM,
     DS3231,
@@ -111,6 +112,8 @@ const T_I2C_PROPERTIES i2cProps[] = {
     // https://www.adafruit.com/product/466
     //{Sensor, ITG3200, "ITG3200", "3 axis accelerometer", false, {0x68, 0x69}},
     // https://www.invensense.com/products/motion-tracking/3-axis/itg-3200/
+    {RTC, LPC810DCF77, "LPC810DCF77", "MicroWerk DCF77-Cortex-M0", false, {0x6e, 0, 0, 0}},
+    // https://www.elektormagazine.com/labs/lpc810-as-dcf77-decoder-and-i2c-slave
     //{Sensor, MS5607, "MS5607", "Altimeter", false, {0x76, 0x77}},
     // https://www.parallax.com/product/29124
     //{Sensor, MS5611, "MS5611", "Barometric pressure altitude sensor", false, {0x76, 0x77}},
