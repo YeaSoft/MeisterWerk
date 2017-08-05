@@ -52,11 +52,11 @@ namespace meisterwerk {
             bool prepare( JsonObject &data, const char *sensorType = nullptr, bool withTime = true ) {
                 if ( isvalid() ) {
                     data[valueName] = valueLast;
+                    data["age"]     = timebudget::delta( last, millis() );
                     if ( sensorType ) {
                         data["sensortype"] = sensorType;
                     }
                     if ( withTime ) {
-                        data["age"] = timebudget::delta( last, millis() );
                         if ( timeStatus() != timeNotSet ) {
                             data["time"] = getTime();
                         }

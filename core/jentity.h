@@ -74,7 +74,7 @@ namespace meisterwerk {
             // members
             array<controlword> wordList;
             bool               bStrictMode    = false;
-            bool               bOnlyValidTIme = true;
+            bool               bOnlyValidTime = true;
 
             public:
             // Constructor for non i2c entities
@@ -276,7 +276,7 @@ namespace meisterwerk {
             }
 
             bool canPublishLoggableReading() const {
-                return !bOnlyValidTIme || timeStatus() != timeNotSet;
+                return !bOnlyValidTime || timeStatus() != timeNotSet;
             }
 
             // internal helpers
