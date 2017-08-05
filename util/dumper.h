@@ -9,11 +9,9 @@
 
 #pragma once
 
-// external libraries
-#include <ArduinoJson.h>
-
 // dependencies
 #include "../core/entity.h"
+#include "../core/topic.h"
 #include "../util/metronome.h"
 
 namespace meisterwerk {
@@ -33,11 +31,10 @@ namespace meisterwerk {
             }
 
             void setup() override {
-                meisterwerk::core::entity::setup();
                 // explicit commands
-                subscribe( "*/dump" );
-                subscribe( "*/sysinfo" );
-                subscribe( "*/taskinfo" );
+                subscribe( "+/dump" );
+                subscribe( "+/sysinfo" );
+                subscribe( "+/taskinfo" );
                 // events from debug Button
                 subscribe( debugButton + "/short" );
                 subscribe( debugButton + "/long" );
@@ -52,14 +49,14 @@ namespace meisterwerk {
                 }
             }
 
-            virtual void receive( const char *origin, const char *topic, const char *msg ) override {
-                String t( topic );
+            virtual void receive( const char *origin, const char *tpc, const char *msg ) override {
+                core::Topic topic( tpc );
                 // process my own subscriptions
-                if ( t == debugButton + "/short" ) {
+                if ( topic == debugButton + "/short" || topic.match( "+/dump" ) ) {
                     dumpRuntimeInfo();
-                } else if ( t == debugButton + "/long" ) {
+                } else if ( topic == debugButton + "/long" || topic.match( "+/sysinfo" ) ) {
                     dumpSystemInfo();
-                } else if ( t == debugButton + "/extralong" ) {
+                } else if ( topic == debugButton + "/extralong" || topic.match( "+/taskinfo" ) ) {
                     dumpTaskInfo();
                 }
             }
@@ -70,6 +67,7 @@ namespace meisterwerk {
                 DBG( "" );
                 DBG( pre + F( "System Information:" ) );
                 DBG( pre + F( "-------------------" ) );
+#ifdef ESP8266
                 DBG( pre + F( "Chip ID: " ) + ESP.getChipId() );
                 DBG( pre + F( "Core Verion: " ) + ESP.getCoreVersion() );
                 DBG( pre + F( "SDK Verion: " ) + ESP.getSdkVersion() );
@@ -81,6 +79,8 @@ namespace meisterwerk {
                 DBG( pre + F( "Flash Chip Real Size: " ) + ESP.getFlashChipRealSize() + bytes );
                 DBG( pre + F( "Flash Chip Speed: " ) + ESP.getFlashChipSpeed() + " hz" );
                 DBG( pre + F( "Last Reset Reason: " ) + ESP.getResetReason() );
+#else
+#endif
             }
 
             void dumpRuntimeInfo() {
@@ -92,8 +92,13 @@ namespace meisterwerk {
                 unsigned long stkt = meisterwerk::core::baseapp::_app->sched.tskTime.getms();
                 unsigned long slit = meisterwerk::core::baseapp::_app->sched.allTime.getms();
                 String        pre  = "dumper(" + entName + ") Runtime Information - ";
+#ifdef ESP8266
+                unsigned long fmem = ESP.getFreeHeap();
+#else
+                unsigned long fmem = 0;
+#endif
 
-                DBG( pre + "Memory(Free Heap=" + ESP.getFreeHeap() + " bytes), Queue(cur=" + qln + " / max=" + qps +
+                DBG( pre + "Memory(Free Heap=" + fmem + " bytes), Queue(cur=" + qln + " / max=" + qps +
                      "), Scheduler(msg=" + smdp + " / tasks=" + stkc + " / msg_time=" + smqt +
                      " ms / task_time=" + stkt + " ms / life_time=" + slit + " ms)" );
             }
