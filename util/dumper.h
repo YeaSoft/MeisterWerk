@@ -19,9 +19,9 @@
 namespace meisterwerk {
     namespace util {
 
+#ifdef _MW_DEBUG
         class dumper : public meisterwerk::core::entity {
             public:
-#ifdef _MW_DEBUG
             meisterwerk::util::metronome autodump;
             String                       debugButton;
 
@@ -103,20 +103,16 @@ namespace meisterwerk {
                     meisterwerk::core::baseapp::_app->sched.dumpInfo( "dumper(" + entName + ") " );
                 }
             }
+        };
 #else
+        class dumper {
+            public:
             // fake entity. Will neither register nor do anything
             dumper( String name = "dmp", unsigned long autodump = 0, String debugButton = "dbg",
                     unsigned long             minMicroSecs = 250000,
-                    meisterwerk::core::T_PRIO priority     = meisterwerk::core::PRIORITY_NORMAL )
-                : meisterwerk::core::entity( "" ) {
-                // will NOT AUTOREGISTER
+                    meisterwerk::core::T_PRIO priority     = meisterwerk::core::PRIORITY_NORMAL ) {
             }
-
-            bool registerEntity( unsigned long             minMicroSecs = 0,
-                                 meisterwerk::core::T_PRIO priority     = meisterwerk::core::PRIORITY_NORMAL ) {
-                return true;
-            }
-#endif
         };
+#endif
     } // namespace util
 } // namespace meisterwerk

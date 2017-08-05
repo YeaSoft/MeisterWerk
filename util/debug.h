@@ -9,7 +9,7 @@
 
 // a generic debug define (may also affectz 3rd party libraries)
 #ifdef DEBUG
-#define _MW_DEBUG
+#define _MW_DEBUG 1
 #endif
 
 // the library specific debug define
@@ -39,6 +39,13 @@ namespace meisterwerk {
 #define VERIFY( f ) ASSERT( f )
 #define DBG_ONLY( f ) f
 #define DBG( f ) Serial.println( f )
+#define DBGF( ... ) Serial.printf( __VA_ARGS__ )
+
+#if _MW_DEBUG > 1
+#define DBG2( f ) Serial.println( f )
+#else
+#define DBG2( f )
+#endif
 
 #else // _MW_DEBUG
 
@@ -46,5 +53,7 @@ namespace meisterwerk {
 #define VERIFY( f ) ( (void)( f ) )
 #define DBG_ONLY( f )
 #define DBG( f )
+#define DBG2( f )
+#define DBGF( ... )
 
 #endif // !_MW_DEBUG
