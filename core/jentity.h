@@ -19,6 +19,7 @@
 // dependencies
 #include "../util/hextools.h"
 #include "../util/msgtime.h"
+#include "../util/sensorvalue.h"
 #include "array.h"
 #include "entity.h"
 
@@ -53,7 +54,7 @@ namespace meisterwerk {
                 }
 
                 bool shouldWrite( String &entName, Topic &topic ) const {
-                    return shouldDo( entName, topic, READ, "/get" );
+                    return shouldDo( entName, topic, WRITE, "/get" );
                 }
 
                 bool shouldDo( String &entName, Topic &topic, unsigned char flag, const char *suffix ) const {
@@ -62,18 +63,18 @@ namespace meisterwerk {
                             return true;
                         }
                         if ( type & GENERIC ) {
-                            return topic == "/" + name + suffix;
+                            return topic == name + suffix;
                         }
                     }
                     return false;
                 }
             };
 
-            protected:
+            public:
             // members
             array<controlword> wordList;
-            bool               bValidTime  = false;
-            bool               bStrictMode = false;
+            bool               bStrictMode    = false;
+            bool               bOnlyValidTIme = true;
 
             public:
             // Constructor for non i2c entities
@@ -81,17 +82,10 @@ namespace meisterwerk {
                      unsigned int wordListSize = 16 )
                 : entity( name, minMicroSecs, priority ), wordList( wordListSize ) {
                 Reading( "info", true );
-                subscribe( "mastertime/time/set" );
             }
 
             // entity overridables
-
             virtual void receive( const char *origin, const char *topic, const char *msg ) override {
-                if ( !strcmp( topic, "mastertime/time/set" ) ) {
-                    bValidTime = true;
-                    return;
-                }
-
                 DynamicJsonBuffer reqBuffer( 256 );
                 DynamicJsonBuffer resBuffer( 256 );
                 JsonObject &      req = reqBuffer.parseObject( msg );
@@ -99,6 +93,9 @@ namespace meisterwerk {
                 Topic             tpc = topic;
 
                 prepareData( res );
+                if ( tpc == entName + "/info/get" || tpc == "info/get" ) {
+                    prepareInfo( res );
+                }
 
                 for ( unsigned int i = 0; i < wordList.length(); i++ ) {
                     if ( wordList[i].shouldReact( entName, tpc ) ) {
@@ -150,6 +147,20 @@ namespace meisterwerk {
                 return entity::publish( entName + "/" + name, buffer );
             }
 
+            bool notify( util::sensorvalue &value, const char *sensorType = nullptr, bool bWithTime = true ) const {
+                if ( bWithTime && !canPublishLoggableReading() ) {
+                    return false;
+                }
+
+                DynamicJsonBuffer dataBuffer( 256 );
+                JsonObject &      data = dataBuffer.createObject();
+                prepareData( data );
+
+                if ( value.prepare( data, sensorType, bWithTime ) ) {
+                    return notify( value.getName(), data );
+                }
+            }
+
             bool publish( const char *topic, JsonObject &json ) const {
                 String buffer;
                 json.printTo( buffer );
@@ -160,6 +171,18 @@ namespace meisterwerk {
                 String buffer;
                 json.printTo( buffer );
                 return entity::publish( topic.c_str(), buffer.c_str() );
+            }
+
+            void updateSensorValue( util::sensorvalue &sv, double value, const char *sensorType = nullptr ) {
+                switch ( sv.set( value ) ) {
+                case util::sensorvalue::result::INVALID:
+                    DBGF( "Sensor failure -- cannot read %s %s\n", sensorType ? sensorType : "", sv.valueName );
+                    break;
+                case util::sensorvalue::result::CHANGED:
+                    // publish the changed value
+                    notify( sv, sensorType );
+                    break;
+                }
             }
 
             void Reaction( const char *wordName, bool generic = false ) {
@@ -215,15 +238,7 @@ namespace meisterwerk {
             }
 
             void prepareData( JsonObject &data ) const {
-                data["name"]  = entName;
-                data["timer"] = millis();
-            }
-
-            void prepareTimestamp( JsonObject &data, const char *valueName = "time",
-                                   String ts = util::msgtime::ISOnowMillis() ) const {
-                if ( bValidTime ) {
-                    data[valueName] = ts;
-                }
+                data["name"] = entName;
             }
 
             void prepareInfo( JsonObject &data ) const {
@@ -258,6 +273,10 @@ namespace meisterwerk {
 
             bool isOwnTopic( String &topic, String &subtopic ) const {
                 return topic == entName + "/" + subtopic;
+            }
+
+            bool canPublishLoggableReading() const {
+                return !bOnlyValidTIme || timeStatus() != timeNotSet;
             }
 
             // internal helpers

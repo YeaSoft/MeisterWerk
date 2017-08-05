@@ -136,17 +136,17 @@ namespace meisterwerk {
                     //    return false; // Pub is more specific than sub
                     // }
                     if ( pub[pp] == '+' || pub[pp] == '#' ) {
-                        DBG( "Bad wildcard in pub" );
+                        DBG2( "Bad wildcard in pub" );
                         return false; // Illegal wildcards in pub
                     }
                     if ( wPos ) {
                         wPos = false;
                         if ( sub[ps] == '#' ) {
                             if ( ps == ls - 1 ) {
-                                DBG( "# ending (+)" );
+                                DBG2( "# ending (+)" );
                                 return true;
                             } else {
-                                DBG( "# followed by stuff! (-)" );
+                                DBG2( "# followed by stuff! (-)" );
                                 return false; // In sub, # must not be followed by anything else
                             }
                         }
@@ -156,46 +156,46 @@ namespace meisterwerk {
                             ++ps;
                             if ( pp == lp ) {
                                 if ( ps == ls ) {
-                                    DBG( "End in + compare (+)" );
+                                    DBG2( "End in + compare (+)" );
                                     return true;
                                 } else if ( !strcmp( &sub[ps], "/#" ) ) {
-                                    DBG( "End in + and /# (+)" );
+                                    DBG2( "End in + and /# (+)" );
                                     return true;
                                 }
                             }
                         }
                     } else {
                         if ( sub[ps] == '+' || sub[ps] == '#' ) {
-                            DBG( "bad wildcard position (-)" );
+                            DBG2( "bad wildcard position (-)" );
                             return false; // Illegal wildcard-position
                         }
                     }
                     if ( pub[pp] != sub[ps] && strcmp( &sub[ps], "/#" ) ) {
-                        DBG( "char mismatch (-)" );
+                        DBG2( "char mismatch (-)" );
                         return false;
                     }
                     if ( pub[pp] == '/' )
                         wPos = true;
                     if ( pp == lp - 1 ) {
                         if ( ps == ls - 1 ) {
-                            DBG( "End pub/sub (+)" );
+                            DBG2( "End pub/sub (+)" );
                             return true;
                         }
                         if ( !strcmp( &sub[ps + 1], "/#" ) || !strcmp( &sub[ps + 1], "#" ) ||
                              !strcmp( &sub[ps + 1], "+" ) ) {
-                            DBG( "End followed by sub '/#' is ok (+)" );
+                            DBG2( "End followed by sub '/#' is ok (+)" );
                             return true;
                         }
-                        DBG( "Overlap on sub (-)" );
+                        DBG2( "Overlap on sub (-)" );
                         return false;
                     }
                     ++ps;
                 }
                 if ( ps == ls ) {
-                    DBG( "Loop end: Sub finished (+)" );
+                    DBG2( "Loop end: Sub finished (+)" );
                     return true;
                 } else {
-                    DBG( "Loop end: Sub not finished (-)" );
+                    DBG2( "Loop end: Sub not finished (-)" );
                     return false;
                 }
             }
@@ -217,7 +217,7 @@ namespace meisterwerk {
                 if ( l1 < l2 )
                     l = l2;
                 else
-                    l = l1;
+                    l  = l1;
                 int p1 = 0, p2 = 0;
                 for ( int i = 0; i < l; l++ ) {
                     if ( ( p1 > l1 ) || ( p2 > l2 ) )
