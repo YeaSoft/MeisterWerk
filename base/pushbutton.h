@@ -35,9 +35,8 @@ namespace meisterwerk {
             unsigned long lastDuration;
 
             pushbutton( String name, unsigned int minLongMs = 0, unsigned int minExtraLongMs = 0,
-                        unsigned long             minMicroSecs = 0,
-                        meisterwerk::core::T_PRIO priority     = meisterwerk::core::PRIORITY_NORMAL,
-                        unsigned int              wordListSize = 8 )
+                        unsigned long minMicroSecs = 0, core::T_PRIO priority = core::PRIORITY_NORMAL,
+                        unsigned int wordListSize = 10 )
                 : button( name, minMicroSecs, priority, wordListSize ), minLongMs{minLongMs}, minExtraLongMs{
                                                                                                   minExtraLongMs} {
                 lastState    = NONE;

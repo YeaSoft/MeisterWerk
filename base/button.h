@@ -22,9 +22,8 @@ namespace meisterwerk {
             meisterwerk::util::stopwatch lastChange;
 
             public:
-            button( String name, unsigned long minMicroSecs,
-                    meisterwerk::core::T_PRIO priority     = meisterwerk::core::PRIORITY_NORMAL,
-                    unsigned int              wordListSize = 4 )
+            button( String name, unsigned long minMicroSecs, core::T_PRIO priority = core::PRIORITY_NORMAL,
+                    unsigned int wordListSize = 6 )
                 : meisterwerk::core::jentity( name, minMicroSecs, priority, wordListSize ) {
                 fromState = false;
             }

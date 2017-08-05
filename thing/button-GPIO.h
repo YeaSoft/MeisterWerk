@@ -13,11 +13,11 @@
 namespace meisterwerk {
     namespace thing {
 
-        class button_GPIO : public meisterwerk::base::button {
+        class button_GPIO : public base::button {
             public:
             uint8_t pin;
 
-            button_GPIO( String name, uint8_t pin ) : meisterwerk::base::button( name, 50000 ), pin{pin} {
+            button_GPIO( String name, uint8_t pin ) : base::button( name, 50000 ), pin{pin} {
                 // default sample rate: 50ms
             }
 

@@ -23,15 +23,15 @@
 namespace meisterwerk {
     namespace base {
 
-        class onoff : public meisterwerk::core::jentity {
+        class onoff : public core::jentity {
             public:
-            bool                        state      = false;
-            bool                        stateNext  = false;
-            meisterwerk::util::eggtimer stateTimer = 0;
+            bool           state      = false;
+            bool           stateNext  = false;
+            util::eggtimer stateTimer = 0;
 
-            onoff( String name, unsigned long minMicroSecs = 250000,
-                   meisterwerk::core::T_PRIO priority = meisterwerk::core::PRIORITY_NORMAL )
-                : meisterwerk::core::jentity( name, minMicroSecs, priority ) {
+            onoff( String name, unsigned long minMicroSecs = 250000, core::T_PRIO priority = core::PRIORITY_NORMAL,
+                   unsigned int wordListSize = 8 )
+                : core::jentity( name, minMicroSecs, priority, wordListSize ) {
                 // The state timer had a millisecond resolution. For most
                 // purposes a 250 ms resolution sbhould be enought, so take
                 // this if a default. If needed an entity can be initialized

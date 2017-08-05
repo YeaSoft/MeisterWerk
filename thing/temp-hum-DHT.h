@@ -21,15 +21,17 @@ namespace meisterwerk {
             protected:
             enum state { S_NONE, S_WARMING, S_INITIALIZING, S_ACTIVE };
             uint8_t           dhtPin; // def = GPIO9, note: D8 needs to be low on boot, don't use if you can avoid.
-            DHT *             pdht     = nullptr;
-            state             dhtState = S_NONE;
             String            dhtType;
-            util::sensorvalue temperature, humidity;
+            state             dhtState = S_NONE;
+            DHT *             pdht     = nullptr;
+            util::sensorvalue humidity;
+            util::sensorvalue temperature;
             util::stopwatch   startTime;
 
             public:
             dht( String name, String type, uint8_t pin )
-                : meisterwerk::core::jentity( name, 2000000 ), temperature( "temperature", 0, 5, 900, 0.1 ),
+                : meisterwerk::core::jentity( name, 2000000, core::PRIORITY_NORMAL, 8 ),
+                  temperature( "temperature", 0, 5, 900, 0.1 ),
                   humidity( "humidity", 0, 5, 900, 1.0 ), dhtType{type}, dhtPin{pin} {
                 // read cycle every 2 seconds
                 pdht     = nullptr;
@@ -80,8 +82,7 @@ namespace meisterwerk {
 
             virtual void onGetValue( String value, JsonObject &params, JsonObject &data ) override {
                 if ( value == "info" ) {
-                    data["type"]       = "environment";
-                    data["sensortype"] = dhtType;
+                    data["type"] = "environment";
                     temperature.prepare( data, dhtType.c_str(), false );
                     humidity.prepare( data, dhtType.c_str(), false );
                     notify( value, data );
