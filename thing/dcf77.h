@@ -76,6 +76,10 @@ namespace meisterwerk {
                     if ( to == 0 ) {
                         DBG( "DCF77: Timeout!" );
                     } else {
+                        char sbuf[128];
+                        sprintf( sbuf, "%d-%d-%d %d:%d:%d %d %d %d", cmd2[0], cmd2[1], cmd2[2], cmd2[3], cmd2[4],
+                                 cmd2[5], cmd2[6], cmd2[7], cmd2[8] );
+                        log( T_LOGLEVEL::INFO, String( sbuf ) );
                         DBG( "DCF77: received!" );
                     }
                 }
