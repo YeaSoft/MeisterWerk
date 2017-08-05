@@ -13,8 +13,8 @@
 namespace meisterwerk {
     namespace util {
 
-        class messagespy : public meisterwerk::core::entity {
 #ifdef _MW_DEBUG
+        class messagespy : public meisterwerk::core::entity {
             private:
             String filter;
 
@@ -40,18 +40,14 @@ namespace meisterwerk {
                 s3.replace( "\n", "␤" );
                 Serial.println( szBuffer + entName + ": origin='" + s1 + "' topic='" + s2 + "' body='" + s3 + "'" );
             }
-
-#else
-            // fake entity. Will neither register nor do anything
-            messagespy( String name = "", String subscription = "" ) : meisterwerk::core::entity( "" ) {
-                // will NOT AUTOREGISTER
-            }
-
-            bool registerEntity( unsigned long             minMicroSecs = 0,
-                                 meisterwerk::core::T_PRIO priority     = meisterwerk::core::PRIORITY_NORMAL ) {
-                return true;
-            }
-#endif
         };
+#else
+        class messagespy {
+            public:
+            // fake entity. Will neither register nor do anything
+            messagespy( String name = "", String subscription = "" ) {
+            }
+        };
+#endif
     } // namespace util
 } // namespace meisterwerk
