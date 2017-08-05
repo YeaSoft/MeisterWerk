@@ -52,11 +52,11 @@ namespace meisterwerk {
             virtual void receive( const char *origin, const char *tpc, const char *msg ) override {
                 core::Topic topic( tpc );
                 // process my own subscriptions
-                if ( topic == debugButton + "/short" || topic.match( "+/dump" ) ) {
+                if ( topic.match( "+/dump" ) || topic == debugButton + "/short" ) {
                     dumpRuntimeInfo();
-                } else if ( topic == debugButton + "/long" || topic.match( "+/sysinfo" ) ) {
+                } else if ( topic.match( "+/sysinfo" ) || topic == debugButton + "/long" ) {
                     dumpSystemInfo();
-                } else if ( topic == debugButton + "/extralong" || topic.match( "+/taskinfo" ) ) {
+                } else if ( topic.match( "+/taskinfo" ) || topic == debugButton + "/extralong" ) {
                     dumpTaskInfo();
                 }
             }
