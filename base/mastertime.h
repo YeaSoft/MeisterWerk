@@ -53,7 +53,7 @@ namespace meisterwerk {
 
             virtual void setup() override {
                 bSetup = true;
-                subscribe( "*/time" );
+                subscribe( "+/time" );
                 publish( "time/get" );
             }
 

@@ -69,7 +69,7 @@ namespace meisterwerk {
                 pollDisplay = true;
                 subscribe( entName + "/display/set" );
                 subscribe( "display/get" );
-                subscribe( "*/luminosity" );
+                subscribe( "+/luminosity" );
                 publish( entName + "/display" );
             }
 

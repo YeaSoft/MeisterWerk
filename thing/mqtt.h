@@ -48,7 +48,7 @@ namespace meisterwerk {
             virtual void setup() override {
                 DBG( "Init mqtt" );
                 setLogLevel( T_LOGLEVEL::INFO );
-                subscribe( "*" );
+                subscribe( "#" );
                 publish( "net/network/get" );
                 publish( "net/services/mqttserver/get" );
                 isOn = true;
