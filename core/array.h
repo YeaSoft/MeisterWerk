@@ -69,14 +69,14 @@ namespace meisterwerk {
                 return arr[i];
             }
 
-            bool isEmpty() {
+            bool isEmpty() const {
                 if ( size == 0 )
                     return true;
                 else
                     return false;
             }
 
-            unsigned int length() {
+            unsigned int length() const {
                 return ( size );
             }
 

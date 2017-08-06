@@ -20,6 +20,7 @@
 #include "../core/entity.h"
 #include "../util/metronome.h"
 #include "../util/msgtime.h"
+#include "../util/sensorprocessor.h"
 
 namespace meisterwerk {
     namespace thing {

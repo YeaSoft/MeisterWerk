@@ -16,22 +16,22 @@
 #include <ArduinoJson.h>
 
 // dependencies
-#include "../core/entity.h"
+#include "../core/jentity.h"
 #include "../core/topic.h"
 #include "../util/eggtimer.h"
 
 namespace meisterwerk {
     namespace base {
 
-        class onoff : public meisterwerk::core::entity {
+        class onoff : public core::jentity {
             public:
-            bool                        state      = false;
-            bool                        stateNext  = false;
-            meisterwerk::util::eggtimer stateTimer = 0;
+            bool           state      = false;
+            bool           stateNext  = false;
+            util::eggtimer stateTimer = 0;
 
-            onoff( String name, unsigned long minMicroSecs = 250000,
-                   meisterwerk::core::T_PRIO priority = meisterwerk::core::PRIORITY_NORMAL )
-                : meisterwerk::core::entity( name, minMicroSecs, priority ) {
+            onoff( String name, unsigned long minMicroSecs = 250000, core::T_PRIO priority = core::PRIORITY_NORMAL,
+                   unsigned int wordListSize = 8 )
+                : core::jentity( name, minMicroSecs, priority, wordListSize ) {
                 // The state timer had a millisecond resolution. For most
                 // purposes a 250 ms resolution sbhould be enought, so take
                 // this if a default. If needed an entity can be initialized
@@ -42,98 +42,81 @@ namespace meisterwerk {
             virtual bool onSwitch( bool newstate ) = 0;
 
             virtual void setup() override {
-                meisterwerk::core::entity::setup();
-                // FHEM style commands
-                subscribe( ownTopic( "on" ) );
-                subscribe( ownTopic( "off" ) );
-                subscribe( ownTopic( "toggle" ) );
+                Reaction( "on" );
+                Reaction( "off" );
+                Reaction( "toggle" );
+
+                SettableState( "state" );
             }
 
             virtual void loop() override {
                 if ( stateTimer > 0 ) {
                     // timed state change requested
                     if ( stateTimer.isexpired() ) {
-                        // perform action
+                        // perform scheduled action
                         if ( state != stateNext ) {
-                            DynamicJsonBuffer resBuffer( 300 );
-                            JsonObject &      res = resBuffer.createObject();
-                            setState( stateNext, 0, res, true );
+                            DynamicJsonBuffer resBuffer( 256 );
+                            JsonObject &      data = resBuffer.createObject();
+                            prepareData( data );
+                            setState( stateNext, 0, data, true );
                         }
                     }
                 }
             }
 
-            virtual void receive( const char *origin, const char *topic, const char *msg ) override {
-                // String t( topic );
-                meisterwerk::core::Topic t( topic );
-                DynamicJsonBuffer        reqBuffer( 300 );
-                DynamicJsonBuffer        resBuffer( 300 );
-                JsonObject &             req        = reqBuffer.parseObject( msg );
-                JsonObject &             res        = resBuffer.createObject();
-                JsonVariant              toDuration = req["duration"];
-
-                if ( t == ownTopic( "on" ) ) {
-                    setState( true, toDuration.as<unsigned long>(), res, true );
-                } else if ( t == ownTopic( "off" ) ) {
-                    setState( true, toDuration.as<unsigned long>(), res, true );
-                } else if ( t == ownTopic( "toggle" ) ) {
-                    setState( !state, toDuration.as<unsigned long>(), res, true );
+            virtual void onReaction( String cmd, JsonObject &params, JsonObject &data ) override {
+                if ( cmd == "on" ) {
+                    setState( true, params["duration"].as<unsigned long>(), data, true );
+                } else if ( cmd == "off" ) {
+                    setState( false, params["duration"].as<unsigned long>(), data, true );
+                } else if ( cmd == "toggle" ) {
+                    setState( !state, params["duration"].as<unsigned long>(), data, true );
                 }
             }
 
-            /*
-            virtual void onGetState( JsonObject &request, JsonObject &response ) override {
-                response["type"]     = "onoff";
-                response["state"]    = state;
-                response["duration"] = stateTimer.getduration();
-            }
-
-            virtual bool onSetState( JsonObject &request, JsonObject &response ) override {
-                JsonVariant toState    = request["state"];
-                JsonVariant toDuration = request["duration"];
-                if ( willSetStateB( toState, state ) ) {
-                    return setState( toState.as<bool>(), toDuration.as<unsigned long>(), response );
-                } else if ( willSetStateU( toDuration, stateTimer.getduration() ) ) {
-                    return setState( state, toDuration.as<unsigned long>(), response );
+            virtual void onGetValue( String value, JsonObject &params, JsonObject &data ) override {
+                if ( value == "info" ) {
+                    data["type"]     = "onoff";
+                    data["state"]    = state;
+                    data["duration"] = stateTimer.getduration();
+                    notify( "info", data );
+                } else if ( value == "state" ) {
+                    data["state"]    = state;
+                    data["duration"] = stateTimer.getduration();
+                    notify( "state", data );
                 }
-                return false;
             }
-            */
 
-            bool setState( bool newstate, unsigned long duration, JsonObject &response, bool publishState = false ) {
+            virtual void onSetValue( String value, JsonObject &params, JsonObject &data ) override {
+                if ( value == "state" ) {
+                    setState( params["state"].as<bool>(), params["duration"].as<unsigned long>(), data );
+                }
+            }
+
+            bool setState( bool newstate, unsigned long duration, JsonObject &data, bool publishState = false ) {
                 bool bChanged = false;
                 if ( newstate != state ) {
                     if ( onSwitch( newstate ) ) {
-                        stateTimer           = duration;
-                        stateNext            = duration ? !newstate : newstate;
-                        state                = newstate;
-                        response["state"]    = newstate;
-                        response["duration"] = duration;
-                        bChanged             = true;
+                        stateTimer       = duration;
+                        stateNext        = duration ? !newstate : newstate;
+                        state            = newstate;
+                        data["state"]    = newstate;
+                        data["duration"] = duration;
+                        bChanged         = true;
                     } else {
                         DBG( entName + ": Hardware failure while switching state" );
                     }
                 } else if ( duration != stateTimer ) {
                     // do not change the state, but the duration for this state
-                    stateTimer           = duration;
-                    stateNext            = !state;
-                    response["duration"] = duration;
-                    bChanged             = true;
+                    stateTimer       = duration;
+                    stateNext        = !state;
+                    data["duration"] = duration;
+                    bChanged         = true;
                 }
-                if ( bChanged ) {
-                    String buffer;
-                    response.printTo( buffer );
-                    publish( ownTopic( "state" ), buffer );
+                if ( bChanged && publishState ) {
+                    notify( "state", data );
                 }
                 return bChanged;
-            }
-
-            String ownTopic( String subtopic ) const {
-                return entName + "/" + subtopic;
-            }
-
-            bool isOwnTopic( String topic, String subtopic ) const {
-                return topic == entName + "/" + subtopic;
             }
         };
     } // namespace base

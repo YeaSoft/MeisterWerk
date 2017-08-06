@@ -70,7 +70,7 @@ namespace meisterwerk {
                 pollDisplay = true;
                 subscribe( entName + "/display/set" );
                 subscribe( entName + "/display/get" );
-                subscribe( "*/luminosity" );
+                subscribe( "+/luminosity" );
                 publish( entName + "/display" );
             }
 
@@ -101,7 +101,7 @@ namespace meisterwerk {
                     plcd->setBacklight( lcdBright );
                 }
 
-                if ( topic == "*/display/get" || topic == entName + "/display/get" ) {
+                if ( topic == "display/get" || topic == entName + "/display/get" ) {
                     publish( entName + "/display", "{\"type\":\"textdisplay\",\"x\":" + String( displayX ) +
                                                        ",\"y\":" + String( displayY ) + "}" );
                 }

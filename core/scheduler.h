@@ -28,11 +28,11 @@ namespace meisterwerk {
             class subscription {
                 public:
                 String subscriber;
-                String topic;
+                String topicmask;
                 subscription() {
-                    subscriber = "", topic = "";
+                    subscriber = "", topicmask = "";
                 }
-                subscription( String sub, String top ) : subscriber{sub}, topic{top} {
+                subscription( String sub, String top ) : subscriber{sub}, topicmask{top} {
                 }
             };
 
@@ -72,10 +72,10 @@ namespace meisterwerk {
             scheduler( int nTaskListSize = 32, int nSubscriptionListSize = 128, int nRetainPubs = 32 )
                 : taskList( nTaskListSize ), subscriptionList( nSubscriptionListSize ) {
                 DBG_ONLY( allTime.snap() );
-                #ifdef ESP8266
+#ifdef ESP8266
                 ESP.wdtDisable();
                 ESP.wdtEnable( WDTO_8S );
-                #endif
+#endif
             }
 
             virtual ~scheduler() {
@@ -100,9 +100,9 @@ namespace meisterwerk {
                     // serve the watchdog
                     checkYield();
                 }
-                #ifdef ESP8266
+#ifdef ESP8266
                 ESP.wdtFeed();
-                #endif
+#endif
                 DBG_ONLY( allTime.shot() );
             }
 
@@ -176,7 +176,7 @@ namespace meisterwerk {
 
             void publishMsg( message *pMsg ) {
                 for ( unsigned int isub = 0; isub < subscriptionList.length(); isub++ ) {
-                    if ( msgmatches( subscriptionList[isub].topic, pMsg->topic ) ) {
+                    if ( Topic::mqttmatch( pMsg->topic, subscriptionList[isub].topicmask ) ) {
                         for ( unsigned int itask = 0; itask < taskList.length(); itask++ ) {
                             if ( ( taskList[itask].pEnt->entName == subscriptionList[isub].subscriber ) &&
                                  ( String( pMsg->originator ) != subscriptionList[isub].subscriber ) ) {
@@ -199,13 +199,13 @@ namespace meisterwerk {
 
             void unsubscribeMsg( message *pMsg ) {
                 for ( unsigned int i = 0; i < subscriptionList.length(); i++ ) {
-                    if ( ( subscriptionList[i].topic == String( pMsg->topic ) ) &&
+                    if ( ( subscriptionList[i].topicmask == String( pMsg->topic ) ) &&
                          ( subscriptionList[i].subscriber == String( pMsg->originator ) ) ) {
                         subscriptionList.erase( i );
                         return;
                     }
                 }
-                DBG( "Entity " + String( pMsg->originator ) + " tried to unscribe topic " + String( pMsg->topic ) +
+                DBG( "Entity " + String( pMsg->originator ) + " tried to unsubcribe topic " + String( pMsg->topic ) +
                      " which had not been subscribed!" );
                 return;
             }
@@ -247,87 +247,6 @@ namespace meisterwerk {
                 return true;
             }
 
-            public:
-            static bool msgmatches( String s1, String s2 ) {
-                // compares topic-paths <subtopic>/<subtopic/...
-                // the compare is symmetric, s1==s2 <=> s2==s1.
-                // subtopic can be <chars> or <chars>+'*', '*' must be last char of a subtopic.
-                // '*' acts within only the current subtopic. Exception: a '*' as last character of
-                // a topic-path
-                //    matches all deeper subptopics:  a*==a/b/c/d/e, but a*/c1!=a1/b1/c1
-                // Samples:   abc/def/ghi == */de*/*, abc/def!=abc, ab*==abc, a*==a/b/c/d
-                //    a/b*==a/b/c/d/e, a/b*/d!=a/b/c/d
-                if ( s1 == s2 )
-                    return true;
-                int l1 = s1.length();
-                int l2 = s2.length();
-                int l;
-                if ( l1 < l2 )
-                    l = l2;
-                else
-                    l = l1;
-                int p1 = 0, p2 = 0;
-                for ( int i = 0; i < l; l++ ) {
-                    if ( ( p1 > l1 ) || ( p2 > l2 ) )
-                        return false;
-                    if ( s1[p1] == s2[p2] ) {
-                        ++p1;
-                        ++p2;
-                        if ( ( p1 == l1 ) && ( p2 == l2 ) )
-                            return true;
-                        continue;
-                    }
-                    if ( ( s1[p1] != '*' ) && ( s2[p2] != '*' ) )
-                        return false;
-                    if ( s1[p1] == '*' ) {
-                        ++p1;
-                        if ( p1 == l1 )
-                            return true;
-                        if ( s1[p1] != '/' )
-                            return false;
-                        else
-                            ++p1;
-                        while ( p2 < l2 && s2[p2] != '/' )
-                            ++p2;
-                        if ( p2 == l2 ) {
-                            if ( p1 == l1 )
-                                return true;
-                            else
-                                return false;
-                        }
-                        if ( s2[p2] != '/' )
-                            return false;
-                        else
-                            ++p2;
-                        continue;
-                    }
-                    if ( s2[p2] == '*' ) {
-                        ++p2;
-                        if ( p2 == l2 )
-                            return true;
-                        if ( s2[p2] != '/' )
-                            return false;
-                        else
-                            ++p2;
-                        while ( p1 < l1 && s1[p1] != '/' )
-                            ++p1;
-                        if ( p1 == l1 ) {
-                            if ( p2 == l2 )
-                                return true;
-                            else
-                                return false;
-                        }
-                        if ( s1[p1] != '/' )
-                            return false;
-                        else
-                            ++p1;
-                        continue;
-                    }
-                    return false;
-                }
-                return false;
-            }
-
 #ifdef _MW_DEBUG
             public:
             meisterwerk::util::timebudget msgTime;
@@ -342,7 +261,7 @@ namespace meisterwerk {
                 DBG( F( "=============" ) );
                 for ( unsigned int i = 0; i < subscriptionList.length(); i++ ) {
                     DBG( pre + "subscriber='" + subscriptionList[i].subscriber + "' topic='" +
-                         subscriptionList[i].topic + "'" );
+                         subscriptionList[i].topicmask + "'" );
                 }
 
                 DBG( "" );

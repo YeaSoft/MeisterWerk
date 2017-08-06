@@ -107,7 +107,7 @@ namespace meisterwerk {
                 String topic( ctopic );
                 if ( topic == "mastertime/time/set" )
                     bTimeValid = true;
-                if ( topic == entName + "/luminosity/get" || topic == "*/luminosity/get" ) {
+                if ( topic == entName + "/luminosity/get" || topic == "+/luminosity/get" ) {
                     publishLuminosity();
                 }
             }

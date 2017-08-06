@@ -197,7 +197,7 @@ namespace meisterwerk {
                         setTime( isoTime );
                     }
                 }
-                if ( topic == entName + "/temperature/get" || topic == "*/temperature/get" ) {
+                if ( topic == entName + "/temperature/get" || topic == "temperature/get" ) {
                     publishTemp(); // XXX: DS3231 temp sensor implementation
                 }
                 if ( topic == entName + "/time/get" || topic == "time/get" ) {

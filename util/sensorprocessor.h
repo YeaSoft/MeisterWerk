@@ -27,7 +27,7 @@ namespace meisterwerk {
             // elapsed.
             sensorprocessor( int smoothIntervall = 5, int pollTimeSec = 60, double eps = 0.1 )
                 : smoothIntervall{smoothIntervall}, pollTimeSec{pollTimeSec}, eps{eps} {
-                last = millis();
+                reset();
             }
 
             // changes the value into a smoothed version
@@ -69,6 +69,15 @@ namespace meisterwerk {
                     *plvalue = (long)tval;
                 }
                 return ret;
+            }
+
+            void reset() {
+                noVals  = 0;
+                sum     = 0.0;
+                first   = true;
+                meanVal = 0;
+                lastVal = -99999.0;
+                last    = millis();
             }
         };
     } // namespace util

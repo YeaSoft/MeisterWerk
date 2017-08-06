@@ -113,10 +113,12 @@ namespace meisterwerk {
             }
 
             void log( T_LOGLEVEL lclass, String msg, String logtopic = "" ) {
-                if ( lclass > logLevel )
+                if ( lclass > logLevel ) {
                     return;
-                if ( logtopic == "" )
+                }
+                if ( logtopic == "" ) {
                     logtopic = entName;
+                }
                 String cstr = "";
                 String icon = "";
                 switch ( lclass ) {
