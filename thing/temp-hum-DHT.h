@@ -51,7 +51,7 @@ namespace meisterwerk {
                 }
 
                 if ( pdht ) {
-                    DBG( "DHT Sensor initialized." );
+                    DBG( dhtType + " sensor initialized." );
                     dhtState = S_WARMING;
                     pdht->begin();
                     startTime.start();

@@ -26,10 +26,10 @@ namespace meisterwerk {
 
             public:
             tsl2561( String name, uint8_t address )
-                : core::jentity( name, 200000, core::PRIORITY_NORMAL, 4 ),
-                  luminosity( "luminosity", 0, 5, 900, 5.0 ), tslAddress{address} {
+                : core::jentity( name, 50000, core::PRIORITY_NORMAL, 4 ),
+                  luminosity( "luminosity", 0, 20, 900, 5.0 ), tslAddress{address} {
                 // original: 50ms, 20 samples
-                // now: 200ms, 5 samples
+                // proposed: 200ms, 5 samples
             }
 
             virtual void setup() override {
