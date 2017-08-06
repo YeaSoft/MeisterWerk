@@ -137,7 +137,7 @@ namespace meisterwerk {
                     else
                         pled14->setBrightness( bright ); // Brightness [0..15] Max 15 at 1000lux.
                 }
-                if ( topic == "*/display/get" || topic == entName + "/display/get" ) {
+                if ( topic == "display/get" || topic == entName + "/display/get" ) {
                     publish( entName + "/display", "{\"type\":\"textdisplay\",\"x\":" + String( displayX ) +
                                                        ",\"y\":" + String( displayY ) +
                                                        ",\"segments\":" + String( segments ) + "}" );
