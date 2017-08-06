@@ -31,9 +31,9 @@ namespace meisterwerk {
             bool isOn = false;
             char addr = 0x6e;
             char cmd0[2];
-            char cmd2[16];
+            char cmd2[128];
 
-            dcf77( String name ) : meisterwerk::core::entity( name, 1000000 ) {
+            dcf77( String name ) : meisterwerk::core::entity( name, 10000000 ) {
             }
             ~dcf77() {
                 if ( isOn ) {
@@ -50,37 +50,62 @@ namespace meisterwerk {
                 isOn = true;
             }
 
+            int          lastMin = -2;
             virtual void loop() override {
+                bool bUpdate;
                 if ( isOn ) {
-                    Wire.beginTransmission( addr );
-                    Wire.write( cmd0[0] ); // , 1 );
-                    byte error = Wire.endTransmission();
-                    if ( error != 0 ) {
-                        DBG( "Transmission send error" );
-                    }
-                    Wire.requestFrom( addr, 9 );
-                    DBG( "DCF-send" );
-                    delay( 50 );
-                    int n  = 0;
-                    int to = 20;
-                    while ( n < 9 && to > 0 ) {
-                        if ( Wire.available() ) {
-                            cmd2[n] = Wire.read();
-                            DBG( "DCF rcv[" + String( n ) + "]:" + String( (int)cmd2[n] ) );
-                            ++n;
-                        } else {
-                            delay( 10 );
-                            --to;
+                    TimeElements tt;
+                    time_t       localt = util::msgtime::time_t2local( now() );
+                    breakTime( localt, tt );
+                    int sr  = tt.Second;
+                    int mr  = tt.Minute;
+                    bUpdate = false;
+                    if ( ( mr - lastMin + 60 ) % 60 > 1 ) {
+                        if ( sr > 5 ) { // Update every 2min about 5 secs after full minute
+                            bUpdate = true;
+                            lastMin = mr;
                         }
                     }
-                    if ( to == 0 ) {
-                        DBG( "DCF77: Timeout!" );
-                    } else {
-                        char sbuf[128];
-                        sprintf( sbuf, "%d-%d-%d %d:%d:%d %d %d %d", cmd2[0], cmd2[1], cmd2[2], cmd2[3], cmd2[4],
-                                 cmd2[5], cmd2[6], cmd2[7], cmd2[8] );
-                        log( T_LOGLEVEL::INFO, String( sbuf ) );
-                        DBG( "DCF77: received!" );
+
+                    if ( bUpdate ) {
+                        Wire.beginTransmission( addr );
+                        Wire.write( cmd0[0] ); // , 1 );
+                        byte error = Wire.endTransmission();
+                        if ( error != 0 ) {
+                            DBG( "Transmission send error" );
+                        }
+                        int get = 9 + 20;
+                        Wire.requestFrom( addr, get );
+                        DBG( "DCF-send" );
+                        delay( 50 );
+                        int n  = 0;
+                        int to = 20;
+                        while ( n < get && to > 0 ) {
+                            if ( Wire.available() ) {
+                                cmd2[n] = Wire.read();
+                                DBG( "DCF rcv[" + String( n ) + "]:" + String( (int)cmd2[n] ) );
+                                ++n;
+                                to = 20;
+                            } else {
+                                yield();
+                                --to;
+                            }
+                        }
+                        if ( to == 0 ) {
+                            DBG( "DCF77: Timeout!" );
+                        } else {
+                            char sbuf[128];
+                            sprintf( sbuf, "%02d%02d.%02d.%02d  %02d:%02d:%02d  %d [%d]", cmd2[0], cmd2[1], cmd2[2],
+                                     cmd2[3], cmd2[4], cmd2[5], cmd2[6], cmd2[7], cmd2[8] );
+                            String s = "";
+                            for ( int i = 0; i < 20; i++ ) {
+                                s += String( (int)cmd2[i + 9] ) + " ";
+                            }
+                            DBG( s );
+                            log( T_LOGLEVEL::INFO, s );
+                            log( T_LOGLEVEL::INFO, String( sbuf ) );
+                            DBG( "DCF77: received!" );
+                        }
                     }
                 }
             }

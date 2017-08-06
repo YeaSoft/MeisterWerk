@@ -165,6 +165,8 @@ namespace meisterwerk {
 
             virtual void setup() override {
                 Wire.begin( sdaport, sclport ); // SDA, SCL;
+                // Wire.setClockStretchLimit( 10000 );
+                // Wire.setClock( 100000 );
                 bSetup = true;
                 bEnum  = false;
                 subscribe( "i2cbus/devices/get" );
