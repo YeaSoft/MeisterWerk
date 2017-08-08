@@ -83,7 +83,7 @@ namespace meisterwerk {
                         while ( n < get && to > 0 ) {
                             if ( Wire.available() ) {
                                 cmd2[n] = Wire.read();
-                                DBG( "DCF rcv[" + String( n ) + "]:" + String( (int)cmd2[n] ) );
+                                // DBG( "DCF rcv[" + String( n ) + "]:" + String( (int)cmd2[n] ) );
                                 ++n;
                                 to = 20;
                             } else {
@@ -102,7 +102,8 @@ namespace meisterwerk {
                                 s += String( (int)cmd2[i + 9] ) + " ";
                             }
                             DBG( s );
-                            log( T_LOGLEVEL::INFO, s );
+                            DBG(sbuf);
+                            log( T_LOGLEVEL::INFO, String(s) );
                             log( T_LOGLEVEL::INFO, String( sbuf ) );
                             DBG( "DCF77: received!" );
                         }
