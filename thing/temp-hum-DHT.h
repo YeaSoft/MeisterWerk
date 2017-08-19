@@ -30,7 +30,7 @@ namespace meisterwerk {
 
             public:
             dht( String name, String type, uint8_t pin )
-                : meisterwerk::core::jentity( name, 2000000, core::PRIORITY_NORMAL, 8 ),
+                : meisterwerk::core::jentity( name, 2500000, core::PRIORITY_NORMAL, 8 ),
                   temperature( "temperature", 0, 5, 900, 0.1 ),
                   humidity( "humidity", 0, 5, 900, 1.0 ), dhtType{type}, dhtPin{pin} {
                 // read cycle every 2 seconds
@@ -75,7 +75,7 @@ namespace meisterwerk {
                     }
                 }
                 if ( dhtState == S_ACTIVE ) {
-                    updateSensorValue( humidity, pdht->readTemperature(), dhtType.c_str() );
+                    updateSensorValue( humidity, pdht->readHumidity(), dhtType.c_str() );
                     updateSensorValue( temperature, pdht->readTemperature(), dhtType.c_str() );
                 }
             }
