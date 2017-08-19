@@ -34,11 +34,12 @@ namespace meisterwerk {
             String          mqttServer;
             IPAddress       mqttserverIP;
 
-            mqtt( String name )
+            mqtt( String name = "mqtt" )
                 : meisterwerk::core::entity( name, 50000 ), mqttClient( wifiClient ),
                   mqttTicker( 5000L ), clientName{name} {
                 mqttServer = "";
             }
+
             ~mqtt() {
                 if ( isOn ) {
                     isOn = false;

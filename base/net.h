@@ -9,6 +9,7 @@
 #pragma once
 
 // hardware dependencies
+#include <ArduinoJson.h>
 #include <ESP8266WiFi.h>
 #include <FS.h>
 #include <map>
@@ -43,7 +44,7 @@ namespace meisterwerk {
             std::map<String, String> netservices;
             String                   macAddress;
 
-            net( String name )
+            net( String name = "net" )
                 : meisterwerk::core::entity( name, 50000 ), tick1sec( 1000L ), tick10sec( 10000L ),
                   rssival( 5, 900, 2.0 ) {
                 bSetup = false;
