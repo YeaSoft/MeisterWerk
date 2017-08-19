@@ -31,18 +31,18 @@ namespace meisterwerk {
             // type definitions
             class controlword {
                 public:
-                static const unsigned char REACT   = 1;
-                static const unsigned char NOTIFY  = 2;
-                static const unsigned char READ    = 4;
-                static const unsigned char WRITE   = 8;
-                static const unsigned char GENERIC = 64;
-                String                     name;
-                unsigned char              type;
-                bool                       generic;
+                static const uint8_t REACT   = 1;
+                static const uint8_t NOTIFY  = 2;
+                static const uint8_t READ    = 4;
+                static const uint8_t WRITE   = 8;
+                static const uint8_t GENERIC = 64;
+                String               name;
+                uint8_t              type;
+                bool                 generic;
                 controlword() {
                     type = 0;
                 }
-                controlword( const char *name, unsigned char type ) : name{name}, type{type} {
+                controlword( const char *name, uint8_t type ) : name{name}, type{type} {
                 }
 
                 bool shouldReact( String &entName, Topic &topic ) const {
@@ -57,7 +57,7 @@ namespace meisterwerk {
                     return shouldDo( entName, topic, WRITE, "/get" );
                 }
 
-                bool shouldDo( String &entName, Topic &topic, unsigned char flag, const char *suffix ) const {
+                bool shouldDo( String &entName, Topic &topic, uint8_t flag, const char *suffix ) const {
                     if ( type & flag ) {
                         if ( topic == entName + "/" + name + suffix ) {
                             return true;
@@ -85,42 +85,42 @@ namespace meisterwerk {
             }
 
             // entity overridables
-            virtual void receive( const char *origin, const char *topic, const char *msg ) override {
-                DynamicJsonBuffer reqBuffer( 256 );
-                DynamicJsonBuffer resBuffer( 256 );
-                JsonObject &      req = reqBuffer.parseObject( msg );
-                JsonObject &      res = resBuffer.createObject();
-                Topic             tpc = topic;
+            virtual void receive( const char *origin, const char *tpc, const char *msg ) override {
+                DynamicJsonBuffer paramBuffer( 256 );
+                DynamicJsonBuffer mdataBuffer( 256 );
+                JsonObject &      param = paramBuffer.parseObject( msg );
+                JsonObject &      mdata = mdataBuffer.createObject();
+                Topic             topic = tpc;
 
-                prepareData( res );
-                if ( tpc == entName + "/info/get" || tpc == "info/get" ) {
-                    prepareInfo( res );
+                prepareData( mdata );
+                if ( topic == entName + "/info/get" || topic == "info/get" ) {
+                    prepareInfo( mdata );
                 }
 
                 for ( unsigned int i = 0; i < wordList.length(); i++ ) {
-                    if ( wordList[i].shouldReact( entName, tpc ) ) {
-                        onReaction( wordList[i].name, req, res );
+                    if ( wordList[i].shouldReact( entName, topic ) ) {
+                        onReaction( wordList[i].name, param, mdata );
                         return;
-                    } else if ( wordList[i].shouldRead( entName, tpc ) ) {
-                        onGetValue( wordList[i].name, req, res );
+                    } else if ( wordList[i].shouldRead( entName, topic ) ) {
+                        onGetValue( wordList[i].name, param, mdata );
                         return;
-                    } else if ( wordList[i].shouldWrite( entName, tpc ) ) {
-                        onSetValue( wordList[i].name, req, res );
+                    } else if ( wordList[i].shouldWrite( entName, topic ) ) {
+                        onSetValue( wordList[i].name, param, mdata );
                         return;
                     }
                 }
 
                 // was not processed by registered control words
                 if ( bStrictMode ) {
-                    onMessage( topic, req, res );
-                } else if ( tpc.match( entName + "/+" ) ) {
-                    onReaction( tpc.gettail(), req, res );
-                } else if ( tpc.match( entName + "/+/get" ) ) {
-                    onGetValue( tpc.gettail().getfirst(), req, res );
-                } else if ( tpc.match( entName + "/+/set" ) ) {
-                    onSetValue( tpc.gettail().getfirst(), req, res );
+                    onMessage( topic, param, mdata );
+                } else if ( topic.match( entName + "/+" ) ) {
+                    onReaction( topic.gettail(), param, mdata );
+                } else if ( topic.match( entName + "/+/get" ) ) {
+                    onGetValue( topic.gettail().getfirst(), param, mdata );
+                } else if ( topic.match( entName + "/+/set" ) ) {
+                    onSetValue( topic.gettail().getfirst(), param, mdata );
                 } else {
-                    onMessage( topic, req, res );
+                    onMessage( topic, param, mdata );
                 }
             }
 
@@ -208,12 +208,11 @@ namespace meisterwerk {
             }
 
             void SettableState( const char *wordName, bool generic = false ) {
-                registerWord( wordName,
-                              controlword::NOTIFY | controlword::READ | controlword::WRITE |
-                                  ( generic ? controlword::GENERIC : 0 ) );
+                registerWord( wordName, controlword::NOTIFY | controlword::READ | controlword::WRITE |
+                                            ( generic ? controlword::GENERIC : 0 ) );
             }
 
-            void registerWord( const char *wordName, unsigned char wordType ) {
+            void registerWord( const char *wordName, uint8_t wordType ) {
                 controlword cw( wordName, wordType );
                 wordList.add( cw );
 

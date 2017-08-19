@@ -18,16 +18,14 @@ namespace meisterwerk {
     namespace util {
 
 #ifdef _MW_DEBUG
-        class dumper : public meisterwerk::core::entity {
+        class dumper : public core::entity {
             public:
-            meisterwerk::util::metronome autodump;
-            String                       debugButton;
+            util::metronome autodump;
+            String          debugButton;
 
             dumper( String name = "dmp", unsigned long autodump = 0, String debugButton = "dbg",
-                    unsigned long             minMicroSecs = 250000,
-                    meisterwerk::core::T_PRIO priority     = meisterwerk::core::PRIORITY_NORMAL )
-                : meisterwerk::core::entity( name, minMicroSecs, priority ), autodump{autodump}, debugButton{
-                                                                                                     debugButton} {
+                    unsigned long minMicroSecs = 250000, core::T_PRIO priority = core::PRIORITY_NORMAL )
+                : core::entity( name, minMicroSecs, priority ), autodump{autodump}, debugButton{debugButton} {
             }
 
             void setup() override {
